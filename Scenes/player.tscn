@@ -53,7 +53,7 @@ func try_break_block():
 	var to = from + camera.global_transform.basis.z * -6.0
 	
 	var query = PhysicsRayQueryParameters3D.create(from, to)
-	var result = space_state.intersect_ray(query)
+	var result = space_state.intersect_ray(query) # test
 	
 	if result:
 		var chunk = result.collider.get_parent()
