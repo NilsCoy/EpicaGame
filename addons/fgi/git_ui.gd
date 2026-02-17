@@ -145,7 +145,7 @@ func _on_push_pressed():
 	status_log.text = "Pushing... (this may take a moment)"
 	%Push.disabled = true
 	
-	execute_git_command_async(["push"], func(result):
+	execute_git_command_async(["push", "origin"], func(result):
 		status_log.text = result.output if result.output != "" else "Push completed"
 		%Push.disabled = false
 		refresh_status()
