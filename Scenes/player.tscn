@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://5jwrhpdhgtm8"]
 
+[ext_resource type="Texture2D" uid="uid://bky2jo0bab0sv" path="res://Assets/Blocks/crosshair.png" id="1_v0iea"]
+
 [sub_resource type="GDScript" id="GDScript_f60y1"]
 script/source = "extends CharacterBody3D
 
@@ -12,6 +14,7 @@ var mouse_sensitivity = 0.003
 var vertical_angle = 0.0 
 var max_vertical_angle = 90
 var pause = false
+var curr_block = 1
 
 func _ready():
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -24,11 +27,16 @@ func _input(event):
 	_ui(event)
 	if pause == false:
 		fly_speed(event)
+		for i in range(10):
+			if Input.is_action_just_pressed(str(i)):
+				curr_block = i
+				$CanvasLayer/Control/Label.text = str(curr_block)
+				break
 		if event is InputEventMouseButton and event.pressed:
 			if event.button_index == MOUSE_BUTTON_LEFT:
-				try_place_block()
-			elif event.button_index == MOUSE_BUTTON_RIGHT:
 				try_break_block()
+			elif event.button_index == MOUSE_BUTTON_RIGHT:
+				try_place_block()
 
 func try_place_block():
 	var camera = $Camera3D
@@ -43,7 +51,7 @@ func try_place_block():
 	if result:
 		var chunk = result.collider.get_parent()
 		if chunk.has_method(\"place_block\"):
-			chunk.place_block(result.position, result.normal)
+			chunk.place_block(result.position, result.normal, curr_block)
 
 func try_break_block():
 	var camera = $Camera3D
@@ -53,7 +61,7 @@ func try_break_block():
 	var to = from + camera.global_transform.basis.z * -6.0
 	
 	var query = PhysicsRayQueryParameters3D.create(from, to)
-	var result = space_state.intersect_ray(query) # test
+	var result = space_state.intersect_ray(query)
 	
 	if result:
 		var chunk = result.collider.get_parent()
@@ -160,6 +168,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="ColorRect" type="ColorRect" parent="CanvasLayer/Control" unique_id=828859526]
+visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -173,3 +182,24 @@ offset_bottom = 5.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
+
+[node name="Label" type="Label" parent="CanvasLayer/Control" unique_id=425599743]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -89.0
+offset_right = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Crosshair" type="Sprite2D" parent="CanvasLayer/Control" unique_id=1581645751]
+position = Vector2(576, 324)
+scale = Vector2(3, 3)
+texture = ExtResource("1_v0iea")

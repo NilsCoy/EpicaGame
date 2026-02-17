@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://b2doj54r58x6h"]
+
+[ext_resource type="PackedScene" uid="uid://bj6pnxogxt38v" path="res://Scenes/save_system.tscn" id="1_ci6au"]
+[ext_resource type="PackedScene" uid="uid://bfos268tpe1gs" path="res://Scenes/chunk.tscn" id="2_26yhd"]
+
+[sub_resource type="GDScript" id="GDScript_58wgy"]
+script/source = "extends Node3D
+
+var chunk_scene := preload(\"res://Scenes/chunk.tscn\")
+var chunk: Node3D
+
+func _ready():
+	chunk = $SaveSystem.load_file(chunk_scene)
+	if chunk == null:
+		chunk = chunk_scene.instantiate()
+		chunk.starter_block = true
+	add_child(chunk)
+
+func _input(event):
+	if Input.is_action_just_pressed('fast_save'):
+		$SaveSystem.save_file(chunk)
+"
+
+[node name="Map" type="Node3D" unique_id=1381430335]
+script = SubResource("GDScript_58wgy")
+
+[node name="SaveSystem" parent="." unique_id=1807565796 instance=ExtResource("1_ci6au")]
+FILE_PATH = "world/save.json"
+
+[node name="chunk_0_0_0" parent="." unique_id=1346054987 instance=ExtResource("2_26yhd")]
