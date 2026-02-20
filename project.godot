@@ -19,6 +19,10 @@ run/main_scene="uid://cp0u50t6q8pqi"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+G="*uid://37ngxtvnw0do"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/fgi/plugin.cfg")

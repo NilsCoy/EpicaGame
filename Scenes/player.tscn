@@ -51,7 +51,7 @@ func try_place_block():
 	if result:
 		var chunk = result.collider.get_parent()
 		if chunk.has_method(\"place_block\"):
-			chunk.place_block(result.position, result.normal, curr_block)
+			chunk.place_block(result.position, result.normal, curr_block, rotation.y)
 
 func try_break_block():
 	var camera = $Camera3D
