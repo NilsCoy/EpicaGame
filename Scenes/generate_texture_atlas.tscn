@@ -5,6 +5,7 @@ script/source = "extends Node
 
 @export var blocks := {
 	1: {
+		\"type\": \"block\",
 		\"textures\": {
 			\"top\": \"res://Assets/Blocks/stone.png\",
 			\"bottom\": \"res://Assets/Blocks/dirt.png\",
@@ -13,17 +14,23 @@ script/source = "extends Node
 		\"is_rotate\": false
 	},
 	2: {
+		\"type\": \"block\",
 		\"textures\": {
 			\"top\": \"res://Assets/Blocks/stone.png\",
 			\"bottom\": \"res://Assets/Blocks/stone.png\",
 			\"side\": \"res://Assets/Blocks/stone.png\",
 		},
 		\"is_rotate\": false
-	}
+	},
+	3: {
+		\"type\": \"model\",
+		\"asset\": \"res://Assets/Blocks/stairs.gltf\",
+		\"is_rotate\": true
+	},
 }
-@export var model_blocks = {
-	3: \"res://Assets/Blocks/stairs.gltf\"
-}
+#@export var model_blocks = {
+	#3: \"res://Assets/Blocks/stairs.gltf\"
+#}
 
 var atlas_texture: Texture2D
 var block_uv_map = {}
@@ -41,10 +48,11 @@ func generate_texture_atlas():
 	var unique_paths = []
 
 	for block_id in blocks:
-		for face in blocks[block_id]['textures']:
-			var path = blocks[block_id]['textures'][face]
-			if not unique_paths.has(path):
-				unique_paths.append(path)
+		if blocks[block_id]['type'] == 'block':
+			for face in blocks[block_id]['textures']:
+				var path = blocks[block_id]['textures'][face]
+				if not unique_paths.has(path):
+					unique_paths.append(path)
 
 	var texture_count = unique_paths.size()
 	var first_tex: Texture2D = load(unique_paths[0])
@@ -79,11 +87,12 @@ func generate_texture_atlas():
 
 	# Теперь собираем UV для блоков
 	for block_id in blocks:
-		block_uv_map[block_id] = {
-			\"top\": texture_uv_lookup[blocks[block_id]['textures'][\"top\"]],
-			\"bottom\": texture_uv_lookup[blocks[block_id]['textures'][\"bottom\"]],
-			\"side\": texture_uv_lookup[blocks[block_id]['textures'][\"side\"]]
-		}
+		if blocks[block_id][\"type\"] == \"block\":
+			block_uv_map[block_id] = {
+				\"top\": texture_uv_lookup[blocks[block_id]['textures'][\"top\"]],
+				\"bottom\": texture_uv_lookup[blocks[block_id]['textures'][\"bottom\"]],
+				\"side\": texture_uv_lookup[blocks[block_id]['textures'][\"side\"]]
+			}
 
 	atlas_texture = ImageTexture.create_from_image(atlas_image)
 "

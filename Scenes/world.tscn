@@ -3,17 +3,6 @@
 [ext_resource type="PackedScene" uid="uid://5jwrhpdhgtm8" path="res://Scenes/player.tscn" id="1_a02cp"]
 [ext_resource type="PackedScene" uid="uid://b2doj54r58x6h" path="res://Scenes/map.tscn" id="2_go701"]
 
-[sub_resource type="GDScript" id="GDScript_go701"]
-script/source = "extends Node3D
-
-#func _ready():
-	#for i in range(5):
-		#for j in range(5):
-			#var chunk = load(\"res://Scenes/chunk.tscn\").instantiate()
-			#add_child(chunk)
-			#chunk.position = Vector3(i * 16, 0, j * 16)
-"
-
 [sub_resource type="Environment" id="Environment_a02cp"]
 background_mode = 1
 background_color = Color(0.49747366, 0.49747366, 0.49747366, 1)
@@ -25,7 +14,6 @@ volumetric_fog_enabled = true
 [sub_resource type="BoxMesh" id="BoxMesh_go701"]
 
 [node name="World" type="Node3D" unique_id=193794405]
-script = SubResource("GDScript_go701")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=89933525]
 environment = SubResource("Environment_a02cp")

@@ -30,8 +30,7 @@ func save_data() -> Dictionary:
 			blocks_rotations[x][y] = []
 			blocks_rotations[x][y].resize(CHUNK_SIZE)
 			for z in CHUNK_SIZE:
-				
-				blocks_ids[x][y][z] = blocks[x][y][z][\"id\"]
+				blocks_ids[x][y][z] = int(blocks[x][y][z][\"id\"])
 				blocks_rotations[x][y][z] = [blocks[x][y][z][\"rotation\"].x, blocks[x][y][z][\"rotation\"].y, blocks[x][y][z][\"rotation\"].z]
 	
 	return {
@@ -56,14 +55,15 @@ func load_data(data: Dictionary) -> void:
 func _ready():
 	if blocks == []:
 		generate_blocks()
+		rebuild()
 	
 	if starter_block:
 		blocks[0][0][0] = {
 			\"id\": 1,
 			\"rotation\": Vector3.UP
 		} # первый блок
-	
 	rebuild()
+	
 
 
 # Генерация массива блоков
@@ -93,7 +93,7 @@ func is_block(x, y, z):
 		return false
 	if x >= CHUNK_SIZE or y >= CHUNK_SIZE or z >= CHUNK_SIZE:
 		return false
-	return blocks[x][y][z]['id'] != 0
+	return blocks[x][y][z]['id'] != 0 and atlas_generator.blocks[int(blocks[x][y][z]['id'])][\"type\"] != \"model\"
 
 
 # Перестроение меша
@@ -110,10 +110,10 @@ func rebuild():
 		for y in CHUNK_SIZE:
 			for z in CHUNK_SIZE:
 				var block_data = blocks[x][y][z]
-				var block_id = block_data[\"id\"]
+				var block_id = int(block_data[\"id\"])
 				if block_id != 0:
 					var block_rotation = block_data[\"rotation\"]
-					if atlas_generator.model_blocks.has(block_id):
+					if atlas_generator.blocks[block_id][\"type\"] == \"model\":
 						add_model_block(x, y, z, block_id, block_rotation)
 						has_ModelBlock = true
 					else:
@@ -124,6 +124,7 @@ func rebuild():
 	if mesh.get_surface_count() == 0 and has_ModelBlock == false:
 		queue_free()
 		return
+	
 	var material = StandardMaterial3D.new()
 	material.albedo_texture = atlas_generator.atlas_texture
 	material.uv1_scale = Vector3(1, 1, 1)
@@ -137,7 +138,7 @@ func rebuild():
 
 # Добавление блок-модель
 func add_model_block(x, y, z, block_id, block_rotation):
-	var scene = load(atlas_generator.model_blocks[block_id])
+	var scene = load(atlas_generator.blocks[block_id][\"asset\"])
 	var instance = scene.instantiate()
 
 	G.create_collision(instance,[1],[1])
@@ -158,7 +159,7 @@ func add_model_block(x, y, z, block_id, block_rotation):
 	instance.position = Vector3(x, y, z)
 
 	# Поворот по направлению
-	print(block_rotation)
+	#print(block_rotation)
 	if block_rotation == Vector3.RIGHT:
 		instance.get_child(0).rotation_degrees.y = -90
 		instance.get_child(0).position.x += 1
@@ -326,7 +327,7 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: int = 1, play
 	if x >= 0 and y >= 0 and z >= 0 and \\
 		x < CHUNK_SIZE and y < CHUNK_SIZE and z < CHUNK_SIZE:
 		
-		if atlas_generator.model_blocks.has(block_id):
+		if atlas_generator.blocks[block_id][\"type\"] == \"model\":
 			blocks[x][y][z] = {
 				\"id\": block_id,
 				\"rotation\": player_rotation
