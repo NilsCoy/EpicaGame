@@ -19,4 +19,16 @@ func create_collision(target,layers,masks):
 					for mask in masks:
 						tree[i].get_child(0).set_collision_mask_value(mask, true)
 		tree = temp_tree
-	pass
+
+func replace_to_static(node_from):
+
+	var new_node = StaticBody3D.new()
+	new_node.name = node_from.name
+	new_node.transform = node_from.transform
+	new_node.owner = node_from.owner
+
+	for child in node_from.get_children():
+		node_from.remove_child(child)
+		new_node.add_child(child)
+
+	return new_node

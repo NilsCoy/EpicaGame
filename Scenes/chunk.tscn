@@ -52,7 +52,6 @@ func load_data(data: Dictionary) -> void:
 		data.get(\"blocks_ids\", [[[]]]),
 		data.get(\"blocks_rotations\", [[[]]])
 	)
-	#self.blocks = data.get(\"blocks\", [])
 
 func _ready():
 	if blocks == []:
@@ -99,9 +98,10 @@ func is_block(x, y, z):
 
 # Перестроение меша
 func rebuild():
+	var has_ModelBlock = false
 	for child in get_children():
-		if child.name.begins_with(\"ModelBlock\"):
-			child.queue_free()
+		if 'ModelBlock' in child.name:
+			child.free()
 	
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -113,18 +113,17 @@ func rebuild():
 				var block_id = block_data[\"id\"]
 				if block_id != 0:
 					var block_rotation = block_data[\"rotation\"]
-
 					if atlas_generator.model_blocks.has(block_id):
 						add_model_block(x, y, z, block_id, block_rotation)
+						has_ModelBlock = true
 					else:
 						add_block_faces(st, x, y, z, block_id, block_rotation)
 
 	var mesh = st.commit()
 
-	if mesh == null:
+	if mesh.get_surface_count() == 0 and has_ModelBlock == false:
 		queue_free()
 		return
-
 	var material = StandardMaterial3D.new()
 	material.albedo_texture = atlas_generator.atlas_texture
 	material.uv1_scale = Vector3(1, 1, 1)
@@ -136,21 +135,40 @@ func rebuild():
 	mesh_instance.mesh = mesh
 	collision_shape.shape = mesh.create_trimesh_shape()
 
+# Добавление блок-модель
 func add_model_block(x, y, z, block_id, block_rotation):
 	var scene = load(atlas_generator.model_blocks[block_id])
 	var instance = scene.instantiate()
 
 	G.create_collision(instance,[1],[1])
+	instance = G.replace_to_static(instance)
+	
+	instance.set_collision_mask_value(1, false)
+	instance.set_collision_mask_value(2, true)
+	instance.set_collision_layer_value(1, false)
+	instance.set_collision_layer_value(2, true)
+	
+	var collision = CollisionShape3D.new()
+	var box = BoxShape3D.new()
+	box.size = Vector3(1, 1, 1)
+	collision.shape = box
+	collision.position = Vector3(0.5, 0.5, 0.5)
+	instance.add_child(collision)
 
 	instance.position = Vector3(x, y, z)
 
 	# Поворот по направлению
+	print(block_rotation)
 	if block_rotation == Vector3.RIGHT:
-		instance.rotation_degrees.y = -90
+		instance.get_child(0).rotation_degrees.y = -90
+		instance.get_child(0).position.x += 1
 	elif block_rotation == Vector3.LEFT:
-		instance.rotation_degrees.y = 90
+		instance.get_child(0).rotation_degrees.y = 90
+		instance.get_child(0).position.z += 1
 	elif block_rotation == Vector3.BACK:
-		instance.rotation_degrees.y = 180
+		instance.get_child(0).rotation_degrees.y = 180
+		instance.get_child(0).position.x += 1
+		instance.get_child(0).position.z += 1
 	
 	instance.name = \"ModelBlock_\" + str(x) + \"_\" + str(y) + \"_\" + str(z)
 	add_child(instance)
@@ -185,7 +203,6 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: int, blo
 	var rotate_texture = false
 
 	# UV из атласа
-	#var atlas_pos = atlas_generator.block_uv_map[block_id]
 	var atlas_pos
 
 	match normal:
@@ -299,7 +316,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: int, blo
 
 
 # Установка блока
-func place_block(hit_position: Vector3, normal: Vector3, block_id: int = 1, player_y_rotation: float = 0.0):
+func place_block(hit_position: Vector3, normal: Vector3, block_id: int = 1, player_rotation: Vector3 = Vector3.ZERO):
 	var local_pos = to_local(hit_position + normal * 0.5)
 
 	var x = int(floor(local_pos.x))
@@ -309,10 +326,16 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: int = 1, play
 	if x >= 0 and y >= 0 and z >= 0 and \\
 		x < CHUNK_SIZE and y < CHUNK_SIZE and z < CHUNK_SIZE:
 		
-		blocks[x][y][z] = {
-			\"id\": block_id,
-			\"rotation\": normal
-		}
+		if atlas_generator.model_blocks.has(block_id):
+			blocks[x][y][z] = {
+				\"id\": block_id,
+				\"rotation\": player_rotation
+			}
+		else:
+			blocks[x][y][z] = {
+				\"id\": block_id,
+				\"rotation\": normal
+			}
 		rebuild()
 	else:
 		var neighbor_chunk_pos = position + normal * CHUNK_SIZE
@@ -324,18 +347,39 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: int = 1, play
 			chunk = load(\"res://Scenes/chunk.tscn\").instantiate()
 			chunk.position = neighbor_chunk_pos
 			chunk.name = chunk_name
+			var neighbor_local_pos = chunk.to_local(hit_position + normal * 0.5)
+			var nx = floor(neighbor_local_pos.x)
+			var ny = floor(neighbor_local_pos.y)
+			var nz = floor(neighbor_local_pos.z)
+			chunk.generate_blocks()
+			if atlas_generator.model_blocks.has(block_id):
+				chunk.blocks[nx][ny][nz] = {
+					\"id\": block_id,
+					\"rotation\": player_rotation
+				}
+			else:
+				chunk.blocks[nx][ny][nz] = {
+					\"id\": block_id,
+					\"rotation\": normal
+				}
 			get_parent().add_child(chunk)
-			
-		var neighbor_local_pos = chunk.to_local(hit_position + normal * 0.5)
-		var nx = floor(neighbor_local_pos.x)
-		var ny = floor(neighbor_local_pos.y)
-		var nz = floor(neighbor_local_pos.z)
-		
-		chunk.blocks[nx][ny][nz] = {
-			\"id\": block_id,
-			\"rotation\": normal
-		}
-		chunk.rebuild()
+			#chunk.rebuild()
+		else:
+			var neighbor_local_pos = chunk.to_local(hit_position + normal * 0.5)
+			var nx = floor(neighbor_local_pos.x)
+			var ny = floor(neighbor_local_pos.y)
+			var nz = floor(neighbor_local_pos.z)
+			if atlas_generator.model_blocks.has(block_id):
+				chunk.blocks[nx][ny][nz] = {
+					\"id\": block_id,
+					\"rotation\": player_rotation
+				}
+			else:
+				chunk.blocks[nx][ny][nz] = {
+					\"id\": block_id,
+					\"rotation\": normal
+				}
+			chunk.rebuild()
 
 # Ломание блока
 func break_block(hit_position: Vector3, normal: Vector3):
@@ -347,7 +391,6 @@ func break_block(hit_position: Vector3, normal: Vector3):
 
 	if x >= 0 and y >= 0 and z >= 0 and \\
 		x < CHUNK_SIZE and y < CHUNK_SIZE and z < CHUNK_SIZE:
-		
 		blocks[x][y][z] = {
 			\"id\": 0,
 			\"rotation\": Vector3.ZERO
@@ -509,6 +552,8 @@ script = SubResource("GDScript_1i61x")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1939269095]
 
 [node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=28209037]
+collision_layer = 3
+collision_mask = 2
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=626727669]
 

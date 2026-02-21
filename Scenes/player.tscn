@@ -38,20 +38,32 @@ func _input(event):
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
 				try_place_block()
 
+func get_rotation_from_forward(forward: Vector3) -> Vector3:
+	if abs(forward.x) > abs(forward.z):
+		return Vector3.RIGHT if forward.x > 0 else Vector3.LEFT
+	else:
+		return Vector3.BACK if forward.z > 0 else Vector3.FORWARD
+
 func try_place_block():
 	var camera = $Camera3D
+	var forward = -camera.global_transform.basis.z
+	forward.y = 0
+	forward = forward.normalized()
+	var rot = get_rotation_from_forward(forward)
+	
 	var space_state = get_world_3d().direct_space_state
 	
 	var from = camera.global_transform.origin
 	var to = from + camera.global_transform.basis.z * -6.0
 	
 	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
 	var result = space_state.intersect_ray(query)
 	
 	if result:
 		var chunk = result.collider.get_parent()
 		if chunk.has_method(\"place_block\"):
-			chunk.place_block(result.position, result.normal, curr_block, rotation.y)
+			chunk.place_block(result.position, result.normal, curr_block, rot)
 
 func try_break_block():
 	var camera = $Camera3D
@@ -61,8 +73,9 @@ func try_break_block():
 	var to = from + camera.global_transform.basis.z * -6.0
 	
 	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
 	var result = space_state.intersect_ray(query)
-	
+
 	if result:
 		var chunk = result.collider.get_parent()
 		if chunk.has_method(\"break_block\"):
