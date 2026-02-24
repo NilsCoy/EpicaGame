@@ -1,0 +1,262 @@
+[gd_scene format=3 uid="uid://5jwrhpdhgtm8"]
+
+[ext_resource type="Texture2D" uid="uid://bky2jo0bab0sv" path="res://Assets/Blocks/crosshair.png" id="1_v0iea"]
+[ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="2_cvnsp"]
+[ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="4_vgqql"]
+
+[sub_resource type="GDScript" id="GDScript_f60y1"]
+script/source = "extends CharacterBody3D
+
+# Move
+const SPEED: float = 5.0
+const JUMP_VELOCITY: float = 4.5
+var FLY_SPEED: float = 5.0
+
+# Mouse
+var mouse_sensitivity: float = 0.003
+var vertical_angle: float = 0.0 
+var max_vertical_angle: float = 90.0
+
+# Player settings
+@export var gamemode: int = 0 # 0=spectator, 1=survival, 2=creative
+
+# Utils
+var pause: bool = false
+var curr_block: int = 1
+
+func _ready():
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+func _physics_process(delta):
+	if pause == false:
+		_move(delta)
+
+func _input(event):
+	_ui(event)
+	if pause == false:
+		fly_speed(event)
+		for i in range(10):
+			if Input.is_action_just_pressed(str(i)):
+				curr_block = i
+				$UI/Control/Label.text = str(curr_block)
+				break
+		if event is InputEventMouseButton and event.pressed:
+			if event.button_index == MOUSE_BUTTON_LEFT:
+				try_break_block()
+			elif event.button_index == MOUSE_BUTTON_RIGHT:
+				try_place_block()
+
+func get_rotation_from_forward(forward: Vector3) -> Vector3:
+	if abs(forward.x) > abs(forward.z):
+		return Vector3.RIGHT if forward.x > 0 else Vector3.LEFT
+	else:
+		return Vector3.BACK if forward.z > 0 else Vector3.FORWARD
+
+func try_place_block():
+	var camera = $Camera3D
+	var forward = -camera.global_transform.basis.z
+	forward.y = 0
+	forward = forward.normalized()
+	var rot = get_rotation_from_forward(forward)
+	
+	var space_state = get_world_3d().direct_space_state
+	
+	var from = camera.global_transform.origin
+	var to = from + camera.global_transform.basis.z * -6.0
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
+	var result = space_state.intersect_ray(query)
+	
+	if result:
+		var chunk = result.collider.get_parent()
+		if chunk.has_method(\"place_block\"):
+			chunk.place_block(result.position, result.normal, curr_block, rot)
+
+func try_break_block():
+	var camera = $Camera3D
+	var space_state = get_world_3d().direct_space_state
+	
+	var from = camera.global_transform.origin
+	var to = from + camera.global_transform.basis.z * -6.0
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
+	var result = space_state.intersect_ray(query)
+
+	if result:
+		var chunk = result.collider.get_parent()
+		if chunk.has_method(\"break_block\"):
+			chunk.break_block(result.position, result.normal)
+
+
+func _move(delta):
+	match gamemode:
+		0: spectator_move(delta)
+		1: survival_move(delta)
+		2: creative_move(delta)
+
+func _ui(e):
+	if e is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		rotate_y(-e.relative.x * mouse_sensitivity)
+		
+		vertical_angle -= e.relative.y * mouse_sensitivity
+		vertical_angle = clamp(vertical_angle, deg_to_rad(-max_vertical_angle), deg_to_rad(max_vertical_angle))
+		
+		$Camera3D.rotation.x = vertical_angle
+	
+	if e.is_action_pressed(\"esc\"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			pause = true
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			pause = false
+
+func fly_speed(e):
+	if e is InputEventMouseButton:
+		if e.button_index == MOUSE_BUTTON_WHEEL_UP and FLY_SPEED < 50.0:
+			FLY_SPEED += 0.5
+		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN and FLY_SPEED > 5.0:
+			FLY_SPEED -= 0.5
+
+func spectator_move(delta):
+	if Input.is_action_pressed(\"space\"):
+		velocity.y = FLY_SPEED
+	elif Input.is_action_pressed(\"shift\"):
+		velocity.y = -FLY_SPEED
+	else:
+		velocity.y = 0
+
+	var input_dir = Input.get_vector(\"left\", \"right\", \"up\", \"down\")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	if direction:
+		velocity.x = direction.x * FLY_SPEED
+		velocity.z = direction.z * FLY_SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, FLY_SPEED)
+		velocity.z = move_toward(velocity.z, 0, FLY_SPEED)
+
+	move_and_slide()
+
+func survival_move(delta):
+	# Add the gravity.
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+
+	# Handle jump.
+	if Input.is_action_just_pressed(\"space\") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+
+	# Get the input direction and handle the movement/deceleration.
+	# As good practice, you should replace UI actions with custom gameplay actions.
+	var input_dir = Input.get_vector(\"left\", \"right\", \"up\", \"down\")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	if direction:
+		velocity.x = direction.x * SPEED
+		velocity.z = direction.z * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+		velocity.z = move_toward(velocity.z, 0, SPEED)
+
+	move_and_slide()
+
+func creative_move(delta):
+	spectator_move(delta)
+"
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_f60y1"]
+
+[sub_resource type="GDScript" id="GDScript_vgqql"]
+script/source = "extends Control
+
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pass # Replace with function body.
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	pass
+"
+
+[node name="Player" type="CharacterBody3D" unique_id=877482764]
+collision_layer = 0
+collision_mask = 0
+script = SubResource("GDScript_f60y1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1863849229]
+shape = SubResource("SphereShape3D_f60y1")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=2072109049]
+current = true
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=864584949]
+
+[node name="Control" type="Control" parent="UI" unique_id=25603552]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="UI/Control" unique_id=828859526]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -5.0
+offset_top = -5.0
+offset_right = 5.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+
+[node name="Label" type="Label" parent="UI/Control" unique_id=425599743]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -89.0
+offset_right = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Crosshair" type="Sprite2D" parent="UI/Control" unique_id=1581645751]
+position = Vector2(576, 324)
+scale = Vector2(3, 3)
+texture = ExtResource("1_v0iea")
+
+[node name="Inventory" type="Control" parent="UI" unique_id=1579392038]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_vgqql")
+
+[node name="InventoryContainer" parent="UI/Inventory" unique_id=2012566676 instance=ExtResource("2_cvnsp")]
+layout_mode = 0
+offset_left = 22.0
+offset_top = 22.0
+offset_right = 62.0
+offset_bottom = 62.0
+metadata/_edit_use_anchors_ = true
+
+[node name="GrabbedSlotContainer" parent="UI/Inventory" unique_id=1947869178 instance=ExtResource("4_vgqql")]
+modulate = Color(1, 1, 1, 0.49411765)
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 0

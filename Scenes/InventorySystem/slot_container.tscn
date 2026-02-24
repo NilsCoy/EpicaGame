@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://bud750atb0nn8"]
+
+[sub_resource type="GDScript" id="GDScript_fpeqf"]
+script/source = "extends PanelContainer
+
+signal slot_clicked(index: int, button: int)
+
+@onready var texture_rect = $MarginContainer/TextureRect
+@onready var quantity_label = $QuantityLabel
+
+func set_slot_data(slot_data: SlotData) -> void:
+	var item_data = slot_data.item_data
+	texture_rect.texture = item_data.texture
+	tooltip_text = \"%s\\n%s\" % [item_data.name, item_data.discription]
+	
+	if slot_data.quantity > 1:
+		quantity_label.text = str(slot_data.quantity)
+		quantity_label.show()
+	else:
+		quantity_label.hide()
+
+func _on_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if (event.button_index == MOUSE_BUTTON_LEFT) \\
+				or (event.button_index == MOUSE_BUTTON_RIGHT) \\
+				and (event.is_pressed()):
+			slot_clicked.emit(get_index(), event.button_index)
+"
+
+[node name="SlotContainer" type="PanelContainer" unique_id=1947869178]
+custom_minimum_size = Vector2(64, 64)
+offset_right = 40.0
+offset_bottom = 40.0
+script = SubResource("GDScript_fpeqf")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=491350940]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer" unique_id=1123846367]
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="QuantityLabel" type="Label" parent="." unique_id=971541674]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+text = "99"
+
+[connection signal="gui_input" from="." to="." method="_on_gui_input"]

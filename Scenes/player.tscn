@@ -1,20 +1,29 @@
 [gd_scene format=3 uid="uid://5jwrhpdhgtm8"]
 
+[ext_resource type="Resource" uid="uid://bpw1sapgkiyqf" path="res://Resources/player_inventory.tres" id="1_6t5aa"]
 [ext_resource type="Texture2D" uid="uid://bky2jo0bab0sv" path="res://Assets/Blocks/crosshair.png" id="1_v0iea"]
+[ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="2_cvnsp"]
+[ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="4_vgqql"]
 
 [sub_resource type="GDScript" id="GDScript_f60y1"]
 script/source = "extends CharacterBody3D
 
+# Move
+const SPEED: float = 5.0
+const JUMP_VELOCITY: float = 4.5
+var FLY_SPEED: float = 5.0
 
-const SPEED = 5.0
-const JUMP_VELOCITY = 4.5
-var FLY_SPEED = 5.0
+# Mouse
+var mouse_sensitivity: float = 0.003
+var vertical_angle: float = 0.0 
+var max_vertical_angle: float = 90.0
+
+# Player settings
 @export var gamemode: int = 0 # 0=spectator, 1=survival, 2=creative
-var mouse_sensitivity = 0.003
-var vertical_angle = 0.0 
-var max_vertical_angle = 90
-var pause = false
-var curr_block = 1
+
+# Utils
+var pause: bool = false
+var curr_block: int = 1
 
 func _ready():
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -30,7 +39,7 @@ func _input(event):
 		for i in range(10):
 			if Input.is_action_just_pressed(str(i)):
 				curr_block = i
-				$CanvasLayer/Control/Label.text = str(curr_block)
+				$UI/Control/Label.text = str(curr_block)
 				break
 		if event is InputEventMouseButton and event.pressed:
 			if event.button_index == MOUSE_BUTTON_LEFT:
@@ -159,6 +168,41 @@ func creative_move(delta):
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_f60y1"]
 
+[sub_resource type="GDScript" id="GDScript_vgqql"]
+script/source = "extends Control
+
+# Inventory
+@export var inventory_data: InventoryData 
+var grabbed_slot_data: SlotData
+@onready var grabbed_slot_container = $GrabbedSlotContainer
+
+func _ready():
+	inventory_data.inventory_interact.connect(on_inventory_interact)
+	$InventoryContainer.set_inventory_data(inventory_data)
+
+func _physics_process(delta):
+	if grabbed_slot_container.visible:
+		grabbed_slot_container.global_position = get_global_mouse_position() + Vector2(5, 5)
+
+func on_inventory_interact(inventory_data: InventoryData, index: int, button: int) -> void:
+	match [grabbed_slot_data, button]:
+		[null, MOUSE_BUTTON_LEFT]:
+			grabbed_slot_data = inventory_data.grab_slot_data(index)
+		[_, MOUSE_BUTTON_LEFT]:
+			grabbed_slot_data = inventory_data.drop_slot_data(grabbed_slot_data, index)
+		[null, MOUSE_BUTTON_RIGHT]:
+			pass
+		[_, MOUSE_BUTTON_RIGHT]:
+			grabbed_slot_data = inventory_data.drop_single_slot_data(grabbed_slot_data, index)
+	update_grabbed_slot()
+
+func update_grabbed_slot() -> void:
+	if grabbed_slot_data:
+		grabbed_slot_container.set_slot_data(grabbed_slot_data)
+		grabbed_slot_container.show()
+	else: grabbed_slot_container.hide()
+"
+
 [node name="Player" type="CharacterBody3D" unique_id=877482764]
 collision_layer = 0
 collision_mask = 0
@@ -170,9 +214,9 @@ shape = SubResource("SphereShape3D_f60y1")
 [node name="Camera3D" type="Camera3D" parent="." unique_id=2072109049]
 current = true
 
-[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=864584949]
+[node name="UI" type="CanvasLayer" parent="." unique_id=864584949]
 
-[node name="Control" type="Control" parent="CanvasLayer" unique_id=25603552]
+[node name="Control" type="Control" parent="UI" unique_id=25603552]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -180,7 +224,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ColorRect" type="ColorRect" parent="CanvasLayer/Control" unique_id=828859526]
+[node name="ColorRect" type="ColorRect" parent="UI/Control" unique_id=828859526]
 visible = false
 layout_mode = 1
 anchors_preset = 8
@@ -196,7 +240,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 
-[node name="Label" type="Label" parent="CanvasLayer/Control" unique_id=425599743]
+[node name="Label" type="Label" parent="UI/Control" unique_id=425599743]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -212,7 +256,33 @@ text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Crosshair" type="Sprite2D" parent="CanvasLayer/Control" unique_id=1581645751]
+[node name="Crosshair" type="Sprite2D" parent="UI/Control" unique_id=1581645751]
 position = Vector2(576, 324)
 scale = Vector2(3, 3)
 texture = ExtResource("1_v0iea")
+
+[node name="Inventory" type="Control" parent="UI" unique_id=1579392038]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_vgqql")
+inventory_data = ExtResource("1_6t5aa")
+
+[node name="InventoryContainer" parent="UI/Inventory" unique_id=2012566676 instance=ExtResource("2_cvnsp")]
+layout_mode = 0
+offset_left = 22.0
+offset_top = 22.0
+offset_right = 62.0
+offset_bottom = 62.0
+metadata/_edit_use_anchors_ = true
+
+[node name="GrabbedSlotContainer" parent="UI/Inventory" unique_id=1947869178 instance=ExtResource("4_vgqql")]
+visible = false
+modulate = Color(1, 1, 1, 0.49411765)
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
