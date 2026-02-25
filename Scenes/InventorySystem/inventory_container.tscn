@@ -6,6 +6,10 @@ script/source = "extends PanelContainer
 const Slot = preload(\"res://Scenes/InventorySystem/slot_container.tscn\")
 
 @onready var item_grid = $MarginContainer/ItemGrid
+@export_range(0,1000) var columns: int = 9
+
+func _ready() -> void:
+	item_grid.columns = columns
 
 func set_inventory_data(inventory_data: InventoryData) -> void:
 	inventory_data.inventory_update.connect(populate_item_grid)

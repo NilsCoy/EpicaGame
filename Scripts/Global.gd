@@ -1,6 +1,6 @@
 extends Node
 
-func create_collision(target,layers,masks):
+func create_collision(target, layers: Array[int], masks: Array[int]) -> void:
 	var tree = []
 	tree = target.get_children()
 	while len(tree) > 0:
@@ -20,7 +20,7 @@ func create_collision(target,layers,masks):
 						tree[i].get_child(0).set_collision_mask_value(mask, true)
 		tree = temp_tree
 
-func replace_to_static(node_from):
+func replace_to_static(node_from) -> StaticBody3D:
 
 	var new_node = StaticBody3D.new()
 	new_node.name = node_from.name

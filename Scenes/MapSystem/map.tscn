@@ -1,18 +1,16 @@
 [gd_scene format=3 uid="uid://b2doj54r58x6h"]
 
-[ext_resource type="PackedScene" uid="uid://bj6pnxogxt38v" path="res://Scenes/save_system.tscn" id="1_ci6au"]
-
 [sub_resource type="GDScript" id="GDScript_58wgy"]
 script/source = "extends Node3D
 
 var chunk_scene := preload(\"res://Scenes/MapSystem/chunk.tscn\")
 var chunk: Node3D
 
-func _ready():
-	var files = $SaveSystem.get_files_in_directory('world')
+func _ready() -> void:
+	var files = SaveSystem.get_files_in_directory('World')
 	if files != []:
 		for file in files:
-			chunk = $SaveSystem.load_file('world/'+file, chunk_scene)
+			chunk = SaveSystem.load_file('World/'+file, chunk_scene)
 			add_child(chunk)
 	else:
 		chunk = chunk_scene.instantiate()
@@ -20,14 +18,12 @@ func _ready():
 		chunk.starter_block = true
 		add_child(chunk)
 
-func _input(event):
+func _input(event) -> void:
 	if Input.is_action_just_pressed('fast_save'):
 		for chunk in get_children():
 			if 'chunk' in chunk.name:
-				$SaveSystem.save_file('world/'+chunk.name+'.json', chunk)
+				SaveSystem.save_file('World/'+chunk.name+'.json', chunk)
 "
 
 [node name="Map" type="Node3D" unique_id=1381430335]
 script = SubResource("GDScript_58wgy")
-
-[node name="SaveSystem" parent="." unique_id=1807565796 instance=ExtResource("1_ci6au")]

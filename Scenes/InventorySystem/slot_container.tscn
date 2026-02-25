@@ -10,7 +10,8 @@ signal slot_clicked(index: int, button: int)
 
 func set_slot_data(slot_data: SlotData) -> void:
 	var item_data = slot_data.item_data
-	texture_rect.texture = item_data.texture
+	if item_data.texture:
+		texture_rect.texture = item_data.texture
 	tooltip_text = \"%s\\n%s\" % [item_data.name, item_data.discription]
 	
 	if slot_data.quantity > 1:
@@ -44,6 +45,14 @@ theme_override_constants/margin_bottom = 4
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
+
+[node name="SubViewport" type="SubViewport" parent="MarginContainer/TextureRect" unique_id=1894130165]
+
+[node name="Node3D" type="Node3D" parent="MarginContainer/TextureRect/SubViewport" unique_id=388755101]
+
+[node name="Camera3D" type="Camera3D" parent="MarginContainer/TextureRect/SubViewport/Node3D" unique_id=192840196]
+transform = Transform3D(0.70710677, -0.4055798, 0.579228, 0, 0.81915206, 0.57357645, -0.70710677, -0.4055798, 0.579228, 1.5, 1.5, 1.5)
+fov = 60.0
 
 [node name="QuantityLabel" type="Label" parent="." unique_id=971541674]
 visible = false

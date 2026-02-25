@@ -3,66 +3,73 @@
 [sub_resource type="GDScript" id="GDScript_fxl7y"]
 script/source = "extends Node
 
-@export var blocks := {
-	\"grass_block\": {
-		\"type\": \"block\",
-		\"textures\": {
-			\"top\": \"res://Assets/Blocks/grass_block_tint.png\",
-			\"bottom\": \"res://Assets/Blocks/dirt.png\",
-			\"side\": \"res://Assets/Blocks/grass_block_side.png\",
-		},
-		\"is_rotate\": false
-	},
-	\"dirt\": {
-		\"type\": \"block\",
-		\"textures\": {
-			\"top\": \"res://Assets/Blocks/dirt.png\",
-			\"bottom\": \"res://Assets/Blocks/dirt.png\",
-			\"side\": \"res://Assets/Blocks/dirt.png\",
-		},
-		\"is_rotate\": false
-	},
-	\"stone\": {
-		\"type\": \"block\",
-		\"textures\": {
-			\"top\": \"res://Assets/Blocks/stone.png\",
-			\"bottom\": \"res://Assets/Blocks/stone.png\",
-			\"side\": \"res://Assets/Blocks/stone.png\",
-		},
-		\"is_rotate\": false
-	},
-	\"cobblestone\": {
-		\"type\": \"block\",
-		\"textures\": {
-			\"top\": \"res://Assets/Blocks/cobblestone.png\",
-			\"bottom\": \"res://Assets/Blocks/cobblestone.png\",
-			\"side\": \"res://Assets/Blocks/cobblestone.png\",
-		},
-		\"is_rotate\": false
-	},
-	\"stone_stairs\": {
-		\"type\": \"model\",
-		\"asset\": \"res://Assets/Blocks/stairs.gltf\",
-		\"is_rotate\": true
-	},
-}
-#@export var model_blocks = {
-	#3: \"res://Assets/Blocks/stairs.gltf\"
+var blocks: Dictionary
+#var blocks: Dictionary = {
+	#\"grass_block\": {
+		#\"type\": \"block\",
+		#\"textures\": {
+			#\"top\": \"res://Assets/Blocks/grass_block_tint.png\",
+			#\"bottom\": \"res://Assets/Blocks/dirt.png\",
+			#\"side\": \"res://Assets/Blocks/grass_block_side.png\",
+		#},
+		#\"is_rotate\": false
+	#},
+	#\"dirt\": {
+		#\"type\": \"block\",
+		#\"textures\": {
+			#\"top\": \"res://Assets/Blocks/dirt.png\",
+			#\"bottom\": \"res://Assets/Blocks/dirt.png\",
+			#\"side\": \"res://Assets/Blocks/dirt.png\",
+		#},
+		#\"is_rotate\": false
+	#},
+	#\"stone\": {
+		#\"type\": \"block\",
+		#\"textures\": {
+			#\"top\": \"res://Assets/Blocks/stone.png\",
+			#\"bottom\": \"res://Assets/Blocks/stone.png\",
+			#\"side\": \"res://Assets/Blocks/stone.png\",
+		#},
+		#\"is_rotate\": false
+	#},
+	#\"cobblestone\": {
+		#\"type\": \"block\",
+		#\"textures\": {
+			#\"top\": \"res://Assets/Blocks/cobblestone.png\",
+			#\"bottom\": \"res://Assets/Blocks/cobblestone.png\",
+			#\"side\": \"res://Assets/Blocks/cobblestone.png\",
+		#},
+		#\"is_rotate\": false
+	#},
+	#\"stone_stairs\": {
+		#\"type\": \"model\",
+		#\"asset\": \"res://Assets/Blocks/stairs.gltf\",
+		#\"is_rotate\": true
+	#},
 #}
 
 var atlas_texture: Texture2D
 var block_uv_map = {}
 
-var ATLAS_SIZE = 0
-var TILE_SIZE = 0.0
-
-func _ready():
-	generate_texture_atlas()
+var ATLAS_SIZE: int = 0
+var TILE_SIZE: float = 0.0
 
 var texture_uv_lookup = {}
 
-func generate_texture_atlas():
+func _ready() -> void:
+	blocks = get_blocks()
+	generate_texture_atlas()
 
+func get_blocks() -> Dictionary:
+	var result: Dictionary
+	var files = SaveSystem.get_files_in_directory('Resources/Blocks/Data/')
+	if files != []:
+		for file in files:
+			var block = SaveSystem.read_json(SaveSystem.get_file_path('Resources/Blocks/Data/'+file, true))
+			result[file.split(\".\")[0]] = block
+	return result
+
+func generate_texture_atlas() -> void:
 	var unique_paths = []
 
 	for block_id in blocks:

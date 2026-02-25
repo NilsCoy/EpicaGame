@@ -22,6 +22,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 G="*uid://37ngxtvnw0do"
+SaveSystem="*uid://nsupueetcdkv"
 
 [display]
 

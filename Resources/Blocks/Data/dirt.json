@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/dirt.png",
+		"bottom": "res://Resources/Blocks/Assets/dirt.png",
+		"side": "res://Resources/Blocks/Assets/dirt.png",
+	},
+	"is_rotate": false
+}
