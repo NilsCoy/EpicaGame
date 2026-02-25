@@ -23,6 +23,10 @@ config/icon="res://icon.svg"
 
 G="*uid://37ngxtvnw0do"
 
+[display]
+
+window/size/mode=3
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/fgi/plugin.cfg")

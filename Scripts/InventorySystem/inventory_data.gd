@@ -14,6 +14,18 @@ func grab_slot_data(index: int) -> SlotData:
 		inventory_update.emit(self)
 	return slot_data
 
+func grab_hafl_slot_data(index: int) -> SlotData:
+	var slot_data = slot_datas[index]
+	var return_slot_data: SlotData
+	
+	if slot_data:
+		return_slot_data = slot_data.duplicate()
+		return_slot_data.quantity = ceili(float(return_slot_data.quantity)/2)
+		slot_data.quantity = floori(float(slot_data.quantity)/2)
+		slot_datas[index] = slot_data
+		inventory_update.emit(self)
+	return return_slot_data
+
 func drop_slot_data(grabbed_slot_data: SlotData, index: int) -> SlotData:
 	var slot_data = slot_datas[index]
 	

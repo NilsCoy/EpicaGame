@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://cp0u50t6q8pqi"]
+
+[ext_resource type="PackedScene" uid="uid://5jwrhpdhgtm8" path="res://Scenes/player.tscn" id="1_bo1nx"]
+[ext_resource type="PackedScene" uid="uid://b2doj54r58x6h" path="res://Scenes/MapSystem/map.tscn" id="2_8gbba"]
+
+[sub_resource type="Environment" id="Environment_a02cp"]
+background_mode = 1
+background_color = Color(0.49747366, 0.49747366, 0.49747366, 1)
+ssao_enabled = true
+ssil_enabled = true
+fog_enabled = true
+volumetric_fog_enabled = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_go701"]
+
+[node name="Main" type="Node3D" unique_id=193794405]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=89933525]
+environment = SubResource("Environment_a02cp")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1450614973]
+transform = Transform3D(0.9933286, 0.042967595, -0.10701475, 0.11531858, -0.37011337, 0.9218015, 0, -0.9279925, -0.37259912, 0, 0, 0)
+
+[node name="Player" parent="." unique_id=877482764 instance=ExtResource("1_bo1nx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.735976, 0)
+gamemode = 0
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=480579453]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4309027, 9.993654, 4.706607)
+visible = false
+shadow_enabled = true
+omni_range = 10.0
+omni_attenuation = 2.0
+omni_shadow_mode = 0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1109051609]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.4189067, 1.6870496)
+visible = false
+mesh = SubResource("BoxMesh_go701")
+
+[node name="Map" parent="." unique_id=1381430335 instance=ExtResource("2_8gbba")]
