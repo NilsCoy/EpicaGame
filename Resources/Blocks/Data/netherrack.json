@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/netherrack.png",
+		"bottom": "res://Resources/Blocks/Assets/netherrack.png",
+		"side": "res://Resources/Blocks/Assets/netherrack.png",
+	},
+	"is_rotate": false
+}

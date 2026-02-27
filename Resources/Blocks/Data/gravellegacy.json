@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/gravellegacy.png",
+		"bottom": "res://Resources/Blocks/Assets/gravellegacy.png",
+		"side": "res://Resources/Blocks/Assets/gravellegacy.png",
+	},
+	"is_rotate": false
+}

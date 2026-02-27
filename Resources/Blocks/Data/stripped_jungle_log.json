@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/stripped_jungle_log_top.png",
+		"bottom": "res://Resources/Blocks/Assets/stripped_jungle_log_top.png",
+		"side": "res://Resources/Blocks/Assets/stripped_jungle_log.png",
+	},
+	"is_rotate": true
+}

@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/gray_concrete_.png",
+		"bottom": "res://Resources/Blocks/Assets/gray_concrete_.png",
+		"side": "res://Resources/Blocks/Assets/gray_concrete_.png",
+	},
+	"is_rotate": false
+}

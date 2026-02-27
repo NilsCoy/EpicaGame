@@ -3,13 +3,23 @@
 [ext_resource type="PackedScene" uid="uid://5jwrhpdhgtm8" path="res://Scenes/player.tscn" id="1_bo1nx"]
 [ext_resource type="PackedScene" uid="uid://b2doj54r58x6h" path="res://Scenes/MapSystem/map.tscn" id="2_8gbba"]
 
+[sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_8gbba"]
+energy_multiplier = 3.0
+
+[sub_resource type="Sky" id="Sky_jjvhh"]
+sky_material = SubResource("PhysicalSkyMaterial_8gbba")
+
 [sub_resource type="Environment" id="Environment_a02cp"]
-background_mode = 1
-background_color = Color(0.49747366, 0.49747366, 0.49747366, 1)
-ssao_enabled = true
-ssil_enabled = true
+background_mode = 2
+sky = SubResource("Sky_jjvhh")
+glow_enabled = true
+glow_intensity = 0.1
+glow_bloom = 0.3
 fog_enabled = true
-volumetric_fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.2869581, 0.31226328, 0.35665286, 1)
+fog_density = 0.7
+fog_sky_affect = 0.5
 
 [sub_resource type="BoxMesh" id="BoxMesh_go701"]
 
@@ -19,11 +29,14 @@ volumetric_fog_enabled = true
 environment = SubResource("Environment_a02cp")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1450614973]
-transform = Transform3D(0.9933286, 0.042967595, -0.10701475, 0.11531858, -0.37011337, 0.9218015, 0, -0.9279925, -0.37259912, 0, 0, 0)
+transform = Transform3D(0.887333, 0.17043379, 0.428477, -0.46112922, 0.327959, 0.8245015, 0, -0.9291906, 0.36960083, 0, 0, 0)
+light_energy = 2.0
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_opacity = 0.8
 
 [node name="Player" parent="." unique_id=877482764 instance=ExtResource("1_bo1nx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.735976, 0)
-gamemode = 0
 
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=480579453]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4309027, 9.993654, 4.706607)

@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/red_sand.png",
+		"bottom": "res://Resources/Blocks/Assets/red_sand.png",
+		"side": "res://Resources/Blocks/Assets/red_sand.png",
+	},
+	"is_rotate": false
+}

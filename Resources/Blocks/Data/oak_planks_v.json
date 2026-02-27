@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/oak_planks_v.png",
+		"bottom": "res://Resources/Blocks/Assets/oak_planks_v.png",
+		"side": "res://Resources/Blocks/Assets/oak_planks_v.png",
+	},
+	"is_rotate": false
+}

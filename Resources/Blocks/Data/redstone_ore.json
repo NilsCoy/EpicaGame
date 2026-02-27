@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/redstone_ore.png",
+		"bottom": "res://Resources/Blocks/Assets/redstone_ore.png",
+		"side": "res://Resources/Blocks/Assets/redstone_ore.png",
+	},
+	"is_rotate": false
+}

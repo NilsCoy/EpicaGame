@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/iron_block.png",
+		"bottom": "res://Resources/Blocks/Assets/iron_block.png",
+		"side": "res://Resources/Blocks/Assets/iron_block.png",
+	},
+	"is_rotate": false
+}

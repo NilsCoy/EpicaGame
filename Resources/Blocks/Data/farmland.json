@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/farmland.png",
+		"bottom": "res://Resources/Blocks/Assets/farmland.png",
+		"side": "res://Resources/Blocks/Assets/farmland.png",
+	},
+	"is_rotate": false
+}

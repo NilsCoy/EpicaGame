@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/gravel.png",
+		"bottom": "res://Resources/Blocks/Assets/gravel.png",
+		"side": "res://Resources/Blocks/Assets/gravel.png",
+	},
+	"is_rotate": false
+}

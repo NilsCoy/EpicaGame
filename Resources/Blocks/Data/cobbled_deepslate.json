@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/cobbled_deepslate.png",
+		"bottom": "res://Resources/Blocks/Assets/cobbled_deepslate.png",
+		"side": "res://Resources/Blocks/Assets/cobbled_deepslate.png",
+	},
+	"is_rotate": false
+}

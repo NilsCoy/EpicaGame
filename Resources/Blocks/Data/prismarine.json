@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/prismarine.png",
+		"bottom": "res://Resources/Blocks/Assets/prismarine.png",
+		"side": "res://Resources/Blocks/Assets/prismarine.png",
+	},
+	"is_rotate": false
+}

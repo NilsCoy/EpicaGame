@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/terracotta.png",
+		"bottom": "res://Resources/Blocks/Assets/terracotta.png",
+		"side": "res://Resources/Blocks/Assets/terracotta.png",
+	},
+	"is_rotate": false
+}

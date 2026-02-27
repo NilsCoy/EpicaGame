@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/deepslate.png",
+		"bottom": "res://Resources/Blocks/Assets/deepslate.png",
+		"side": "res://Resources/Blocks/Assets/deepslate.png",
+	},
+	"is_rotate": false
+}

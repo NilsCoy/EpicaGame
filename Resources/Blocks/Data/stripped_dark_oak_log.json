@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/stripped_dark_oak_log_top.png",
+		"bottom": "res://Resources/Blocks/Assets/stripped_dark_oak_log_top.png",
+		"side": "res://Resources/Blocks/Assets/stripped_dark_oak_log.png",
+	},
+	"is_rotate": true
+}

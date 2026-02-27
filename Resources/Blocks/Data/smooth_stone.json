@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/smooth_stone.png",
+		"bottom": "res://Resources/Blocks/Assets/smooth_stone.png",
+		"side": "res://Resources/Blocks/Assets/smooth_stone.png",
+	},
+	"is_rotate": false
+}

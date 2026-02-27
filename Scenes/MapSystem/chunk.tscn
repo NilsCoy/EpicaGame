@@ -140,37 +140,39 @@ func add_model_block(x: int, y: int, z: int, block_id: String, block_rotation: V
 	var instance = scene.instantiate()
 
 	G.create_collision(instance,[1],[1])
-	instance = G.replace_to_static(instance)
+	var static_instance = StaticBody3D.new()
+	#instance = G.replace_to_static(instance)
+	static_instance.add_child(instance)
 	
-	instance.set_collision_mask_value(1, false)
-	instance.set_collision_mask_value(2, true)
-	instance.set_collision_layer_value(1, false)
-	instance.set_collision_layer_value(2, true)
+	static_instance.set_collision_mask_value(1, false)
+	static_instance.set_collision_mask_value(2, true)
+	static_instance.set_collision_layer_value(1, false)
+	static_instance.set_collision_layer_value(2, true)
 	
 	var collision = CollisionShape3D.new()
 	var box = BoxShape3D.new()
 	box.size = Vector3(1, 1, 1)
 	collision.shape = box
 	collision.position = Vector3(0.5, 0.5, 0.5)
-	instance.add_child(collision)
+	static_instance.add_child(collision)
 
 	instance.position = Vector3(x, y, z)
 
 	# Поворот по направлению
 	#print(block_rotation)
 	if block_rotation == Vector3.RIGHT:
-		instance.get_child(0).rotation_degrees.y = -90
-		instance.get_child(0).position.x += 1
+		instance.rotation_degrees.y = -90
+		instance.position.x += 1
 	elif block_rotation == Vector3.LEFT:
-		instance.get_child(0).rotation_degrees.y = 90
-		instance.get_child(0).position.z += 1
+		instance.rotation_degrees.y = 90
+		instance.position.z += 1
 	elif block_rotation == Vector3.BACK:
-		instance.get_child(0).rotation_degrees.y = 180
-		instance.get_child(0).position.x += 1
-		instance.get_child(0).position.z += 1
+		instance.rotation_degrees.y = 180
+		instance.position.x += 1
+		instance.position.z += 1
 	
-	instance.name = \"ModelBlock_\" + str(x) + \"_\" + str(y) + \"_\" + str(z)
-	add_child(instance)
+	static_instance.name = \"ModelBlock_\" + str(x) + \"_\" + str(y) + \"_\" + str(z)
+	add_child(static_instance)
 
 # Добавление граней блока
 func add_block_faces(st: SurfaceTool, x: int, y: int, z: int, block_id: String, block_rotation: Vector3):
@@ -199,8 +201,7 @@ func add_block_faces(st: SurfaceTool, x: int, y: int, z: int, block_id: String, 
 func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, block_rotation: Vector3):
 
 	var v = []
-	var rotate_texture_90 = false
-	var rotate_texture_180 = false
+	var uv_rotation_steps = 0  # 0,1,2,3 = 0°,90°,180°,270°
 
 	# UV из атласа
 	var atlas_pos
@@ -232,7 +233,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(1,1,0)
 			]
 			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
-			rotate_texture_180 = true
+			uv_rotation_steps = 2
 
 		Vector3.LEFT:
 			v = [
@@ -242,7 +243,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(0,0,1)
 			]
 			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
-			rotate_texture_90 = true
+			uv_rotation_steps = 1
 
 		Vector3.FORWARD:
 			v = [
@@ -252,7 +253,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(0,1,0)
 			]
 			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
-			rotate_texture_180 = true
+			uv_rotation_steps = 2
 
 		Vector3.BACK:
 			v = [
@@ -262,7 +263,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(1,0,1)
 			]
 			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
-			rotate_texture_90 = true
+			uv_rotation_steps = 1
 
 	if atlas_generator.blocks[block_id][\"is_rotate\"] == true:
 		if normal == block_rotation:
@@ -273,6 +274,32 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 
 		else:
 			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
+			match block_rotation:
+				Vector3.RIGHT:
+					if normal == Vector3.FORWARD: uv_rotation_steps = 1
+					elif normal == Vector3.BACK: uv_rotation_steps = 2
+					elif normal == Vector3.DOWN: uv_rotation_steps = 2
+					elif normal == Vector3.UP: uv_rotation_steps = 1
+
+				Vector3.LEFT:
+					if normal == Vector3.FORWARD: uv_rotation_steps = 3
+					elif normal == Vector3.BACK: uv_rotation_steps = 4
+					elif normal == Vector3.RIGHT: uv_rotation_steps = 2
+					elif normal == Vector3.UP: uv_rotation_steps = 3
+
+				Vector3.FORWARD:
+					if normal == Vector3.RIGHT: uv_rotation_steps = 3
+					elif normal == Vector3.LEFT: uv_rotation_steps = 4
+					elif normal == Vector3.BACK: uv_rotation_steps = 2
+					elif normal == Vector3.DOWN: uv_rotation_steps = 3
+
+				Vector3.BACK:
+					if normal == Vector3.RIGHT: uv_rotation_steps = 1
+					elif normal == Vector3.LEFT: uv_rotation_steps = 2
+					elif normal == Vector3.DOWN: uv_rotation_steps = 1
+					elif normal == Vector3.UP: uv_rotation_steps = 2
+	else:
+		block_rotation = Vector3.UP
 
 	var TILE_SIZE = atlas_generator.TILE_SIZE
 
@@ -282,20 +309,13 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 	var uv10 = uv_origin + Vector2(TILE_SIZE, 0)
 	var uv11 = uv_origin + Vector2(TILE_SIZE, TILE_SIZE)
 	var uv01 = uv_origin + Vector2(0, TILE_SIZE)
-	
-	if rotate_texture_90:
+
+	for i in range(uv_rotation_steps):
 		var temp = uv00
 		uv00 = uv01
 		uv01 = uv11
 		uv11 = uv10
 		uv10 = temp
-	if rotate_texture_180:
-		for i in range(2):
-			var temp = uv00
-			uv00 = uv01
-			uv01 = uv11
-			uv11 = uv10
-			uv10 = temp
 
 	# Треугольник 1
 	st.set_normal(normal)
@@ -378,7 +398,7 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 			var nx = floor(neighbor_local_pos.x)
 			var ny = floor(neighbor_local_pos.y)
 			var nz = floor(neighbor_local_pos.z)
-			if atlas_generator.model_blocks.has(block_id):
+			if atlas_generator.blocks[block_id][\"type\"] == \"model\":
 				chunk.blocks[nx][ny][nz] = {
 					\"id\": block_id,
 					\"rotation\": player_rotation

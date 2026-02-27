@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/stone_bricks.png",
+		"bottom": "res://Resources/Blocks/Assets/stone_bricks.png",
+		"side": "res://Resources/Blocks/Assets/stone_bricks.png",
+	},
+	"is_rotate": false
+}
