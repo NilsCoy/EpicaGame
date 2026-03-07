@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://d1ocmltvrklml"
-path="res://.godot/imported/person.gltf-02ee8b6e8699dec3e74102fe59ef7ba2.scn"
+uid="uid://crkj2pqs08sto"
+path="res://.godot/imported/human.gltf-9282c8bf454d90c7080d86c0cba71355.scn"
 
 [deps]
 
-source_file="res://Assets/Models/person.gltf"
-dest_files=["res://.godot/imported/person.gltf-02ee8b6e8699dec3e74102fe59ef7ba2.scn"]
+source_file="res://Assets/Models/human.gltf"
+dest_files=["res://.godot/imported/human.gltf-9282c8bf454d90c7080d86c0cba71355.scn"]
 
 [params]
 
@@ -18,7 +18,7 @@ nodes/root_name=""
 nodes/root_script=null
 nodes/apply_root_scale=true
 nodes/root_scale=1.0
-nodes/import_as_skeleton_bones=false
+nodes/import_as_skeleton_bones=true
 nodes/use_name_suffixes=true
 nodes/use_node_type_suffixes=true
 meshes/ensure_tangents=true

@@ -1,0 +1,780 @@
+[gd_scene format=3 uid="uid://5jwrhpdhgtm8"]
+
+[ext_resource type="Texture2D" uid="uid://bky2jo0bab0sv" path="res://Assets/crosshair.png" id="1_v0iea"]
+[ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="2_cvnsp"]
+[ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/InventorySystem/inventory_data.gd" id="2_fkybt"]
+[ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/InventorySystem/slot_data.gd" id="3_x3wgy"]
+[ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="4_vgqql"]
+[ext_resource type="PackedScene" uid="uid://crkj2pqs08sto" path="res://Assets/Models/human.gltf" id="6_x3wgy"]
+
+[sub_resource type="GDScript" id="GDScript_f60y1"]
+script/source = "extends CharacterBody3D
+
+# Move
+const JUMP_VELOCITY: float = 4.5
+const WALK_SPEED: float = 3.0
+const RUN_SPEED: float = 5.0
+var FLY_SPEED: float = 5.0
+var current_speed = WALK_SPEED
+
+# Player settings
+@export_range(0, 2, 1) var gamemode: int = 1 # 0=spectator, 1=survival, 2=creative
+@export_range(0, 2, 1) var move_state: int = 1 # 0=crawl, 1=walk, 2=run
+var fly = true
+
+# Utils
+var curr_block: String = \"\"
+
+@onready var inventory = $UI/Inventory
+@onready var camera = $Model/Camera
+@onready var animation = $AnimationTree
+
+func _ready() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	$UI/HUD/ItemName.text = str(curr_block)
+
+func _physics_process(delta) -> void:
+	$UI/HUD/FPS.text = str(int(Performance.get_monitor(Performance.TIME_FPS)))
+
+	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		_move(delta)
+	
+	_animatins_update()
+
+func _input(event) -> void:
+	_ui(event)
+
+func _get_rotation_from_forward(forward: Vector3) -> Vector3:
+	if abs(forward.x) > abs(forward.z):
+		return Vector3.RIGHT if forward.x > 0 else Vector3.LEFT
+	else:
+		return Vector3.BACK if forward.z > 0 else Vector3.FORWARD
+
+func _place_block() -> void:
+	var forward = -camera.global_transform.basis.z
+	forward.y = 0
+	forward = forward.normalized()
+	var rot = _get_rotation_from_forward(forward)
+	
+	var space_state = get_world_3d().direct_space_state
+	
+	var from = camera.global_transform.origin
+	var to = from + camera.global_transform.basis.z * -6.0
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
+	var result = space_state.intersect_ray(query)
+	
+	if result:
+		var chunk = result.collider.get_parent()
+		if chunk.has_method(\"place_block\"):
+			chunk.place_block(result.position, result.normal, curr_block, rot)
+
+func _break_block() -> void:
+	var space_state = get_world_3d().direct_space_state
+	
+	var from = camera.global_transform.origin
+	var to = from + camera.global_transform.basis.z * -6.0
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
+	var result = space_state.intersect_ray(query)
+
+	if result:
+		var chunk = result.collider.get_parent()
+		if chunk.has_method(\"break_block\"):
+			chunk.break_block(result.position, result.normal)
+
+
+func _move(delta) -> void:
+	if velocity:
+		match move_state:
+			1: animation[\"parameters/pos_state/transition_request\"] = \"walk\"
+			2: animation[\"parameters/pos_state/transition_request\"] = \"run\"
+	else: animation[\"parameters/pos_state/transition_request\"] = \"idle\"
+	
+	match gamemode:
+		0: _spectator_move(delta)
+		1: _survival_move(delta)
+		2: _creative_move(delta)
+	
+	var input_dir = Input.get_vector(\"left\", \"right\", \"up\", \"down\")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	direction = direction.rotated(Vector3.UP, camera.global_rotation.y)
+	if direction:
+		velocity.x = direction.x * current_speed
+		velocity.z = direction.z * current_speed
+	else:
+		velocity.x = move_toward(velocity.x, 0, current_speed)
+		velocity.z = move_toward(velocity.z, 0, current_speed)
+
+	move_and_slide()
+
+func _ui(e) -> void:
+	if Input.is_action_just_pressed(\"esc\"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		else: Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	if Input.is_action_just_pressed(\"tab\"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			$UI/Inventory/ScrollContainer.show()
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			$UI/Inventory/ScrollContainer.hide()
+
+	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		if fly:
+			_fly_speed(e)
+
+		if gamemode == 0: # spectator
+			for i in range(10):
+				if Input.is_action_just_pressed(str(i)):
+					if inventory.hot_bar_data.slot_datas[i-1]:
+						if inventory.hot_bar_data.slot_datas[i-1].item_data.attributes.has(\"action\"):
+							if inventory.hot_bar_data.slot_datas[i-1].item_data.attributes[\"action\"] == \"block\":
+								curr_block = inventory.hot_bar_data.slot_datas[i-1].item_data.name
+					else: curr_block = \"\"
+					$UI/HUD/ItemName.text = str(curr_block)
+					break
+
+			if e is InputEventMouseButton and e.pressed:
+				if e.button_index == MOUSE_BUTTON_LEFT:
+					_break_block()
+				elif e.button_index == MOUSE_BUTTON_RIGHT and curr_block != \"\":
+					_place_block()
+
+func _fly_speed(e) -> void:
+	if e is InputEventMouseButton:
+		if e.button_index == MOUSE_BUTTON_WHEEL_UP and FLY_SPEED < 50.0:
+			FLY_SPEED += 0.5
+		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN and FLY_SPEED > 5.0:
+			FLY_SPEED -= 0.5
+
+func _spectator_move(delta) -> void:
+	# There is no gravity
+	if Input.is_action_pressed(\"space\"):
+		velocity.y = FLY_SPEED
+	elif Input.is_action_pressed(\"shift\"):
+		velocity.y = -FLY_SPEED
+	else:
+		velocity.y = 0
+	
+	current_speed = FLY_SPEED
+
+func _survival_move(delta) -> void:
+	# Add the gravity
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+
+	# Add the jump
+	if Input.is_action_just_pressed(\"space\") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+	
+	if Input.is_action_pressed(\"shift\"):
+		current_speed = lerp(current_speed, RUN_SPEED, 0.01*delta)
+		move_state = 2
+	else: 
+		current_speed = lerp(current_speed, WALK_SPEED, 0.01*delta)
+		move_state = 1
+
+func _creative_move(delta) -> void:
+	var fly_switch_timer = $FlySwitchTimer
+	if Input.is_action_just_pressed(\"space\"):
+		if fly_switch_timer.is_stopped(): fly_switch_timer.start()
+		else: fly = not(fly)
+	if fly: _spectator_move(delta)
+	else: _survival_move(delta)
+
+func switch_gamemode(to_gamemode: int) -> void:
+	gamemode = to_gamemode
+	if to_gamemode == 0:
+		$Model.switch_camera(1)
+		$CollisionShape3D.disabled = true
+	else:
+		$Model.switch_camera(3)
+		$CollisionShape3D.disabled = false
+
+func _animatins_update():
+	animation[\"parameters/pos_state 2/transition_request\"] = animation[\"parameters/pos_state/transition_request\"]
+"
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_x3wgy"]
+height = 1.9
+radius = 0.3
+
+[sub_resource type="GDScript" id="GDScript_vgqql"]
+script/source = "extends Control
+
+# Inventory
+@export var blocks_data: InventoryData
+@export var hot_bar_data: InventoryData
+var grabbed_slot_data: SlotData
+@onready var grabbed_slot_container = $GrabbedSlotContainer
+
+func _ready() -> void:
+	var files = SaveSystem.get_files_in_directory('Resources/Blocks/Data/')
+	for file in files:
+		var slot = SlotData.new()
+		var item = ItemData.new()
+		item.name = file.split(\".\")[0]
+		var block = SaveSystem.read_json(SaveSystem.get_file_path('Resources/Blocks/Data/'+file, true))
+		if block[\"type\"] == \"block\":
+			var atlas_texture = load(block[\"textures\"][\"side\"]) as Texture2D
+			var texture = AtlasTexture.new()
+			texture.atlas = atlas_texture
+			item.texture = texture
+		elif block[\"type\"] == \"model\":
+			item.texture = get_texture_3d(block[\"asset\"])
+		item.attributes[\"action\"] = \"block\"
+		item.max_stack = 99
+		slot.item_data = item
+		slot.quantity = item.max_stack
+		blocks_data.slot_datas.append(slot)
+	blocks_data.inventory_interact.connect(on_inventory_interact)
+	$ScrollContainer/BlocksContainer.set_inventory_data(blocks_data)
+	hot_bar_data.inventory_interact.connect(on_inventory_interact)
+	$HotBarContainer.set_inventory_data(hot_bar_data)
+
+func _physics_process(delta) -> void:
+	if grabbed_slot_container.visible:
+		grabbed_slot_container.global_position = get_global_mouse_position() + Vector2(5, 5)
+
+func get_texture_3d(path: String) -> AtlasTexture:
+	for i in $SubViewport/Scene.get_children():
+		i.free()
+	var node = load(path).instantiate()
+	$SubViewport/Scene.add_child(node)
+	var texture = AtlasTexture.new()
+	texture.atlas = $SubViewport.get_texture()
+	return texture
+
+func on_inventory_interact(inventory_data: InventoryData, index: int, button: int) -> void:
+	if Input.is_action_pressed(\"shift\"):
+		if inventory_data.inv_name == \"ItemTabs\":
+			inventory_data.transportation_slot_data(index, hot_bar_data)
+		elif inventory_data.inv_name == \"HotBar\":
+			inventory_data.transportation_slot_data(index, blocks_data)
+	else:
+		match [grabbed_slot_data, button]:
+			[null, MOUSE_BUTTON_LEFT]:
+					grabbed_slot_data = inventory_data.grab_slot_data(index)
+			[_, MOUSE_BUTTON_LEFT]:
+				grabbed_slot_data = inventory_data.drop_slot_data(grabbed_slot_data, index)
+			[null, MOUSE_BUTTON_RIGHT]:
+				grabbed_slot_data = inventory_data.grab_hafl_slot_data(index)
+			[_, MOUSE_BUTTON_RIGHT]:
+				grabbed_slot_data = inventory_data.drop_single_slot_data(grabbed_slot_data, index)
+	update_grabbed_slot()
+
+func update_grabbed_slot() -> void:
+	if grabbed_slot_data:
+		grabbed_slot_container.set_slot_data(grabbed_slot_data)
+		grabbed_slot_container.show()
+	else: grabbed_slot_container.hide()
+"
+
+[sub_resource type="Resource" id="Resource_fkybt"]
+script = ExtResource("2_fkybt")
+inv_name = "ItemTabs"
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Resource" id="Resource_3smsa"]
+script = ExtResource("2_fkybt")
+inv_name = "HotBar"
+slot_datas = Array[ExtResource("3_x3wgy")]([null, null, null, null, null, null, null, null, null])
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Environment" id="Environment_3smsa"]
+
+[sub_resource type="World3D" id="World3D_8erm5"]
+environment = SubResource("Environment_3smsa")
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gymyn"]
+animation = &"idle"
+use_custom_timeline = true
+timeline_length = 2.0
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_x3wgy"]
+animation = &"idle"
+use_custom_timeline = true
+timeline_length = 2.0
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="Curve" id="Curve_3smsa"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_8erm5"]
+xfade_time = 0.3
+xfade_curve = SubResource("Curve_3smsa")
+input_0/name = "false"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "true"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+
+[sub_resource type="Curve" id="Curve_pu2lt"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_ukyrk"]
+xfade_time = 0.3
+xfade_curve = SubResource("Curve_pu2lt")
+input_0/name = "idle"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "walk"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+
+[sub_resource type="Curve" id="Curve_x3wgy"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_3smsa"]
+xfade_time = 0.3
+xfade_curve = SubResource("Curve_x3wgy")
+input_0/name = "idle"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "walk"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+input_2/name = "run"
+input_2/auto_advance = false
+input_2/break_loop_at_end = false
+input_2/reset = true
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_3smsa"]
+animation = &"run"
+use_custom_timeline = true
+timeline_length = 0.7
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_f1ek2"]
+animation = &"run"
+use_custom_timeline = true
+timeline_length = 0.7
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_7dp3o"]
+animation = &"sword_idle"
+use_custom_timeline = true
+timeline_length = 1.0
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_h4iuc"]
+filter_enabled = true
+filters = ["Skeleton3D:base", "Skeleton3D:body", "Skeleton3D:head", "Skeleton3D:left_arm", "Skeleton3D:left_elbow", "Skeleton3D:left_knee", "Skeleton3D:left_leg", "Skeleton3D:right_arm", "Skeleton3D:right_elbow", "Skeleton3D:right_equip", "Skeleton3D:right_knee", "Skeleton3D:right_leg", "base/body2", "base/left_leg2", "base/left_leg2/left_knee2", "base/right_leg2", "base/right_leg2/right_knee2"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_tx1dd"]
+animation = &"sword_walk"
+use_custom_timeline = true
+timeline_length = 0.7
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_3smsa"]
+filter_enabled = true
+filters = ["Skeleton3D:base", "Skeleton3D:body", "Skeleton3D:head", "Skeleton3D:left_knee", "Skeleton3D:left_leg", "Skeleton3D:right_knee", "Skeleton3D:right_leg", "base", "base/body2", "base/body2/head2", "base/left_leg2", "base/left_leg2/left_knee2", "base/right_leg2", "base/right_leg2/right_knee2"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8erm5"]
+animation = &"walk"
+use_custom_timeline = true
+timeline_length = 1.0
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_f1ek2"]
+graph_offset = Vector2(-478.76172, -134.50397)
+nodes/output/position = Vector2(1280, 320)
+nodes/idle_anim/node = SubResource("AnimationNodeAnimation_x3wgy")
+nodes/idle_anim/position = Vector2(-100, -180)
+nodes/walk_anim/node = SubResource("AnimationNodeAnimation_8erm5")
+nodes/walk_anim/position = Vector2(-80, 0)
+nodes/run_anim/node = SubResource("AnimationNodeAnimation_3smsa")
+nodes/run_anim/position = Vector2(-60, 180)
+nodes/sword_walk_blend/node = SubResource("AnimationNodeAdd2_3smsa")
+nodes/sword_walk_blend/position = Vector2(220, 840)
+nodes/pos_state/node = SubResource("AnimationNodeTransition_3smsa")
+nodes/pos_state/position = Vector2(220, -180)
+nodes/sword_walk_aim/node = SubResource("AnimationNodeAnimation_tx1dd")
+nodes/sword_walk_aim/position = Vector2(-40, 780)
+nodes/run_leg_anim/node = SubResource("AnimationNodeAnimation_f1ek2")
+nodes/run_leg_anim/position = Vector2(-20, 960)
+nodes/is_weapon/node = SubResource("AnimationNodeTransition_8erm5")
+nodes/is_weapon/position = Vector2(760, 320)
+"nodes/idle_anim 2/node" = SubResource("AnimationNodeAnimation_gymyn")
+"nodes/idle_anim 2/position" = Vector2(-40, 560)
+"nodes/pos_state 2/node" = SubResource("AnimationNodeTransition_ukyrk")
+"nodes/pos_state 2/position" = Vector2(520, 560)
+nodes/sword_idle_blend/node = SubResource("AnimationNodeAdd2_h4iuc")
+nodes/sword_idle_blend/position = Vector2(200, 380)
+nodes/sword_idle/node = SubResource("AnimationNodeAnimation_7dp3o")
+nodes/sword_idle/position = Vector2(-40, 380)
+node_connections = [&"output", 0, &"is_weapon", &"sword_walk_blend", 0, &"sword_walk_aim", &"sword_walk_blend", 1, &"run_leg_anim", &"pos_state", 0, &"idle_anim", &"pos_state", 1, &"walk_anim", &"pos_state", 2, &"run_anim", &"is_weapon", 0, &"pos_state", &"is_weapon", 1, &"pos_state 2", &"pos_state 2", 0, &"sword_idle_blend", &"pos_state 2", 1, &"sword_walk_blend", &"sword_idle_blend", 0, &"sword_idle", &"sword_idle_blend", 1, &"idle_anim 2"]
+
+[sub_resource type="GDScript" id="GDScript_3smsa"]
+script/source = "extends Node3D
+
+@onready var camera = $Camera
+@export var mouse_sensitivity: float = 0.003
+@export_range(-90, 0, 0.1, \"radians_as_degrees\") var min_vertical_angle: float = -PI/2
+@export_range(0, 90, 0.1, \"radians_as_degrees\") var max_vertical_angle: float = PI/4
+
+func _input(event) -> void:
+	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		#rotation.y -= event.relative.x * mouse_sensitivity
+		#rotation.y = wrapf(rotation.y, 0, TAU)
+		rotate_y(-event.relative.x * mouse_sensitivity)
+		
+		camera.rotation.x -= event.relative.y * mouse_sensitivity
+		camera.rotation.x = clamp(camera.rotation.x, min_vertical_angle, max_vertical_angle)
+
+func switch_camera(camera_id: int) -> void:
+	match camera_id:
+		1:
+			$Camera/FirstCamera.current = true
+			$Camera/ThirdCamera/Camera3D.current = false
+			$Import.visible = false
+		3:
+			$Camera/FirstCamera.current = false
+			$Camera/ThirdCamera/Camera3D.current = true
+			$Import.visible = true
+"
+
+[node name="Player" type="CharacterBody3D" unique_id=877482764]
+collision_layer = 4
+script = SubResource("GDScript_f60y1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1863849229]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_x3wgy")
+debug_color = Color(0.2726146, 0.819198, 0, 0.41960785)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=864584949]
+
+[node name="HUD" type="Control" parent="UI" unique_id=25603552]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+metadata/_edit_lock_ = true
+
+[node name="FPS" type="Label" parent="UI/HUD" unique_id=82568468]
+layout_mode = 0
+offset_left = 16.0
+offset_right = 56.0
+offset_bottom = 23.0
+text = "60"
+
+[node name="ItemName" type="Label" parent="UI/HUD" unique_id=425599743]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -111.0
+offset_right = 40.0
+offset_bottom = -88.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Control" type="Control" parent="UI/HUD" unique_id=1763639806]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -24.0
+offset_top = -24.0
+offset_right = 24.0
+offset_bottom = 24.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Crosshair" type="Sprite2D" parent="UI/HUD/Control" unique_id=1581645751]
+scale = Vector2(3, 3)
+texture = ExtResource("1_v0iea")
+centered = false
+
+[node name="Inventory" type="Control" parent="UI" unique_id=1579392038]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_vgqql")
+blocks_data = SubResource("Resource_fkybt")
+hot_bar_data = SubResource("Resource_3smsa")
+metadata/_edit_lock_ = true
+
+[node name="HotBarContainer" parent="UI/Inventory" unique_id=1601073822 instance=ExtResource("2_cvnsp")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -8.0
+offset_top = -16.0
+offset_right = 8.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="GrabbedSlotContainer" parent="UI/Inventory" unique_id=1947869178 instance=ExtResource("4_vgqql")]
+visible = false
+modulate = Color(1, 1, 1, 0.49411765)
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/Inventory" unique_id=1423352971]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -312.0
+offset_top = -230.0
+offset_right = 322.0
+offset_bottom = 171.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="BlocksContainer" parent="UI/Inventory/ScrollContainer" unique_id=2012566676 instance=ExtResource("2_cvnsp")]
+layout_mode = 2
+
+[node name="SubViewport" type="SubViewport" parent="UI/Inventory" unique_id=1153669609]
+own_world_3d = true
+world_3d = SubResource("World3D_8erm5")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="UI/Inventory/SubViewport" unique_id=1553131943]
+transform = Transform3D(0.8328903, 0.4372957, 0.3392141, -0.55343753, 0.6572007, 0.5116583, 0.00081419945, -0.61388904, 0.7893919, 0, 0, 0)
+
+[node name="Scene" type="Node3D" parent="UI/Inventory/SubViewport" unique_id=688651325]
+
+[node name="Camera3D" type="Camera3D" parent="UI/Inventory/SubViewport" unique_id=822104734]
+transform = Transform3D(0.7071067, -0.4055798, 0.579228, 0, 0.81915206, 0.57357645, -0.7071067, -0.4055798, 0.579228, 1.25, 1.25, 1.25)
+fov = 60.0
+
+[node name="AnimationTree" type="AnimationTree" parent="." unique_id=901218641]
+root_node = NodePath("../Model/Import/blockbench_export")
+tree_root = SubResource("AnimationNodeBlendTree_f1ek2")
+anim_player = NodePath("../Model/Import/blockbench_export/AnimationPlayer")
+parameters/sword_walk_blend/add_amount = 1.0
+parameters/pos_state/current_state = "idle"
+parameters/pos_state/transition_request = ""
+parameters/pos_state/current_index = 0
+parameters/is_weapon/current_state = "false"
+parameters/is_weapon/transition_request = ""
+parameters/is_weapon/current_index = 0
+"parameters/pos_state 2/current_state" = "walk"
+"parameters/pos_state 2/transition_request" = "idle"
+"parameters/pos_state 2/current_index" = 1
+parameters/sword_idle_blend/add_amount = 1.0
+
+[node name="Model" type="Node3D" parent="." unique_id=2038029055]
+script = SubResource("GDScript_3smsa")
+
+[node name="Camera" type="Node3D" parent="Model" unique_id=1825356973]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="FirstCamera" type="Camera3D" parent="Model/Camera" unique_id=58642018]
+
+[node name="ThirdCamera" type="SpringArm3D" parent="Model/Camera" unique_id=1006196592]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+collision_mask = 2
+spring_length = 1.2
+
+[node name="Camera3D" type="Camera3D" parent="Model/Camera/ThirdCamera" unique_id=2072109049]
+transform = Transform3D(1, 0, 0, 0, 0.9862856, 0.16504759, 0, -0.16504759, 0.9862856, 0, 0, 1.2)
+current = true
+
+[node name="Import" type="Node3D" parent="Model" unique_id=71535928]
+
+[node name="blockbench_export" parent="Model/Import" unique_id=1365975076 instance=ExtResource("6_x3wgy")]
+
+[node name="Skeleton3D" parent="Model/Import/blockbench_export" index="0" unique_id=2068147427]
+bones/0/position = Vector3(0, 0.80625, 0)
+bones/1/rotation = Quaternion(-0.00016747511, 0, 0, 1)
+bones/25/rotation = Quaternion(0.043608624, 0.00096912554, 0.022196623, 0.9988017)
+bones/26/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
+bones/34/rotation = Quaternion(0.043608624, -0.00096912554, -0.022196623, 0.9988017)
+bones/38/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
+bones/43/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
+bones/48/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
+bones/53/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
+bones/58/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
+
+[node name="body_2" parent="Model/Import/blockbench_export/Skeleton3D" index="0" unique_id=864585616]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, 0, 0.73125, 0)
+
+[node name="body_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="1" unique_id=584858091]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, 0, 0.73125, 0)
+
+[node name="body_armor" parent="Model/Import/blockbench_export/Skeleton3D" index="2" unique_id=1887895398]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, 0, 0.73125, 0)
+
+[node name="body_armor_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="3" unique_id=741290388]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, 0, 0.73125, 0)
+
+[node name="head_2" parent="Model/Import/blockbench_export/Skeleton3D" index="4" unique_id=1622019500]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, 0, 1.4812499, -0.00025121268)
+
+[node name="head_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="5" unique_id=880903595]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, 0, 1.4812499, -0.00025121268)
+
+[node name="head_armor" parent="Model/Import/blockbench_export/Skeleton3D" index="6" unique_id=239473124]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, 0, 1.4812499, -0.00025121268)
+
+[node name="head_armor_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="7" unique_id=925096612]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, 0, 1.4812499, -0.00025121268)
+
+[node name="cube" parent="Model/Import/blockbench_export/Skeleton3D" index="8" unique_id=1861396198]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, -1.7875, 1.5218414, -0.10026482)
+
+[node name="cube_2" parent="Model/Import/blockbench_export/Skeleton3D" index="9" unique_id=58562202]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, -1.7875, 1.5218425, -0.09713982)
+
+[node name="cube_3" parent="Model/Import/blockbench_export/Skeleton3D" index="10" unique_id=1426630664]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, -1.765625, 1.6062175, -0.09716807)
+
+[node name="cube_4" parent="Model/Import/blockbench_export/Skeleton3D" index="11" unique_id=197209587]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, -1.9499999, 1.5218414, -0.10026482)
+
+[node name="cube_5" parent="Model/Import/blockbench_export/Skeleton3D" index="12" unique_id=1490460268]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, -2.00625, 1.5218424, -0.097139806)
+
+[node name="cube_6" parent="Model/Import/blockbench_export/Skeleton3D" index="13" unique_id=1005562059]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0.00033495022, 0, -0.00033495022, 0.99999994, -1.984375, 1.6062174, -0.09716807)
+
+[node name="right_elbow_2" parent="Model/Import/blockbench_export/Skeleton3D" index="14" unique_id=333736223]
+transform = Transform3D(0.99901277, -0.043749653, 0.0077142445, 0.044424556, 0.98389363, -0.17314687, -1.4880133e-05, 0.17331862, 0.98486584, 0.44886273, 1.1049274, 0.102610245)
+
+[node name="right_elbow_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="15" unique_id=364238167]
+transform = Transform3D(0.99901277, -0.043749653, 0.0077142445, 0.044424556, 0.98389363, -0.17314687, -1.4880133e-05, 0.17331862, 0.98486584, 0.51130104, 1.1077039, 0.102609314)
+
+[node name="right_elbow_armor" parent="Model/Import/blockbench_export/Skeleton3D" index="16" unique_id=101619844]
+transform = Transform3D(0.99901277, -0.043749653, 0.0077142445, 0.044424556, 0.98389363, -0.17314687, -1.4880133e-05, 0.17331862, 0.98486584, 0.51130104, 1.1077039, 0.102609314)
+
+[node name="right_arm_2" parent="Model/Import/blockbench_export/Skeleton3D" index="17" unique_id=1688164574]
+transform = Transform3D(0.99901277, -0.044255514, 0.0038718558, 0.044424556, 0.99524033, -0.086736016, -1.4880133e-05, 0.08682238, 0.9962238, 0.25, 1.3562499, -0.00020934388)
+
+[node name="right_arm_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="18" unique_id=1908861729]
+transform = Transform3D(0.99901277, -0.044255514, 0.0038718558, 0.044424556, 0.99524033, -0.086736016, -1.4880133e-05, 0.08682238, 0.9962238, 0.25, 1.3562499, -0.00020934388)
+
+[node name="right_arm_armor" parent="Model/Import/blockbench_export/Skeleton3D" index="19" unique_id=1310135330]
+transform = Transform3D(0.99901277, -0.044255514, 0.0038718558, 0.044424556, 0.99524033, -0.086736016, -1.4880133e-05, 0.08682238, 0.9962238, 0.25, 1.3562499, -0.00020934388)
+
+[node name="left_arm_2" parent="Model/Import/blockbench_export/Skeleton3D" index="20" unique_id=1082299349]
+transform = Transform3D(0.99901277, 0.044255514, -0.0038718558, -0.044424556, 0.99524033, -0.086736016, 1.4880133e-05, 0.08682238, 0.9962238, -0.25, 1.3562499, -0.00020934388)
+
+[node name="left_arm_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="21" unique_id=1686684583]
+transform = Transform3D(0.99901277, 0.044255514, -0.0038718558, -0.044424556, 0.99524033, -0.086736016, 1.4880133e-05, 0.08682238, 0.9962238, -0.25, 1.3562499, -0.00020934388)
+
+[node name="left_arm_armor" parent="Model/Import/blockbench_export/Skeleton3D" index="22" unique_id=964229393]
+transform = Transform3D(0.99901277, 0.044255514, -0.0038718558, -0.044424556, 0.99524033, -0.086736016, 1.4880133e-05, 0.08682238, 0.9962238, -0.25, 1.3562499, -0.00020934388)
+
+[node name="left_elbow_2" parent="Model/Import/blockbench_export/Skeleton3D" index="23" unique_id=255262627]
+transform = Transform3D(0.99901277, 0.043749653, -0.0077142445, -0.044424556, 0.98389363, -0.17314687, 1.4880133e-05, 0.17331862, 0.98486584, -0.44886273, 1.1049274, 0.102610245)
+
+[node name="left_elbow_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="24" unique_id=1701683962]
+transform = Transform3D(0.99901277, 0.043749653, -0.0077142445, -0.044424556, 0.98389363, -0.17314687, 1.4880133e-05, 0.17331862, 0.98486584, -0.51130104, 1.1077039, 0.102609314)
+
+[node name="left_elbow_armor" parent="Model/Import/blockbench_export/Skeleton3D" index="25" unique_id=2120778579]
+transform = Transform3D(0.99901277, 0.043749653, -0.0077142445, -0.044424556, 0.98389363, -0.17314687, 1.4880133e-05, 0.17331862, 0.98486584, -0.51130104, 1.1077039, 0.102609314)
+
+[node name="right_leg_2" parent="Model/Import/blockbench_export/Skeleton3D" index="26" unique_id=117771355]
+transform = Transform3D(0.9948295, -0.059722517, -0.08214372, 0.052136805, 0.9944319, -0.09158032, 0.08715574, 0.08682409, 0.99240386, 0.125, 0.73125, 0)
+
+[node name="right_leg_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="27" unique_id=1385811739]
+transform = Transform3D(0.9948295, -0.059722517, -0.08214372, 0.052136805, 0.9944319, -0.09158032, 0.08715574, 0.08682409, 0.99240386, 0.125, 0.73125, 0)
+
+[node name="right_leg_armor_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="28" unique_id=430203433]
+transform = Transform3D(0.9948295, -0.059722517, -0.08214372, 0.052136805, 0.9944319, -0.09158032, 0.08715574, 0.08682409, 0.99240386, 0.125, 0.73125, 0)
+
+[node name="right_leg_armor" parent="Model/Import/blockbench_export/Skeleton3D" index="29" unique_id=471865214]
+transform = Transform3D(0.9948295, -0.059722517, -0.08214372, 0.052136805, 0.9944319, -0.09158032, 0.08715574, 0.08682409, 0.99240386, 0.125, 0.73125, 0)
+
+[node name="right_knee_2" parent="Model/Import/blockbench_export/Skeleton3D" index="30" unique_id=655621878]
+transform = Transform3D(0.9948295, -0.05233596, -0.0870363, 0.052136805, 0.99862957, -0.0045613796, 0.08715574, 0, 0.9961947, 0.15766391, 0.36978558, -0.15660952)
+
+[node name="right_leg_overlay_2" parent="Model/Import/blockbench_export/Skeleton3D" index="31" unique_id=652842106]
+transform = Transform3D(0.9948295, -0.05233596, -0.0870363, 0.052136805, 0.99862957, -0.0045613796, 0.08715574, 0, 0.9961947, 0.15766391, 0.36978558, -0.15660952)
+
+[node name="right_leg_armor_overlay_2" parent="Model/Import/blockbench_export/Skeleton3D" index="32" unique_id=380969323]
+transform = Transform3D(0.9948295, -0.05233596, -0.0870363, 0.052136805, 0.99862957, -0.0045613796, 0.08715574, 0, 0.9961947, 0.15766391, 0.36978558, -0.15660952)
+
+[node name="right_leg_armor_2" parent="Model/Import/blockbench_export/Skeleton3D" index="33" unique_id=1666716075]
+transform = Transform3D(0.9948295, -0.05233596, -0.0870363, 0.052136805, 0.99862957, -0.0045613796, 0.08715574, 0, 0.9961947, 0.15766391, 0.36978558, -0.15660952)
+
+[node name="left_leg_2" parent="Model/Import/blockbench_export/Skeleton3D" index="34" unique_id=759686553]
+transform = Transform3D(0.9948295, 0.059722517, 0.08214372, -0.052136805, 0.9944319, -0.09158032, -0.08715574, 0.08682409, 0.99240386, -0.125, 0.73125, 0)
+
+[node name="left_leg_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="35" unique_id=1299057905]
+transform = Transform3D(0.9948295, 0.059722517, 0.08214372, -0.052136805, 0.9944319, -0.09158032, -0.08715574, 0.08682409, 0.99240386, -0.125, 0.73125, 0)
+
+[node name="left_leg_armor_overlay" parent="Model/Import/blockbench_export/Skeleton3D" index="36" unique_id=539143872]
+transform = Transform3D(0.9948295, 0.059722517, 0.08214372, -0.052136805, 0.9944319, -0.09158032, -0.08715574, 0.08682409, 0.99240386, -0.125, 0.73125, 0)
+
+[node name="left_leg_armor" parent="Model/Import/blockbench_export/Skeleton3D" index="37" unique_id=457031220]
+transform = Transform3D(0.9948295, 0.059722517, 0.08214372, -0.052136805, 0.9944319, -0.09158032, -0.08715574, 0.08682409, 0.99240386, -0.125, 0.73125, 0)
+
+[node name="left_knee_2" parent="Model/Import/blockbench_export/Skeleton3D" index="38" unique_id=441247]
+transform = Transform3D(0.9948295, 0.05233596, 0.0870363, -0.052136805, 0.99862957, -0.0045613796, -0.08715574, 0, 0.9961947, -0.15766391, 0.36978558, -0.15660952)
+
+[node name="left_leg_overlay_2" parent="Model/Import/blockbench_export/Skeleton3D" index="39" unique_id=1993708333]
+transform = Transform3D(0.9948295, 0.05233596, 0.0870363, -0.052136805, 0.99862957, -0.0045613796, -0.08715574, 0, 0.9961947, -0.15766391, 0.36978558, -0.15660952)
+
+[node name="left_leg_armor_overlay_2" parent="Model/Import/blockbench_export/Skeleton3D" index="40" unique_id=1086191126]
+transform = Transform3D(0.9948295, 0.05233596, 0.0870363, -0.052136805, 0.99862957, -0.0045613796, -0.08715574, 0, 0.9961947, -0.15766391, 0.36978558, -0.15660952)
+
+[node name="left_leg_armor_2" parent="Model/Import/blockbench_export/Skeleton3D" index="41" unique_id=327655283]
+transform = Transform3D(0.9948295, 0.05233596, 0.0870363, -0.052136805, 0.99862957, -0.0045613796, -0.08715574, 0, 0.9961947, -0.15766391, 0.36978558, -0.15660952)
+
+[node name="Components" type="Node" parent="." unique_id=1119627159]
+
+[node name="FlySwitchTimer" type="Timer" parent="." unique_id=2109156986]
+wait_time = 0.2
+one_shot = true
+
+[editable path="Model/Import/blockbench_export"]

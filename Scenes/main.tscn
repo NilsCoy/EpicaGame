@@ -37,6 +37,7 @@ shadow_opacity = 0.8
 
 [node name="Player" parent="." unique_id=877482764 instance=ExtResource("1_bo1nx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.735976, 0)
+gamemode = 2
 
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=480579453]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4309027, 9.993654, 4.706607)
