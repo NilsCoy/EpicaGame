@@ -1,5 +1,8 @@
 [gd_resource type="AnimationNodeBlendTree" format=3 uid="uid://bfsc40fkwmylr"]
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_n7jwg"]
+animation = &"fall"
+
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_l6n3p"]
 animation = &"idle"
 use_custom_timeline = true
@@ -7,6 +10,33 @@ timeline_length = 2.0
 stretch_time_scale = true
 start_offset = 0.0
 loop_mode = 1
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_fetw0"]
+animation = &"jump"
+
+[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_arox2"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_djjio"]
+animation = &"forward_run"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_j1fnu"]
+animation = &"back_run"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_057xd"]
+animation = &"left_run"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_rowp7"]
+animation = &"right_run"
+
+[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_n7jwg"]
+blend_point_0/node = SubResource("AnimationNodeAnimation_djjio")
+blend_point_0/pos = Vector2(0, 1)
+blend_point_1/node = SubResource("AnimationNodeAnimation_j1fnu")
+blend_point_1/pos = Vector2(0, -1)
+blend_point_2/node = SubResource("AnimationNodeAnimation_057xd")
+blend_point_2/pos = Vector2(-1, 0)
+blend_point_3/node = SubResource("AnimationNodeAnimation_rowp7")
+blend_point_3/pos = Vector2(1, 0)
 
 [sub_resource type="Curve" id="Curve_olqyp"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
@@ -27,6 +57,14 @@ input_2/name = "run"
 input_2/auto_advance = false
 input_2/break_loop_at_end = false
 input_2/reset = true
+input_3/name = "jump"
+input_3/auto_advance = false
+input_3/break_loop_at_end = false
+input_3/reset = true
+input_4/name = "fall"
+input_4/auto_advance = false
+input_4/break_loop_at_end = false
+input_4/reset = true
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_36dho"]
 animation = &"run"
@@ -143,30 +181,38 @@ blend_point_3/node = SubResource("AnimationNodeAnimation_y6uwr")
 blend_point_3/pos = Vector2(1, 0)
 
 [resource]
-graph_offset = Vector2(-458.03735, 352.5663)
-nodes/output/position = Vector2(1200, 380)
+graph_offset = Vector2(-210.09879, 902.53674)
+nodes/output/position = Vector2(1240, 540)
 nodes/move_state/node = SubResource("AnimationNodeTransition_wpjfl")
-nodes/move_state/position = Vector2(1020, 360)
+nodes/move_state/position = Vector2(1020, 540)
 nodes/idle/node = SubResource("AnimationNodeAnimation_l6n3p")
-nodes/idle/position = Vector2(680, 200)
+nodes/idle/position = Vector2(840, 220)
 nodes/walk_forward/node = SubResource("AnimationNodeAnimation_fs7ks")
-nodes/walk_forward/position = Vector2(0, 340)
+nodes/walk_forward/position = Vector2(40, 140)
 nodes/walk_rotate_direction/node = SubResource("AnimationNodeBlendSpace2D_83xs0")
-nodes/walk_rotate_direction/position = Vector2(340, 540)
+nodes/walk_rotate_direction/position = Vector2(300, 440)
 nodes/run_rotate_direction/node = SubResource("AnimationNodeBlendSpace2D_bi64h")
-nodes/run_rotate_direction/position = Vector2(360, 1060)
+nodes/run_rotate_direction/position = Vector2(340, 820)
 nodes/walk_blend/node = SubResource("AnimationNodeAdd2_11gg7")
-nodes/walk_blend/position = Vector2(680, 420)
+nodes/walk_blend/position = Vector2(580, 340)
 nodes/run_blend/node = SubResource("AnimationNodeAdd2_yh6i2")
-nodes/run_blend/position = Vector2(700, 840)
+nodes/run_blend/position = Vector2(600, 620)
 nodes/walk_back/node = SubResource("AnimationNodeAnimation_8gxox")
-nodes/walk_back/position = Vector2(0, 540)
+nodes/walk_back/position = Vector2(40, 340)
 nodes/walk_direction/node = SubResource("AnimationNodeTransition_sbwqj")
-nodes/walk_direction/position = Vector2(360, 300)
+nodes/walk_direction/position = Vector2(320, 200)
 nodes/run_forward/node = SubResource("AnimationNodeAnimation_nv4vc")
-nodes/run_forward/position = Vector2(-20, 800)
+nodes/run_forward/position = Vector2(-60, 620)
 nodes/run_back/node = SubResource("AnimationNodeAnimation_36dho")
-nodes/run_back/position = Vector2(-20, 1000)
+nodes/run_back/position = Vector2(-60, 820)
 nodes/run_direction/node = SubResource("AnimationNodeTransition_gymyn")
-nodes/run_direction/position = Vector2(380, 800)
-node_connections = [&"output", 0, &"move_state", &"move_state", 0, &"idle", &"move_state", 1, &"walk_blend", &"move_state", 2, &"run_blend", &"walk_blend", 0, &"walk_direction", &"walk_blend", 1, &"walk_rotate_direction", &"run_blend", 0, &"run_direction", &"run_blend", 1, &"run_rotate_direction", &"walk_direction", 0, &"walk_forward", &"walk_direction", 1, &"walk_back", &"run_direction", 0, &"run_forward", &"run_direction", 1, &"run_back"]
+nodes/run_direction/position = Vector2(140, 660)
+nodes/jump/node = SubResource("AnimationNodeAnimation_fetw0")
+nodes/jump/position = Vector2(260, 1080)
+nodes/jump_blend/node = SubResource("AnimationNodeAdd2_arox2")
+nodes/jump_blend/position = Vector2(540, 1000)
+nodes/jump_rotate_direction/node = SubResource("AnimationNodeBlendSpace2D_n7jwg")
+nodes/jump_rotate_direction/position = Vector2(260, 1260)
+nodes/fall/node = SubResource("AnimationNodeAnimation_n7jwg")
+nodes/fall/position = Vector2(840, 1080)
+node_connections = [&"output", 0, &"move_state", &"move_state", 0, &"idle", &"move_state", 1, &"walk_blend", &"move_state", 2, &"run_blend", &"move_state", 3, &"jump_blend", &"move_state", 4, &"fall", &"walk_blend", 0, &"walk_direction", &"walk_blend", 1, &"walk_rotate_direction", &"run_blend", 0, &"run_direction", &"run_blend", 1, &"run_rotate_direction", &"walk_direction", 0, &"walk_forward", &"walk_direction", 1, &"walk_back", &"run_direction", 0, &"run_forward", &"run_direction", 1, &"run_back", &"jump_blend", 0, &"jump", &"jump_blend", 1, &"jump_rotate_direction"]
