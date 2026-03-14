@@ -12,11 +12,13 @@
 script/source = "extends CharacterBody3D
 
 # Move
-const JUMP_VELOCITY: float = 8
+const JUMP_VELOCITY: float = 8.0
 const WALK_SPEED: float = 2.0
 const RUN_SPEED: float = 5.0
+const AIR_SPEED: float = 8.0
 var FLY_SPEED: float = 5.0
 var current_speed = WALK_SPEED
+var is_weapon = false
 
 # Player settings
 @export_range(0, 2, 1) var gamemode: int = 1 # 0=spectator, 1=survival, 2=creative
@@ -109,48 +111,75 @@ func _move(delta) -> void:
 	var rot_speed = 5
 	match input_dir:
 		Vector2(0, -1): #FORWARD
-			#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
 			animation.move_direction = \"forward\"
 			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta)
+			if not is_weapon:
+				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
 		Vector2(0, 1): #BACK
-			#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
 			animation.move_direction = \"back\"
 			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta)
+			if not is_weapon:
+				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
 		Vector2(-1, 0): #LEFT
-			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(-1, 0), rot_speed*delta)
-			#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(90), rot_speed * delta)
+			if is_weapon:
+				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(-1, 0), rot_speed*delta)
+			else:
+				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta)
+				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(90), rot_speed * delta)
 		Vector2(1, 0): #RIGHT
-			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(1, 0), rot_speed*delta)
-			#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(90), rot_speed * delta)
+			if is_weapon:
+				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(1, 0), rot_speed*delta)
+			else:
+				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta)
+				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(90), rot_speed * delta)
 		Vector2.ZERO:
 			animation.move_direction = \"forward\"
 			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2.ZERO, rot_speed*delta)
 		_:
 			if (input_dir.x < 0 and input_dir.y < 0):
 				animation.move_direction = \"forward\"
-				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(-1, 1), rot_speed*delta)
+				if is_weapon:
+					animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(-1, 1), rot_speed*delta)
+				else:
+					animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta)
+					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(45), rot_speed * delta)
 			elif (input_dir.x > 0 and input_dir.y > 0):
 				animation.move_direction = \"back\"
-				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(1, -1), rot_speed*delta)
-				#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(45), rot_speed * delta)
+				if is_weapon:
+					animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(1, -1), rot_speed*delta)
+				else:
+					animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta)
+					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(45), rot_speed * delta)
 			elif (input_dir.x > 0 and input_dir.y < 0):
 				animation.move_direction = \"forward\"
-				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(1, 1), rot_speed*delta)
+				if is_weapon:
+					animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(1, 1), rot_speed*delta)
+				else:
+					animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta)
+					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(45), rot_speed * delta)
 			elif (input_dir.x < 0 and input_dir.y > 0):
 				animation.move_direction = \"back\"
-				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(-1, -1), rot_speed*delta)
-				#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(45), rot_speed * delta)
+				if is_weapon:
+					animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(-1, -1), rot_speed*delta)
+				else:
+					animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta)
+					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(45), rot_speed * delta)
 				
 	animation.update_move_rotate_direction()
 	animation.update_move_direction()
 	
 	direction = direction.rotated(Vector3.UP, camera.global_rotation.y)
 	if direction:
-		velocity.x = direction.x * current_speed
-		velocity.z = direction.z * current_speed
+		if is_on_floor() or fly == true:
+			velocity.x = direction.x * current_speed
+			velocity.z = direction.z * current_speed
+		else:
+			velocity.x += direction.x * AIR_SPEED * delta
+			#velocity.z += direction.z * AIR_SPEED * delta
 	else:
-		velocity.x = move_toward(velocity.x, 0, current_speed)
-		velocity.z = move_toward(velocity.z, 0, current_speed)
+		if is_on_floor() or fly == true:
+			velocity.x = move_toward(velocity.x, 0, current_speed)
+			velocity.z = move_toward(velocity.z, 0, current_speed)
 
 	move_and_slide()
 
@@ -208,20 +237,20 @@ func _spectator_move(delta) -> void:
 	current_speed = FLY_SPEED
 
 func _survival_move(delta) -> void:
-	# Add the gravity
-	if not is_on_floor():
-		velocity += get_gravity() * delta
-
 	# Add the jump
-	if Input.is_action_just_pressed(\"space\") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
-	
-	if Input.is_action_pressed(\"shift\"):
-		current_speed = move_toward(current_speed, RUN_SPEED, 10*delta)
-		move_state = 2
-	else: 
-		current_speed = move_toward(current_speed, WALK_SPEED, 10*delta)
-		move_state = 1
+	if is_on_floor():
+		if Input.is_action_just_pressed(\"space\"):
+			velocity.y = JUMP_VELOCITY
+		
+		if Input.is_action_pressed(\"shift\"):
+			current_speed = move_toward(current_speed, RUN_SPEED, 10*delta)
+			move_state = 2
+		else: 
+			current_speed = move_toward(current_speed, WALK_SPEED, 10*delta)
+			move_state = 1
+	# Add the gravity
+	else:
+		velocity += get_gravity() * delta
 
 func _creative_move(delta) -> void:
 	var fly_switch_timer = $FlySwitchTimer
@@ -673,10 +702,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8, 0)
 
 [node name="Skeleton3D" parent="Model/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(705302759, 716536024) index="0" unique_id=1908721480]
 bones/0/position = Vector3(0, 0.80625, 0)
-bones/1/rotation = Quaternion(-0.0038140374, 0, 0, 0.9999928)
-bones/11/rotation = Quaternion(0.043597955, 0.001367078, 0.031311236, 0.99855745)
+bones/1/rotation = Quaternion(-0.0074732294, 0, 0, 0.9999721)
+bones/11/rotation = Quaternion(0.04358175, 0.0018115988, 0.04149243, 0.99818623)
 bones/12/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
-bones/14/rotation = Quaternion(0.043597955, -0.001367078, -0.031311236, 0.99855745)
+bones/14/rotation = Quaternion(0.04358175, -0.0018115988, -0.04149243, 0.99818623)
 bones/15/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
 bones/17/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
 bones/18/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
