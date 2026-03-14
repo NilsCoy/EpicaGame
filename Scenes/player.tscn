@@ -5,7 +5,8 @@
 [ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/InventorySystem/inventory_data.gd" id="2_fkybt"]
 [ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/InventorySystem/slot_data.gd" id="3_x3wgy"]
 [ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="4_vgqql"]
-[ext_resource type="PackedScene" uid="uid://crkj2pqs08sto" path="res://Assets/Models/human.gltf" id="6_x3wgy"]
+[ext_resource type="AnimationNodeBlendTree" uid="uid://bfsc40fkwmylr" path="res://Assets/Animations/move_blend_tree.tres" id="6_3smsa"]
+[ext_resource type="PackedScene" uid="uid://dk5xgk07jtqrm" path="res://Assets/Models/human.gltf" id="7_3smsa"]
 
 [sub_resource type="GDScript" id="GDScript_f60y1"]
 script/source = "extends CharacterBody3D
@@ -32,14 +33,14 @@ var curr_block: String = \"\"
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	$UI/HUD/ItemName.text = str(curr_block)
+	switch_gamemode(gamemode)
 
 func _physics_process(delta) -> void:
 	$UI/HUD/FPS.text = str(int(Performance.get_monitor(Performance.TIME_FPS)))
 
-	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		_move(delta)
+	_move(delta)
 	
-	_animatins_update()
+	#animation.animation_update()
 
 func _input(event) -> void:
 	_ui(event)
@@ -90,35 +91,58 @@ func _move(delta) -> void:
 	if velocity:
 		$Model.sum_rotation(delta)
 		match move_state:
-			1: animation[\"parameters/pos_state/transition_request\"] = \"walk\"
-			2: animation[\"parameters/pos_state/transition_request\"] = \"run\"
-	else: animation[\"parameters/pos_state/transition_request\"] = \"idle\"
+			1: animation.move_state = \"walk\"
+			2: animation.move_state = \"run\"
+	else: animation.move_state = \"idle\"
+	animation.update_move_state()
 	
 	match gamemode:
 		0: _spectator_move(delta)
 		1: _survival_move(delta)
 		2: _creative_move(delta)
+	
 	var input_dir = Input.get_vector(\"left\", \"right\", \"up\", \"down\")
+	if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
+		input_dir.x = 0
+		input_dir.y = 0
 	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	var rot_speed = 5
 	match input_dir:
 		Vector2(0, -1): #FORWARD
-			$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
-			animation[\"parameters/walk_direction/transition_request\"] = \"forward\"
-			animation[\"parameters/run_direction/transition_request\"] = \"forward\"
+			#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
+			animation.move_direction = \"forward\"
+			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta)
 		Vector2(0, 1): #BACK
-			$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
-			animation[\"parameters/walk_direction/transition_request\"] = \"back\"
-			animation[\"parameters/run_direction/transition_request\"] = \"forward\"
+			#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
+			animation.move_direction = \"back\"
+			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta)
 		Vector2(-1, 0): #LEFT
-			$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(90), rot_speed * delta)
+			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(-1, 0), rot_speed*delta)
+			#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(90), rot_speed * delta)
 		Vector2(1, 0): #RIGHT
-			$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(90), rot_speed * delta)
+			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(1, 0), rot_speed*delta)
+			#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(90), rot_speed * delta)
+		Vector2.ZERO:
+			animation.move_direction = \"forward\"
+			animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2.ZERO, rot_speed*delta)
 		_:
-			if (input_dir.x < 0 and input_dir.y < 0) or (input_dir.x > 0 and input_dir.y > 0):
-				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(45), rot_speed * delta)
-			elif (input_dir.x > 0 and input_dir.y < 0) or (input_dir.x < 0 and input_dir.y > 0):
-				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(45), rot_speed * delta)
+			if (input_dir.x < 0 and input_dir.y < 0):
+				animation.move_direction = \"forward\"
+				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(-1, 1), rot_speed*delta)
+			elif (input_dir.x > 0 and input_dir.y > 0):
+				animation.move_direction = \"back\"
+				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(1, -1), rot_speed*delta)
+				#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(45), rot_speed * delta)
+			elif (input_dir.x > 0 and input_dir.y < 0):
+				animation.move_direction = \"forward\"
+				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(1, 1), rot_speed*delta)
+			elif (input_dir.x < 0 and input_dir.y > 0):
+				animation.move_direction = \"back\"
+				animation.move_rotate_direction = animation.move_rotate_direction.lerp(Vector2(-1, -1), rot_speed*delta)
+				#$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(45), rot_speed * delta)
+				
+	animation.update_move_rotate_direction()
+	animation.update_move_direction()
 	
 	direction = direction.rotated(Vector3.UP, camera.global_rotation.y)
 	if direction:
@@ -215,9 +239,6 @@ func switch_gamemode(to_gamemode: int) -> void:
 	else:
 		$Model.switch_camera(3)
 		$CollisionShape3D.disabled = false
-
-func _animatins_update():
-	animation[\"parameters/pos_state_weapon/transition_request\"] = animation[\"parameters/pos_state/transition_request\"]
 "
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_x3wgy"]
@@ -311,22 +332,6 @@ metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 [sub_resource type="World3D" id="World3D_8erm5"]
 environment = SubResource("Environment_3smsa")
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gymyn"]
-animation = &"idle"
-use_custom_timeline = true
-timeline_length = 2.0
-stretch_time_scale = true
-start_offset = 0.0
-loop_mode = 1
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_x3wgy"]
-animation = &"idle"
-use_custom_timeline = true
-timeline_length = 2.0
-stretch_time_scale = true
-start_offset = 0.0
-loop_mode = 1
-
 [sub_resource type="Curve" id="Curve_3smsa"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
 point_count = 2
@@ -343,25 +348,27 @@ input_1/auto_advance = false
 input_1/break_loop_at_end = false
 input_1/reset = true
 
-[sub_resource type="Curve" id="Curve_x3wgy"]
-_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
-point_count = 2
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_7dp3o"]
+animation = &"sword_idle"
+use_custom_timeline = true
+timeline_length = 1.0
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
 
-[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_3smsa"]
-xfade_time = 0.4
-xfade_curve = SubResource("Curve_x3wgy")
-input_0/name = "idle"
-input_0/auto_advance = false
-input_0/break_loop_at_end = false
-input_0/reset = true
-input_1/name = "walk"
-input_1/auto_advance = false
-input_1/break_loop_at_end = false
-input_1/reset = true
-input_2/name = "run"
-input_2/auto_advance = false
-input_2/break_loop_at_end = false
-input_2/reset = true
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_tx1dd"]
+animation = &"sword_walk"
+use_custom_timeline = true
+timeline_length = 0.7
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_3smsa"]
+
+[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_h4iuc"]
+filter_enabled = true
+filters = ["Skeleton3D:base", "Skeleton3D:body", "Skeleton3D:head", "Skeleton3D:left_arm", "Skeleton3D:left_elbow", "Skeleton3D:left_knee", "Skeleton3D:left_leg", "Skeleton3D:right_arm", "Skeleton3D:right_elbow", "Skeleton3D:right_equip", "Skeleton3D:right_knee", "Skeleton3D:right_leg", "base/Skeleton3D:base_2", "base/Skeleton3D:left_knee", "base/Skeleton3D:left_leg", "base/Skeleton3D:right_knee", "base/Skeleton3D:right_leg", "base/body2", "base/left_leg2", "base/left_leg2/left_knee2", "base/right_leg2", "base/right_leg2/right_knee2"]
 
 [sub_resource type="Curve" id="Curve_pu2lt"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
@@ -378,141 +385,57 @@ input_1/name = "walk"
 input_1/auto_advance = false
 input_1/break_loop_at_end = false
 input_1/reset = true
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_pu2lt"]
-animation = &"run"
-play_mode = 1
-use_custom_timeline = true
-timeline_length = 0.7
-stretch_time_scale = true
-start_offset = 0.0
-loop_mode = 1
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_3smsa"]
-animation = &"run"
-use_custom_timeline = true
-timeline_length = 0.7
-stretch_time_scale = true
-start_offset = 0.0
-loop_mode = 1
-
-[sub_resource type="Curve" id="Curve_8erm5"]
-_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
-point_count = 2
-
-[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_7dp3o"]
-xfade_time = 0.3
-xfade_curve = SubResource("Curve_8erm5")
-input_0/name = "forward"
-input_0/auto_advance = false
-input_0/break_loop_at_end = false
-input_0/reset = true
-input_1/name = "back"
-input_1/auto_advance = false
-input_1/break_loop_at_end = false
-input_1/reset = true
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_f1ek2"]
-animation = &"run"
-use_custom_timeline = true
-timeline_length = 0.7
-stretch_time_scale = true
-start_offset = 0.0
-loop_mode = 1
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_7dp3o"]
-animation = &"sword_idle"
-use_custom_timeline = true
-timeline_length = 1.0
-stretch_time_scale = true
-start_offset = 0.0
-loop_mode = 1
-
-[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_h4iuc"]
-filter_enabled = true
-filters = ["Skeleton3D:base", "Skeleton3D:body", "Skeleton3D:head", "Skeleton3D:left_arm", "Skeleton3D:left_elbow", "Skeleton3D:left_knee", "Skeleton3D:left_leg", "Skeleton3D:right_arm", "Skeleton3D:right_elbow", "Skeleton3D:right_equip", "Skeleton3D:right_knee", "Skeleton3D:right_leg", "base/body2", "base/left_leg2", "base/left_leg2/left_knee2", "base/right_leg2", "base/right_leg2/right_knee2"]
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_tx1dd"]
-animation = &"sword_walk"
-use_custom_timeline = true
-timeline_length = 0.7
-stretch_time_scale = true
-start_offset = 0.0
-loop_mode = 1
-
-[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_3smsa"]
-filter_enabled = true
-filters = ["Skeleton3D:base", "Skeleton3D:body", "Skeleton3D:head", "Skeleton3D:left_knee", "Skeleton3D:left_leg", "Skeleton3D:right_knee", "Skeleton3D:right_leg", "base", "base/body2", "base/body2/head2", "base/left_leg2", "base/left_leg2/left_knee2", "base/right_leg2", "base/right_leg2/right_knee2"]
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_h4iuc"]
-animation = &"walk"
-play_mode = 1
-use_custom_timeline = true
-timeline_length = 1.0
-stretch_time_scale = true
-start_offset = 0.0
-loop_mode = 1
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8erm5"]
-animation = &"walk"
-use_custom_timeline = true
-timeline_length = 1.0
-stretch_time_scale = true
-start_offset = 0.0
-loop_mode = 1
-
-[sub_resource type="Curve" id="Curve_f1ek2"]
-_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
-point_count = 2
-
-[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_fd4e3"]
-xfade_time = 0.3
-xfade_curve = SubResource("Curve_f1ek2")
-input_0/name = "forward"
-input_0/auto_advance = false
-input_0/break_loop_at_end = false
-input_0/reset = true
-input_1/name = "back"
-input_1/auto_advance = false
-input_1/break_loop_at_end = false
-input_1/reset = true
+input_2/name = "run"
+input_2/auto_advance = false
+input_2/break_loop_at_end = false
+input_2/reset = true
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_f1ek2"]
-graph_offset = Vector2(-405.43433, -158.75885)
+graph_offset = Vector2(-572.38403, 59.673126)
 nodes/output/position = Vector2(1280, 320)
-nodes/idle_anim_forward/node = SubResource("AnimationNodeAnimation_x3wgy")
-nodes/idle_anim_forward/position = Vector2(260, -320)
-nodes/walk_anim_forward/node = SubResource("AnimationNodeAnimation_8erm5")
-nodes/walk_anim_forward/position = Vector2(60, -140)
-nodes/run_anim_forward/node = SubResource("AnimationNodeAnimation_3smsa")
-nodes/run_anim_forward/position = Vector2(60, 200)
-nodes/sword_walk_blend/node = SubResource("AnimationNodeAdd2_3smsa")
-nodes/sword_walk_blend/position = Vector2(240, 920)
-nodes/pos_state/node = SubResource("AnimationNodeTransition_3smsa")
-nodes/pos_state/position = Vector2(480, -320)
-nodes/sword_walk_aim/node = SubResource("AnimationNodeAnimation_tx1dd")
-nodes/sword_walk_aim/position = Vector2(40, 920)
-nodes/run_leg_anim/node = SubResource("AnimationNodeAnimation_f1ek2")
-nodes/run_leg_anim/position = Vector2(40, 1080)
+nodes/move_blend_tree/node = ExtResource("6_3smsa")
+nodes/move_blend_tree/position = Vector2(500, 260)
+nodes/weapon_blend/node = SubResource("AnimationNodeAdd2_h4iuc")
+nodes/weapon_blend/position = Vector2(400, 520)
+nodes/sword_idle/node = SubResource("AnimationNodeAnimation_7dp3o")
+nodes/sword_idle/position = Vector2(-240, 380)
+nodes/sword_walk/node = SubResource("AnimationNodeAnimation_3smsa")
+nodes/sword_walk/position = Vector2(-220, 560)
+nodes/weapon_move_state/node = SubResource("AnimationNodeTransition_ukyrk")
+nodes/weapon_move_state/position = Vector2(0, 420)
+nodes/sword_run/node = SubResource("AnimationNodeAnimation_tx1dd")
+nodes/sword_run/position = Vector2(-220, 740)
 nodes/is_weapon/node = SubResource("AnimationNodeTransition_8erm5")
 nodes/is_weapon/position = Vector2(760, 320)
-"nodes/idle_anim 2/node" = SubResource("AnimationNodeAnimation_gymyn")
-"nodes/idle_anim 2/position" = Vector2(60, 720)
-nodes/pos_state_weapon/node = SubResource("AnimationNodeTransition_ukyrk")
-nodes/pos_state_weapon/position = Vector2(520, 560)
-nodes/sword_idle_blend/node = SubResource("AnimationNodeAdd2_h4iuc")
-nodes/sword_idle_blend/position = Vector2(240, 560)
-nodes/sword_idle/node = SubResource("AnimationNodeAnimation_7dp3o")
-nodes/sword_idle/position = Vector2(60, 560)
-nodes/walk_direction/node = SubResource("AnimationNodeTransition_fd4e3")
-nodes/walk_direction/position = Vector2(260, -140)
-nodes/walk_anim_back/node = SubResource("AnimationNodeAnimation_h4iuc")
-nodes/walk_anim_back/position = Vector2(60, 20)
-nodes/run_anim_back/node = SubResource("AnimationNodeAnimation_pu2lt")
-nodes/run_anim_back/position = Vector2(60, 360)
-nodes/run_direction/node = SubResource("AnimationNodeTransition_7dp3o")
-nodes/run_direction/position = Vector2(260, 200)
-node_connections = [&"output", 0, &"is_weapon", &"sword_walk_blend", 0, &"sword_walk_aim", &"sword_walk_blend", 1, &"run_leg_anim", &"pos_state", 0, &"idle_anim_forward", &"pos_state", 1, &"walk_direction", &"pos_state", 2, &"run_direction", &"is_weapon", 0, &"pos_state", &"is_weapon", 1, &"pos_state_weapon", &"pos_state_weapon", 0, &"sword_idle_blend", &"pos_state_weapon", 1, &"sword_walk_blend", &"sword_idle_blend", 0, &"sword_idle", &"sword_idle_blend", 1, &"idle_anim 2", &"walk_direction", 0, &"walk_anim_forward", &"walk_direction", 1, &"walk_anim_back", &"run_direction", 0, &"run_anim_forward", &"run_direction", 1, &"run_anim_back"]
+nodes/AnimationNodeBlendTree/node = ExtResource("6_3smsa")
+nodes/AnimationNodeBlendTree/position = Vector2(80, 740)
+node_connections = [&"output", 0, &"is_weapon", &"weapon_blend", 0, &"weapon_move_state", &"weapon_blend", 1, &"AnimationNodeBlendTree", &"weapon_move_state", 0, &"sword_idle", &"weapon_move_state", 1, &"sword_walk", &"weapon_move_state", 2, &"sword_run", &"is_weapon", 0, &"move_blend_tree", &"is_weapon", 1, &"weapon_blend"]
+
+[sub_resource type="GDScript" id="GDScript_8erm5"]
+script/source = "extends AnimationTree
+
+@export_enum('idle', 'walk', 'run') var move_state = 'idle'
+@export_enum('forward', 'back') var move_direction = 'forward'
+@export var move_rotate_direction = Vector2.ZERO
+@export var is_weapon = false
+
+func update_move_state():
+	self[\"parameters/move_blend_tree/move_state/transition_request\"] = move_state
+	self[\"parameters/AnimationNodeBlendTree/move_state/transition_request\"] = move_state
+	self[\"parameters/weapon_move_state/transition_request\"] = move_state
+
+func update_move_direction():
+	self[\"parameters/move_blend_tree/walk_direction/transition_request\"] = move_direction
+	self[\"parameters/move_blend_tree/run_direction/transition_request\"] = move_direction
+	self[\"parameters/AnimationNodeBlendTree/walk_direction/transition_request\"] = move_direction
+	self[\"parameters/AnimationNodeBlendTree/run_direction/transition_request\"] = move_direction
+
+func update_move_rotate_direction():
+	self[\"parameters/move_blend_tree/walk_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/move_blend_tree/run_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/AnimationNodeBlendTree/walk_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/AnimationNodeBlendTree/run_rotate_direction/blend_position\"] = move_rotate_direction
+"
 
 [sub_resource type="GDScript" id="GDScript_3smsa"]
 script/source = "extends Node3D
@@ -556,6 +479,7 @@ script = SubResource("GDScript_f60y1")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("CylinderShape3D_x3wgy")
 debug_color = Color(0.2726146, 0.819198, 0, 0.41960785)
+metadata/_edit_lock_ = true
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=864584949]
 
@@ -683,184 +607,81 @@ fov = 60.0
 root_node = NodePath("../Model/Model/Import/blockbench_export")
 tree_root = SubResource("AnimationNodeBlendTree_f1ek2")
 anim_player = NodePath("../Model/Model/Import/blockbench_export/AnimationPlayer")
-parameters/sword_walk_blend/add_amount = 1.0
-parameters/pos_state/current_state = "walk"
-parameters/pos_state/transition_request = ""
-parameters/pos_state/current_index = 1
+parameters/move_blend_tree/move_state/current_state = "idle"
+parameters/move_blend_tree/move_state/transition_request = ""
+parameters/move_blend_tree/move_state/current_index = 0
+parameters/move_blend_tree/walk_rotate_direction/blend_position = Vector2(0, 0)
+parameters/move_blend_tree/run_rotate_direction/blend_position = Vector2(0, 0)
+parameters/move_blend_tree/walk_blend/add_amount = 1.0
+parameters/move_blend_tree/run_blend/add_amount = 1.0
+parameters/move_blend_tree/walk_direction/current_state = "forward"
+parameters/move_blend_tree/walk_direction/transition_request = ""
+parameters/move_blend_tree/walk_direction/current_index = 0
+parameters/move_blend_tree/run_direction/current_state = "forward"
+parameters/move_blend_tree/run_direction/transition_request = ""
+parameters/move_blend_tree/run_direction/current_index = 0
+parameters/weapon_blend/add_amount = 1.0
+parameters/weapon_move_state/current_state = "run"
+parameters/weapon_move_state/transition_request = ""
+parameters/weapon_move_state/current_index = 2
 parameters/is_weapon/current_state = "false"
 parameters/is_weapon/transition_request = ""
 parameters/is_weapon/current_index = 0
-parameters/pos_state_weapon/current_state = ""
-parameters/pos_state_weapon/transition_request = ""
-parameters/pos_state_weapon/current_index = -1
-parameters/sword_idle_blend/add_amount = 1.0
-parameters/walk_direction/current_state = "forward"
-parameters/walk_direction/transition_request = ""
-parameters/walk_direction/current_index = 0
-parameters/run_direction/current_state = "forward"
-parameters/run_direction/transition_request = ""
-parameters/run_direction/current_index = 0
+parameters/AnimationNodeBlendTree/move_state/current_state = ""
+parameters/AnimationNodeBlendTree/move_state/transition_request = "idle"
+parameters/AnimationNodeBlendTree/move_state/current_index = -1
+parameters/AnimationNodeBlendTree/walk_rotate_direction/blend_position = Vector2(0, 0)
+parameters/AnimationNodeBlendTree/run_rotate_direction/blend_position = Vector2(0, 0)
+parameters/AnimationNodeBlendTree/walk_blend/add_amount = 1.0
+parameters/AnimationNodeBlendTree/run_blend/add_amount = 1.0
+parameters/AnimationNodeBlendTree/walk_direction/current_state = ""
+parameters/AnimationNodeBlendTree/walk_direction/transition_request = "forward"
+parameters/AnimationNodeBlendTree/walk_direction/current_index = -1
+parameters/AnimationNodeBlendTree/run_direction/current_state = "forward"
+parameters/AnimationNodeBlendTree/run_direction/transition_request = ""
+parameters/AnimationNodeBlendTree/run_direction/current_index = 0
+script = SubResource("GDScript_8erm5")
 
 [node name="Model" type="Node3D" parent="." unique_id=2038029055]
 script = SubResource("GDScript_3smsa")
 
 [node name="Camera" type="Node3D" parent="Model" unique_id=1825356973]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+metadata/_edit_lock_ = true
 
 [node name="FirstCamera" type="Camera3D" parent="Model/Camera" unique_id=58642018]
+metadata/_edit_lock_ = true
 
 [node name="ThirdCamera" type="SpringArm3D" parent="Model/Camera" unique_id=1006196592]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 collision_mask = 2
 spring_length = 1.2
+metadata/_edit_lock_ = true
 
 [node name="Camera3D" type="Camera3D" parent="Model/Camera/ThirdCamera" unique_id=2072109049]
 transform = Transform3D(1, 0, 0, 0, 0.9862856, 0.16504759, 0, -0.16504759, 0.9862856, 0, 0, 1.2)
 current = true
+fov = 90.0
+metadata/_edit_lock_ = true
 
 [node name="Model" type="Node3D" parent="Model" unique_id=1594007780]
 
 [node name="Import" type="Node3D" parent="Model/Model" unique_id=71535928]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8, 0)
 
-[node name="blockbench_export" parent="Model/Model/Import" unique_id=1365975076 instance=ExtResource("6_x3wgy")]
+[node name="blockbench_export" parent="Model/Model/Import" unique_id=705302759 instance=ExtResource("7_3smsa")]
 
-[node name="Skeleton3D" parent="Model/Model/Import/blockbench_export" index="0" unique_id=2068147427]
-bones/0/position = Vector3(0, 0.7968978, 0)
-bones/1/rotation = Quaternion(-0.008726101, -8.7063425e-05, 0.00997648, 0.99991226)
-bones/25/rotation = Quaternion(0.0515477, 0.021247726, -0.0011157496, 0.9984439)
-bones/26/rotation = Quaternion(0.08714309, -0.0014843894, -0.01696665, 0.9960502)
-bones/34/rotation = Quaternion(0.057453983, -0.022314753, 0.0013032923, 0.9980979)
-bones/38/rotation = Quaternion(0.087141804, 0.001558124, 0.01780944, 0.99603546)
-bones/43/rotation = Quaternion(0.05505822, 0, 0, 0.9984832)
-bones/48/rotation = Quaternion(-0.06398159, 0, 0, 0.99795115)
-bones/53/rotation = Quaternion(0.12672946, 0, 0, 0.9919374)
-bones/58/rotation = Quaternion(-0.35877463, 0, 0, 0.9334243)
-
-[node name="body_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="0" unique_id=864585616]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, 0, 0.72189784, 0)
-
-[node name="body_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="1" unique_id=584858091]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, 0, 0.72189784, 0)
-
-[node name="body_armor" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="2" unique_id=1887895398]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, 0, 0.72189784, 0)
-
-[node name="body_armor_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="3" unique_id=741290388]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, 0, 0.72189784, 0)
-
-[node name="head_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="4" unique_id=1622019500]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -0.014962263, 1.4716344, -0.013089305)
-
-[node name="head_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="5" unique_id=880903595]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -0.014962263, 1.4716344, -0.013089305)
-
-[node name="head_armor" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="6" unique_id=239473124]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -0.014962263, 1.4716344, -0.013089305)
-
-[node name="head_armor_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="7" unique_id=925096612]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -0.014962263, 1.4716344, -0.013089305)
-
-[node name="cube" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="8" unique_id=1861396198]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -1.802882, 1.4748347, -0.11378308)
-
-[node name="cube_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="9" unique_id=58562202]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -1.802883, 1.4748893, -0.11065854)
-
-[node name="cube_3" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="10" unique_id=1426630664]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -1.7826957, 1.559671, -0.11213109)
-
-[node name="cube_4" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="11" unique_id=197209587]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -1.9653496, 1.4715923, -0.11378306)
-
-[node name="cube_5" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="12" unique_id=1490460268]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -2.0215895, 1.4705245, -0.11065854)
-
-[node name="cube_6" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="13" unique_id=1005562059]
-transform = Transform3D(0.9998009, -0.019949684, -0.00034822302, 0.019952724, 0.99964863, 0.01744893, 1.4551915e-11, -0.017452406, 0.9998477, -2.0014021, 1.5553064, -0.11213109)
-
-[node name="right_elbow_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="14" unique_id=333736223]
-transform = Transform3D(0.99885845, 0.025929023, 0.040121276, -0.014785426, 0.966437, -0.25647795, -0.045424916, 0.25559193, 0.9657171, 0.43414477, 1.0956085, 0.08416705)
-
-[node name="right_elbow_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="15" unique_id=364238167]
-transform = Transform3D(0.99885845, 0.025929023, 0.040121276, -0.014785426, 0.966437, -0.25647795, -0.045424916, 0.25559193, 0.9657171, 0.49657342, 1.0946844, 0.08132799)
-
-[node name="right_elbow_armor" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="16" unique_id=101619844]
-transform = Transform3D(0.99885845, 0.025929023, 0.040121276, -0.014785426, 0.966437, -0.25647795, -0.045424916, 0.25559193, 0.9657171, 0.49657342, 1.0946844, 0.08132799)
-
-[node name="right_arm_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="17" unique_id=1688164574]
-transform = Transform3D(0.9989113, -0.015461754, 0.044014275, 0.019154834, 0.99621713, -0.084761456, -0.042537216, 0.08551226, 0.99542874, 0.23748168, 1.3516665, -0.010907753)
-
-[node name="right_arm_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="18" unique_id=1908861729]
-transform = Transform3D(0.9989113, -0.015461754, 0.044014275, 0.019154834, 0.99621713, -0.084761456, -0.042537216, 0.08551226, 0.99542874, 0.23748168, 1.3516665, -0.010907753)
-
-[node name="right_arm_armor" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="19" unique_id=1310135330]
-transform = Transform3D(0.9989113, -0.015461754, 0.044014275, 0.019154834, 0.99621713, -0.084761456, -0.042537216, 0.08551226, 0.99542874, 0.23748168, 1.3516665, -0.010907753)
-
-[node name="left_arm_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="20" unique_id=1082299349]
-transform = Transform3D(0.9987855, -0.025022566, -0.042442422, 0.020750126, 0.9949428, -0.09827669, 0.044686917, 0.09727664, 0.99425364, -0.26241878, 1.3416901, -0.010907753)
-
-[node name="left_arm_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="21" unique_id=1686684583]
-transform = Transform3D(0.9987855, -0.025022566, -0.042442422, 0.020750126, 0.9949428, -0.09827669, 0.044686917, 0.09727664, 0.99425364, -0.26241878, 1.3416901, -0.010907753)
-
-[node name="left_arm_armor" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="22" unique_id=964229393]
-transform = Transform3D(0.9987855, -0.025022566, -0.042442422, 0.020750126, 0.9949428, -0.09827669, 0.044686917, 0.09727664, 0.99425364, -0.26241878, 1.3416901, -0.010907753)
-
-[node name="left_elbow_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="23" unique_id=255262627]
-transform = Transform3D(0.9972525, -0.06716007, -0.031255033, 0.056305297, 0.9614049, -0.2693144, 0.048135918, 0.26681462, 0.962545, -0.44874072, 1.0767791, 0.08067599)
-
-[node name="left_elbow_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="24" unique_id=1701683962]
-transform = Transform3D(0.9972525, -0.06716007, -0.031255033, 0.056305297, 0.9614049, -0.2693144, 0.048135918, 0.26681462, 0.962545, -0.511069, 1.0732601, 0.0776675)
-
-[node name="left_elbow_armor" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="25" unique_id=2120778579]
-transform = Transform3D(0.9972525, -0.06716007, -0.031255033, 0.056305297, 0.9614049, -0.2693144, 0.048135918, 0.26681462, 0.962545, -0.511069, 1.0732601, 0.0776675)
-
-[node name="right_leg_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="26" unique_id=117771355]
-transform = Transform3D(1, 0, 0, 0, 0.9939372, -0.109949395, 0, 0.109949395, 0.9939372, 0.125, 0.72189784, 0)
-
-[node name="right_leg_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="27" unique_id=1385811739]
-transform = Transform3D(1, 0, 0, 0, 0.9939372, -0.109949395, 0, 0.109949395, 0.9939372, 0.125, 0.72189784, 0)
-
-[node name="right_leg_armor_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="28" unique_id=430203433]
-transform = Transform3D(1, 0, 0, 0, 0.9939372, -0.109949395, 0, 0.109949395, 0.9939372, 0.125, 0.72189784, 0)
-
-[node name="right_leg_armor" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="29" unique_id=471865214]
-transform = Transform3D(1, 0, 0, 0, 0.9939372, -0.109949395, 0, 0.109949395, 0.9939372, 0.125, 0.72189784, 0)
-
-[node name="right_knee_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="30" unique_id=655621878]
-transform = Transform3D(1, 0, 0, 0, 0.9998402, 0.017877571, 0, -0.017877571, 0.9998402, 0.125, 0.36291507, -0.16547316)
-
-[node name="right_leg_overlay_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="31" unique_id=652842106]
-transform = Transform3D(1, 0, 0, 0, 0.9998402, 0.017877571, 0, -0.017877571, 0.9998402, 0.125, 0.36291507, -0.16547316)
-
-[node name="right_leg_armor_overlay_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="32" unique_id=380969323]
-transform = Transform3D(1, 0, 0, 0, 0.9998402, 0.017877571, 0, -0.017877571, 0.9998402, 0.125, 0.36291507, -0.16547316)
-
-[node name="right_leg_armor_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="33" unique_id=1666716075]
-transform = Transform3D(1, 0, 0, 0, 0.9998402, 0.017877571, 0, -0.017877571, 0.9998402, 0.125, 0.36291507, -0.16547316)
-
-[node name="left_leg_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="34" unique_id=759686553]
-transform = Transform3D(1, 0, 0, 0, 0.9678793, -0.2514153, 0, 0.2514153, 0.9678793, -0.125, 0.72189784, 0)
-
-[node name="left_leg_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="35" unique_id=1299057905]
-transform = Transform3D(1, 0, 0, 0, 0.9678793, -0.2514153, 0, 0.2514153, 0.9678793, -0.125, 0.72189784, 0)
-
-[node name="left_leg_armor_overlay" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="36" unique_id=539143872]
-transform = Transform3D(1, 0, 0, 0, 0.9678793, -0.2514153, 0, 0.2514153, 0.9678793, -0.125, 0.72189784, 0)
-
-[node name="left_leg_armor" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="37" unique_id=457031220]
-transform = Transform3D(1, 0, 0, 0, 0.9678793, -0.2514153, 0, 0.2514153, 0.9678793, -0.125, 0.72189784, 0)
-
-[node name="left_knee_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="38" unique_id=441247]
-transform = Transform3D(1, 0, 0, 0, 0.8871024, 0.46157277, 0, -0.46157277, 0.8871024, -0.125, 0.39037, -0.21526566)
-
-[node name="left_leg_overlay_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="39" unique_id=1993708333]
-transform = Transform3D(1, 0, 0, 0, 0.8871024, 0.46157277, 0, -0.46157277, 0.8871024, -0.125, 0.39037, -0.21526566)
-
-[node name="left_leg_armor_overlay_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="40" unique_id=1086191126]
-transform = Transform3D(1, 0, 0, 0, 0.8871024, 0.46157277, 0, -0.46157277, 0.8871024, -0.125, 0.39037, -0.21526566)
-
-[node name="left_leg_armor_2" parent="Model/Model/Import/blockbench_export/Skeleton3D" index="41" unique_id=327655283]
-transform = Transform3D(1, 0, 0, 0, 0.8871024, 0.46157277, 0, -0.46157277, 0.8871024, -0.125, 0.39037, -0.21526566)
+[node name="Skeleton3D" parent="Model/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(705302759, 716536024) index="0" unique_id=1908721480]
+bones/0/position = Vector3(0, 0.80625, 0)
+bones/1/rotation = Quaternion(-0.0038140374, 0, 0, 0.9999928)
+bones/11/rotation = Quaternion(0.043597955, 0.001367078, 0.031311236, 0.99855745)
+bones/12/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
+bones/14/rotation = Quaternion(0.043597955, -0.001367078, -0.031311236, 0.99855745)
+bones/15/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
+bones/17/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
+bones/18/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
+bones/19/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
+bones/20/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
 
 [node name="Components" type="Node" parent="." unique_id=1119627159]
 
