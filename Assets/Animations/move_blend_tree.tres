@@ -181,7 +181,7 @@ blend_point_3/node = SubResource("AnimationNodeAnimation_y6uwr")
 blend_point_3/pos = Vector2(1, 0)
 
 [resource]
-graph_offset = Vector2(-210.09879, 902.53674)
+graph_offset = Vector2(-186.09879, 424.75232)
 nodes/output/position = Vector2(1240, 540)
 nodes/move_state/node = SubResource("AnimationNodeTransition_wpjfl")
 nodes/move_state/position = Vector2(1020, 540)

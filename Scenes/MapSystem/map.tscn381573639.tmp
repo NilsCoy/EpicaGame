@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://b2doj54r58x6h"]
+
+[sub_resource type="GDScript" id="GDScript_58wgy"]
+script/source = "extends Node3D
+
+var chunk_scen: Resource = preload(\"res://Scenes/MapSystem/chunk.tscn\")
+var chunk: Node3D
+
+func _ready() -> void:
+	var files: Array = SaveSystem.get_files_in_directory('World')
+	if files != []:
+		for file: String in files:
+			chunk:  = SaveSystem.load_file('World/'+file, chunk_scene)
+			add_child(chunk)
+	else:
+		chunk = chunk_scene.instantiate()
+		chunk.name = 'chunk_0_0_0'
+		chunk.starter_block = true
+		add_child(chunk)
+
+func _input(event) -> void:
+	if Input.is_action_just_pressed('fast_save'):
+		for chunk in get_children():
+			if 'chunk' in chunk.name:
+				SaveSystem.save_file('World/'+chunk.name+'.json', chunk)
+"
+
+[node name="Map" type="Node3D" unique_id=1381430335]
+script = SubResource("GDScript_58wgy")

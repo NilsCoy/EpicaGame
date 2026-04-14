@@ -3,9 +3,9 @@
 [sub_resource type="GDScript" id="GDScript_vdgd3"]
 script/source = "extends PanelContainer
 
-const Slot = preload(\"res://Scenes/InventorySystem/slot_container.tscn\")
+const Slot: Resource = preload(\"res://Scenes/InventorySystem/slot_container.tscn\")
 
-@onready var item_grid = $MarginContainer/ItemGrid
+@onready var item_grid: GridContainer = $MarginContainer/ItemGrid
 @export_range(0,1000) var columns: int = 9
 
 func _ready() -> void:
@@ -16,11 +16,11 @@ func set_inventory_data(inventory_data: InventoryData) -> void:
 	populate_item_grid(inventory_data)
 
 func populate_item_grid(inventory_data: InventoryData) -> void:
-	for child in item_grid.get_children():
+	for child: Node in item_grid.get_children():
 		child.queue_free()
 	
-	for slot_data in inventory_data.slot_datas:
-		var slot = Slot.instantiate()
+	for slot_data: SlotData in inventory_data.slot_datas:
+		var slot: Control = Slot.instantiate()
 		item_grid.add_child(slot)
 		
 		slot.slot_clicked.connect(inventory_data.on_slot_clicked)

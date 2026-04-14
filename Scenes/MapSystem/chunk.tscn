@@ -5,31 +5,32 @@
 [sub_resource type="GDScript" id="GDScript_1i61x"]
 script/source = "extends Node3D
 
-const CHUNK_SIZE = 16
-@export var starter_block = false
+const CHUNK_SIZE: int = 16
+@export var starter_block: bool = false
+var loaded_chunk: bool = false
 
-var blocks = []
+var blocks: Array = []
 
-@onready var mesh_instance = $MeshInstance3D
-@onready var collision_shape = $StaticBody3D/CollisionShape3D
-@onready var atlas_generator = $GenerateTextureAtlas
+@onready var mesh_instance: MeshInstance3D = $MeshInstance3D
+@onready var collision_shape: CollisionShape3D = $StaticBody3D/CollisionShape3D
+@onready var atlas_generator: Node = $GenerateTextureAtlas
 
 func save_data() -> Dictionary:
-	var blocks_ids = []
-	var blocks_rotations = []
+	var blocks_ids: Array = []
+	var blocks_rotations: Array = []
 	blocks_ids.resize(CHUNK_SIZE)
 	blocks_rotations.resize(CHUNK_SIZE)
-	for x in CHUNK_SIZE:
+	for x: int in CHUNK_SIZE:
 		blocks_ids[x] = []
 		blocks_ids[x].resize(CHUNK_SIZE)
 		blocks_rotations[x] = []
 		blocks_rotations[x].resize(CHUNK_SIZE)
-		for y in CHUNK_SIZE:
+		for y: int in CHUNK_SIZE:
 			blocks_ids[x][y] = []
 			blocks_ids[x][y].resize(CHUNK_SIZE)
 			blocks_rotations[x][y] = []
 			blocks_rotations[x][y].resize(CHUNK_SIZE)
-			for z in CHUNK_SIZE:
+			for z: int in CHUNK_SIZE:
 				blocks_ids[x][y][z] = str(blocks[x][y][z][\"id\"])
 				blocks_rotations[x][y][z] = [blocks[x][y][z][\"rotation\"].x, blocks[x][y][z][\"rotation\"].y, blocks[x][y][z][\"rotation\"].z]
 	
@@ -51,6 +52,8 @@ func load_data(data: Dictionary) -> void:
 		data.get(\"blocks_ids\", [[[]]]),
 		data.get(\"blocks_rotations\", [[[]]])
 	)
+	
+	loaded_chunk = true
 
 func _ready() -> void:
 	if blocks == []:
@@ -62,18 +65,20 @@ func _ready() -> void:
 			\"id\": \"stone\",
 			\"rotation\": Vector3.UP
 		} # первый блок
-	rebuild()
+		rebuild()
+	if loaded_chunk:
+		rebuild()
 
 # Генерация массива блоков
-func generate_blocks(blocks_ids = [[[]]], blocks_rotations = [[[]]]) -> void:
+func generate_blocks(blocks_ids: Array = [[[]]], blocks_rotations: Array = [[[]]]) -> void:
 	blocks.resize(CHUNK_SIZE)
-	for x in CHUNK_SIZE:
+	for x: int in CHUNK_SIZE:
 		blocks[x] = []
 		blocks[x].resize(CHUNK_SIZE)
-		for y in CHUNK_SIZE:
+		for y: int in CHUNK_SIZE:
 			blocks[x][y] = []
 			blocks[x][y].resize(CHUNK_SIZE)
-			for z in CHUNK_SIZE:
+			for z: int in CHUNK_SIZE:
 				if blocks_ids == [[[]]]:
 					blocks[x][y][z] = {
 						\"id\": \"air\", # 0 = воздух
@@ -96,34 +101,34 @@ func is_block(x: int, y: int, z: int) -> bool:
 
 # Перестроение меша
 func rebuild() -> void:
-	var has_ModelBlock = false
-	for child in get_children():
+	var has_ModelBlock: bool = false
+	for child: Node in get_children():
 		if 'ModelBlock' in child.name:
 			child.free()
 	
-	var st = SurfaceTool.new()
+	var st: SurfaceTool = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	for x in CHUNK_SIZE:
-		for y in CHUNK_SIZE:
-			for z in CHUNK_SIZE:
-				var block_data = blocks[x][y][z]
-				var block_id = str(block_data[\"id\"])
+	for x: int in CHUNK_SIZE:
+		for y: int in CHUNK_SIZE:
+			for z: int in CHUNK_SIZE:
+				var block_data: Dictionary = blocks[x][y][z]
+				var block_id: String = str(block_data[\"id\"])
 				if block_id != \"air\":
-					var block_rotation = block_data[\"rotation\"]
+					var block_rotation: Vector3 = block_data[\"rotation\"]
 					if atlas_generator.blocks[block_id][\"type\"] == \"model\":
 						add_model_block(x, y, z, block_id, block_rotation)
 						has_ModelBlock = true
 					else:
 						add_block_faces(st, x, y, z, block_id, block_rotation)
 
-	var mesh = st.commit()
+	var mesh: ArrayMesh = st.commit()
 
 	if mesh.get_surface_count() == 0 and has_ModelBlock == false:
 		queue_free()
 		return
 	
-	var material = StandardMaterial3D.new()
+	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.albedo_texture = atlas_generator.atlas_texture
 	material.uv1_scale = Vector3(1, 1, 1)
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
@@ -135,12 +140,12 @@ func rebuild() -> void:
 	collision_shape.shape = mesh.create_trimesh_shape()
 
 # Добавление блок-модель
-func add_model_block(x: int, y: int, z: int, block_id: String, block_rotation: Vector3):
-	var scene = load(atlas_generator.blocks[block_id][\"asset\"])
-	var instance = scene.instantiate()
+func add_model_block(x: int, y: int, z: int, block_id: String, block_rotation: Vector3) -> void:
+	var scene: Resource = load(atlas_generator.blocks[block_id][\"asset\"])
+	var instance: Variant = scene.instantiate()
 
 	G.create_collision(instance,[1],[1])
-	var static_instance = StaticBody3D.new()
+	var static_instance: StaticBody3D = StaticBody3D.new()
 	#instance = G.replace_to_static(instance)
 	static_instance.add_child(instance)
 	
@@ -149,8 +154,8 @@ func add_model_block(x: int, y: int, z: int, block_id: String, block_rotation: V
 	static_instance.set_collision_layer_value(1, false)
 	static_instance.set_collision_layer_value(2, true)
 	
-	var collision = CollisionShape3D.new()
-	var box = BoxShape3D.new()
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	var box: BoxShape3D = BoxShape3D.new()
 	box.size = Vector3(1, 1, 1)
 	collision.shape = box
 	collision.position = Vector3(0.5, 0.5, 0.5)
@@ -175,8 +180,8 @@ func add_model_block(x: int, y: int, z: int, block_id: String, block_rotation: V
 	add_child(static_instance)
 
 # Добавление граней блока
-func add_block_faces(st: SurfaceTool, x: int, y: int, z: int, block_id: String, block_rotation: Vector3):
-	var pos = Vector3(x, y, z)
+func add_block_faces(st: SurfaceTool, x: int, y: int, z: int, block_id: String, block_rotation: Vector3) -> void:
+	var pos: Vector3 = Vector3(x, y, z)
 
 	if not is_block(x, y + 1, z):
 		add_face(st, pos, Vector3.UP, block_id, block_rotation)
@@ -198,13 +203,13 @@ func add_block_faces(st: SurfaceTool, x: int, y: int, z: int, block_id: String, 
 
 
 # Создание одной грани
-func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, block_rotation: Vector3):
+func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, block_rotation: Vector3) -> void:
 
-	var v = []
-	var uv_rotation_steps = 0  # 0,1,2,3 = 0°,90°,180°,270°
+	var v: Array = []
+	var uv_rotation_steps: int = 0  # 0,1,2,3 = 0°,90°,180°,270°
 
 	# UV из атласа
-	var atlas_pos
+	var atlas_pos: Vector2i
 
 	match normal:
 		Vector3.UP:
@@ -301,17 +306,17 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 	else:
 		block_rotation = Vector3.UP
 
-	var TILE_SIZE = atlas_generator.TILE_SIZE
+	var TILE_SIZE: float = atlas_generator.TILE_SIZE
 
-	var uv_origin = Vector2(atlas_pos.x, atlas_pos.y) * TILE_SIZE
+	var uv_origin: Vector2 = Vector2(atlas_pos.x, atlas_pos.y) * TILE_SIZE
 
-	var uv00 = uv_origin
-	var uv10 = uv_origin + Vector2(TILE_SIZE, 0)
-	var uv11 = uv_origin + Vector2(TILE_SIZE, TILE_SIZE)
-	var uv01 = uv_origin + Vector2(0, TILE_SIZE)
+	var uv00: Vector2 = uv_origin
+	var uv10: Vector2 = uv_origin + Vector2(TILE_SIZE, 0)
+	var uv11: Vector2 = uv_origin + Vector2(TILE_SIZE, TILE_SIZE)
+	var uv01: Vector2 = uv_origin + Vector2(0, TILE_SIZE)
 
-	for i in range(uv_rotation_steps):
-		var temp = uv00
+	for i: int in range(uv_rotation_steps):
+		var temp: Vector2 = uv00
 		uv00 = uv01
 		uv01 = uv11
 		uv11 = uv10
@@ -345,12 +350,12 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 
 
 # Установка блока
-func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"grass_block\", player_rotation: Vector3 = Vector3.ZERO):
-	var local_pos = to_local(hit_position + normal * 0.5)
+func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"grass_block\", player_rotation: Vector3 = Vector3.ZERO) -> void:
+	var local_pos: Vector3 = to_local(hit_position + normal * 0.5)
 
-	var x = int(floor(local_pos.x))
-	var y = int(floor(local_pos.y))
-	var z = int(floor(local_pos.z))
+	var x: int = int(floor(local_pos.x))
+	var y: int = int(floor(local_pos.y))
+	var z: int = int(floor(local_pos.z))
 
 	if x >= 0 and y >= 0 and z >= 0 and \\
 		x < CHUNK_SIZE and y < CHUNK_SIZE and z < CHUNK_SIZE:
@@ -367,19 +372,28 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 			}
 		rebuild()
 	else:
-		var neighbor_chunk_pos = position + normal * CHUNK_SIZE
-		var chunk_name = 'chunk_' + str(int(neighbor_chunk_pos.x / CHUNK_SIZE)) + \\
+		var neighbor_chunk_pos: Vector3 = position + normal * CHUNK_SIZE
+		var chunk_name: String = 'chunk_' + str(int(neighbor_chunk_pos.x / CHUNK_SIZE)) + \\
 						 '_' + str(int(neighbor_chunk_pos.y / CHUNK_SIZE)) + \\
 						 '_' + str(int(neighbor_chunk_pos.z / CHUNK_SIZE))
-		var chunk = get_parent().get_node(chunk_name)
+		var chunk: Node = get_parent().get_node(chunk_name)
 		if chunk == null:
 			chunk = load(\"res://Scenes/MapSystem/chunk.tscn\").instantiate()
 			chunk.position = neighbor_chunk_pos
 			chunk.name = chunk_name
-			var neighbor_local_pos = chunk.to_local(hit_position + normal * 0.5)
-			var nx = floor(neighbor_local_pos.x)
-			var ny = floor(neighbor_local_pos.y)
-			var nz = floor(neighbor_local_pos.z)
+			get_parent().add_child(chunk)
+			var neighbor_local_pos: Vector3 = chunk.to_local(hit_position + normal * 0.5)
+			var nx: int = int(floor(neighbor_local_pos.x))
+			var ny: int = int(floor(neighbor_local_pos.y))
+			var nz: int = int(floor(neighbor_local_pos.z))
+			#var nx: int = x
+			#var ny: int = y
+			#var nz: int = z
+			#print(nx, ny, nz)
+			#nx = clamp(abs(nx), 0, CHUNK_SIZE - 1)
+			#ny = clamp(abs(ny), 0, CHUNK_SIZE - 1)
+			#nz = clamp(abs(nz), 0, CHUNK_SIZE - 1)
+			print(nx, ny, nz)
 			chunk.generate_blocks()
 			if atlas_generator.blocks[block_id][\"type\"] == \"model\":
 				chunk.blocks[nx][ny][nz] = {
@@ -391,13 +405,15 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 					\"id\": block_id,
 					\"rotation\": normal
 				}
-			get_parent().add_child(chunk)
-			#chunk.rebuild()
+			chunk.rebuild()
 		else:
-			var neighbor_local_pos = chunk.to_local(hit_position + normal * 0.5)
-			var nx = floor(neighbor_local_pos.x)
-			var ny = floor(neighbor_local_pos.y)
-			var nz = floor(neighbor_local_pos.z)
+			var neighbor_local_pos: Vector3 = chunk.to_local(hit_position + normal * 0.5)
+			var nx: int = floor(neighbor_local_pos.x)
+			var ny: int = floor(neighbor_local_pos.y)
+			var nz: int = floor(neighbor_local_pos.z)
+			#nx = clamp(nx, 0, CHUNK_SIZE - 1)
+			#ny = clamp(ny, 0, CHUNK_SIZE - 1)
+			#nz = clamp(nz, 0, CHUNK_SIZE - 1)
 			if atlas_generator.blocks[block_id][\"type\"] == \"model\":
 				chunk.blocks[nx][ny][nz] = {
 					\"id\": block_id,
@@ -411,12 +427,12 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 			chunk.rebuild()
 
 # Ломание блока
-func break_block(hit_position: Vector3, normal: Vector3):
-	var local_pos = to_local(hit_position - normal * 0.01)
+func break_block(hit_position: Vector3, normal: Vector3) -> void:
+	var local_pos: Vector3 = to_local(hit_position - normal * 0.01)
 
-	var x = int(floor(local_pos.x))
-	var y = int(floor(local_pos.y))
-	var z = int(floor(local_pos.z))
+	var x: int = int(floor(local_pos.x))
+	var y: int = int(floor(local_pos.y))
+	var z: int = int(floor(local_pos.z))
 
 	if x >= 0 and y >= 0 and z >= 0 and \\
 		x < CHUNK_SIZE and y < CHUNK_SIZE and z < CHUNK_SIZE:
@@ -442,29 +458,29 @@ func break_block(hit_position: Vector3, normal: Vector3):
 
 
 func greedy_mesh(st: SurfaceTool) -> void:
-	var dims = [CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE]
-	var mask = []
+	var dims: Array = [CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE]
+	var mask: Array = []
 
-	for d in 3:  # d = 0,1,2 -> X,Y,Z
-		var u = (d + 1) % 3
-		var v = (d + 2) % 3
+	for d: int in 3:  # d = 0,1,2 -> X,Y,Z
+		var u: int = (d + 1) % 3
+		var v: int = (d + 2) % 3
 
-		var q = Vector3i()
+		var q: Vector3i = Vector3i()
 		q[d] = 1
 
-		for id in range(-1, dims[d]):
+		for id: int in range(-1, dims[d]):
 			mask.clear()
 			
 			# строим маску для слоя
-			for j_v in range(dims[v]):
-				for i_u in range(dims[u]):
-					var x = Vector3i()
+			for j_v: int in range(dims[v]):
+				for i_u: int in range(dims[u]):
+					var x: Vector3i = Vector3i()
 					x[d] = id
 					x[u] = i_u
 					x[v] = j_v
 
-					var a = false
-					var b = false
+					var a: bool = false
+					var b: bool = false
 					if id >= 0:
 						a = get_block_vec(x)
 					if id < dims[d] - 1:
@@ -476,21 +492,21 @@ func greedy_mesh(st: SurfaceTool) -> void:
 						mask.append(null)
 
 			# greedy по 2D маске
-			var n = 0
-			for j_v in range(dims[v]):
-				var i_u = 0
+			var n: int = 0
+			for j_v: int in range(dims[v]):
+				var i_u: int = 0
 				while i_u < dims[u]:
 					if mask[n] != null:
 						# ширина
-						var w = 1
+						var w: int = 1
 						while i_u + w < dims[u] and mask[n + w] == mask[n]:
 							w += 1
 
 						# высота
-						var h = 1
-						var done = false
+						var h: int = 1
+						var done: bool = false
 						while j_v + h < dims[v] and not done:
-							for k_w in range(w):
+							for k_w: int in range(w):
 								if mask[n + k_w + h * dims[u]] != mask[n]:
 									done = true
 									break
@@ -498,21 +514,21 @@ func greedy_mesh(st: SurfaceTool) -> void:
 								h += 1
 
 						# создаем quad
-						var x0 = Vector3i()
+						var x0: Vector3i = Vector3i()
 						x0[d] = id + 1
 						x0[u] = i_u
 						x0[v] = j_v
 
-						var du = Vector3i()
+						var du: Vector3i = Vector3i()
 						du[u] = w
-						var dv = Vector3i()
+						var dv: Vector3i = Vector3i()
 						dv[v] = h
 
 						add_quad(st, x0, du, dv, d, mask[n])
 
 						# очищаем маску
-						for l_h in range(h):
-							for k_w in range(w):
+						for l_h: int in range(h):
+							for k_w: int in range(w):
 								mask[n + k_w + l_h * dims[u]] = null
 
 						i_u += w
@@ -522,17 +538,17 @@ func greedy_mesh(st: SurfaceTool) -> void:
 						n += 1
 
 # универсальное добавление квадов для любого направления
-func add_quad(st: SurfaceTool, pos: Vector3i, du: Vector3i, dv: Vector3i, d: int, filled: bool):
-	var p = Vector3(pos)
-	var du3 = Vector3(du.x, du.y, du.z)
-	var dv3 = Vector3(dv.x, dv.y, dv.z)
+func add_quad(st: SurfaceTool, pos: Vector3i, du: Vector3i, dv: Vector3i, d: int, filled: bool) -> void:
+	var p: Vector3 = Vector3(pos)
+	var du3: Vector3 = Vector3(du.x, du.y, du.z)
+	var dv3: Vector3 = Vector3(dv.x, dv.y, dv.z)
 
-	var v1 = p
-	var v2 = p + du3
-	var v3 = p + du3 + dv3
-	var v4 = p + dv3
+	var v1: Vector3 = p
+	var v2: Vector3 = p + du3
+	var v3: Vector3 = p + du3 + dv3
+	var v4: Vector3 = p + dv3
 
-	var normal = Vector3()
+	var normal: Vector3 = Vector3()
 
 	# Явно задаем нормаль и порядок вершин в зависимости от направления
 	match d:

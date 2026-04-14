@@ -34,7 +34,7 @@ func fully_merge_with_return(other_slot_data: SlotData) -> SlotData:
 	return other_slot_data
 
 func create_single_slot_data() -> SlotData:
-	var new_slot_data = duplicate()
+	var new_slot_data: SlotData = duplicate()
 	new_slot_data.quantity = 1
 	quantity -= 1
 	return new_slot_data
