@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cp0u50t6q8pqi"]
 
-[ext_resource type="PackedScene" uid="uid://5jwrhpdhgtm8" path="res://Scenes/player.tscn" id="1_bo1nx"]
+[ext_resource type="PackedScene" uid="uid://5jwrhpdhgtm8" path="res://Scenes/Entities/player.tscn" id="1_bo1nx"]
 [ext_resource type="PackedScene" uid="uid://b2doj54r58x6h" path="res://Scenes/MapSystem/map.tscn" id="2_8gbba"]
 
 [sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_8gbba"]
@@ -21,8 +21,6 @@ fog_light_color = Color(0.2869581, 0.31226328, 0.35665286, 1)
 fog_density = 0.7
 fog_sky_affect = 0.5
 
-[sub_resource type="BoxMesh" id="BoxMesh_go701"]
-
 [node name="Main" type="Node3D" unique_id=193794405]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=89933525]
@@ -36,20 +34,7 @@ shadow_bias = 0.05
 shadow_opacity = 0.8
 
 [node name="Player" parent="." unique_id=877482764 instance=ExtResource("1_bo1nx")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.735976, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.655326, 29.914026)
 gamemode = 2
-
-[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=480579453]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4309027, 9.993654, 4.706607)
-visible = false
-shadow_enabled = true
-omni_range = 10.0
-omni_attenuation = 2.0
-omni_shadow_mode = 0
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1109051609]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.4189067, 1.6870496)
-visible = false
-mesh = SubResource("BoxMesh_go701")
 
 [node name="Map" parent="." unique_id=1381430335 instance=ExtResource("2_8gbba")]

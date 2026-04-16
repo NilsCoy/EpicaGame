@@ -1,29 +1,39 @@
 [gd_scene format=3 uid="uid://b2doj54r58x6h"]
 
 [sub_resource type="GDScript" id="GDScript_58wgy"]
-script/source = "extends Node3D
+script/source = "extends Node
 
-var chunk_scene: Resource = preload(\"res://Scenes/MapSystem/chunk.tscn\")
-var chunk: Node3D
+@onready var chunks: Node = $Chunks
+@onready var entities: Node = $Entities
+@onready var players: Node = $Players
 
 func _ready() -> void:
-	var files: Array = SaveSystem.get_files_in_directory('World')
+	var chunk_scene: Resource = preload(\"res://Scenes/MapSystem/chunk.tscn\")
+	var files: Array = SaveSystem.get_files_in_directory('World/chunks')
 	if files != []:
 		for file: String in files:
-			chunk = SaveSystem.load_file('World/'+file, chunk_scene)
-			add_child(chunk)
+			var chunk: Node3D
+			chunk = SaveSystem.load_file('World/chunks/'+file, chunk_scene)
+			chunks.add_child(chunk)
 	else:
+		var chunk: Node3D
 		chunk = chunk_scene.instantiate()
 		chunk.name = 'chunk_0_0_0'
 		chunk.starter_block = true
-		add_child(chunk)
+		chunks.add_child(chunk)
 
 func _input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed('fast_save'):
-		for chunk: Node in get_children():
+		for chunk: Node in chunks.get_children():
 			if 'chunk' in chunk.name:
-				SaveSystem.save_file('World/'+chunk.name+'.json', chunk)
+				SaveSystem.save_file('World/chunks/'+chunk.name+'.json', chunk)
 "
 
-[node name="Map" type="Node3D" unique_id=1381430335]
+[node name="Map" type="Node" unique_id=616319268]
 script = SubResource("GDScript_58wgy")
+
+[node name="Chunks" type="Node" parent="." unique_id=1473334747]
+
+[node name="Entities" type="Node" parent="." unique_id=1761748697]
+
+[node name="Players" type="Node" parent="." unique_id=548145297]

@@ -1,0 +1,277 @@
+[gd_scene format=3 uid="uid://ctg2xy8v1tood"]
+
+[ext_resource type="Texture2D" uid="uid://bky2jo0bab0sv" path="res://Assets/Textures/crosshair.png" id="1_c4arg"]
+[ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/InventorySystem/inventory_data.gd" id="2_deklj"]
+[ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/InventorySystem/slot_data.gd" id="3_nwg7q"]
+[ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="4_6nfne"]
+[ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="5_21gwg"]
+
+[sub_resource type="GDScript" id="GDScript_vgqql"]
+script/source = "extends Control
+
+# Inventory
+@export var blocks_data: InventoryData
+@export var hot_bar_data: InventoryData
+var grabbed_slot_data: SlotData
+@onready var grabbed_slot_container: Control = $GrabbedSlotContainer
+
+func _ready() -> void:
+	var files: Array = SaveSystem.get_files_in_directory('Resources/Blocks/Data/')
+	for file: String in files:
+		var slot: SlotData = SlotData.new()
+		var item: ItemData = ItemData.new()
+		item.name = file.split(\".\")[0]
+		var block: Dictionary = SaveSystem.read_json(SaveSystem.get_file_path('Resources/Blocks/Data/'+file, true))
+		if block[\"type\"] == \"block\":
+			var atlas_texture: Texture2D = load(block[\"textures\"][\"side\"])
+			var texture: AtlasTexture = AtlasTexture.new()
+			texture.atlas = atlas_texture
+			item.texture = texture
+		elif block[\"type\"] == \"model\":
+			item.texture = get_texture_3d(block[\"asset\"])
+		item.attributes[\"action\"] = \"block\"
+		item.max_stack = 99
+		slot.item_data = item
+		slot.quantity = item.max_stack
+		blocks_data.slot_datas.append(slot)
+	blocks_data.inventory_interact.connect(on_inventory_interact)
+	$ScrollContainer/BlocksContainer.set_inventory_data(blocks_data)
+	hot_bar_data.inventory_interact.connect(on_inventory_interact)
+	$HotBarContainer.set_inventory_data(hot_bar_data)
+
+func _physics_process(delta: float) -> void:
+	if grabbed_slot_container.visible:
+		grabbed_slot_container.global_position = get_global_mouse_position() + Vector2(5, 5)
+
+func get_texture_3d(path: String) -> AtlasTexture:
+	for i: Node in $BlockScreen/Scene.get_children():
+		i.free()
+	var node: Variant = load(path).instantiate()
+	$BlockScreen/Scene.add_child(node)
+	var texture: AtlasTexture = AtlasTexture.new()
+	texture.atlas = $BlockScreen.get_texture()
+	return texture
+
+func on_inventory_interact(inventory_data: InventoryData, index: int, button: int) -> void:
+	if Input.is_action_pressed(\"shift\"):
+		if inventory_data.inv_name == \"ItemTabs\":
+			inventory_data.transportation_slot_data(index, hot_bar_data)
+		elif inventory_data.inv_name == \"HotBar\":
+			inventory_data.transportation_slot_data(index, blocks_data)
+	else:
+		match [grabbed_slot_data, button]:
+			[null, MOUSE_BUTTON_LEFT]:
+					grabbed_slot_data = inventory_data.grab_slot_data(index)
+			[_, MOUSE_BUTTON_LEFT]:
+				grabbed_slot_data = inventory_data.drop_slot_data(grabbed_slot_data, index)
+			[null, MOUSE_BUTTON_RIGHT]:
+				grabbed_slot_data = inventory_data.grab_hafl_slot_data(index)
+			[_, MOUSE_BUTTON_RIGHT]:
+				grabbed_slot_data = inventory_data.drop_single_slot_data(grabbed_slot_data, index)
+	update_grabbed_slot()
+
+func update_grabbed_slot() -> void:
+	if grabbed_slot_data:
+		grabbed_slot_container.set_slot_data(grabbed_slot_data)
+		grabbed_slot_container.show()
+	else: grabbed_slot_container.hide()
+"
+
+[sub_resource type="Resource" id="Resource_fkybt"]
+script = ExtResource("2_deklj")
+inv_name = "ItemTabs"
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Resource" id="Resource_3smsa"]
+script = ExtResource("2_deklj")
+inv_name = "HotBar"
+slot_datas = Array[ExtResource("3_nwg7q")]([null, null, null, null, null, null, null, null, null])
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Environment" id="Environment_3smsa"]
+
+[sub_resource type="World3D" id="World3D_8erm5"]
+environment = SubResource("Environment_3smsa")
+
+[sub_resource type="GDScript" id="GDScript_c4arg"]
+script/source = "extends Control
+
+func _on_send_chat_text_submitted(new_text: String) -> void:
+	var from: Node = get_parent().get_parent()
+	
+	ChatManager.send(from, new_text)
+	$SendChat.text = ''
+"
+
+[node name="UI" type="CanvasLayer" unique_id=1293807617]
+
+[node name="HUD" type="Control" parent="." unique_id=460458071]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+metadata/_edit_lock_ = true
+
+[node name="FPS" type="Label" parent="HUD" unique_id=1105957091]
+layout_mode = 0
+offset_left = 16.0
+offset_right = 56.0
+offset_bottom = 23.0
+text = "60"
+metadata/_edit_lock_ = true
+
+[node name="ItemName" type="Label" parent="HUD" unique_id=1624363533]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -111.0
+offset_right = 40.0
+offset_bottom = -88.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_lock_ = true
+
+[node name="Crosshair" type="Control" parent="HUD" unique_id=1199651067]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -24.0
+offset_top = -24.0
+offset_right = 24.0
+offset_bottom = 24.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_lock_ = true
+
+[node name="CrosshairTexture" type="Sprite2D" parent="HUD/Crosshair" unique_id=901016780]
+scale = Vector2(3, 3)
+texture = ExtResource("1_c4arg")
+centered = false
+metadata/_edit_lock_ = true
+
+[node name="CreativeInventory" type="Control" parent="." unique_id=1941891616]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_vgqql")
+blocks_data = SubResource("Resource_fkybt")
+hot_bar_data = SubResource("Resource_3smsa")
+metadata/_edit_lock_ = true
+
+[node name="HotBarContainer" parent="CreativeInventory" unique_id=2012566676 instance=ExtResource("4_6nfne")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -8.0
+offset_top = -16.0
+offset_right = 8.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="GrabbedSlotContainer" parent="CreativeInventory" unique_id=1947869178 instance=ExtResource("5_21gwg")]
+visible = false
+modulate = Color(1, 1, 1, 0.49411765)
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="CreativeInventory" unique_id=252690363]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -312.0
+offset_top = -230.0
+offset_right = 322.0
+offset_bottom = 171.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="BlocksContainer" parent="CreativeInventory/ScrollContainer" unique_id=1357003237 instance=ExtResource("4_6nfne")]
+layout_mode = 2
+
+[node name="BlockScreen" type="SubViewport" parent="CreativeInventory" unique_id=1067350639]
+own_world_3d = true
+world_3d = SubResource("World3D_8erm5")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="CreativeInventory/BlockScreen" unique_id=1929548789]
+transform = Transform3D(0.8328903, 0.4372957, 0.3392141, -0.55343753, 0.6572007, 0.5116583, 0.00081419945, -0.61388904, 0.7893919, 0, 0, 0)
+metadata/_edit_lock_ = true
+
+[node name="Scene" type="Node3D" parent="CreativeInventory/BlockScreen" unique_id=1205167294]
+metadata/_edit_lock_ = true
+
+[node name="Camera3D" type="Camera3D" parent="CreativeInventory/BlockScreen" unique_id=1824162630]
+transform = Transform3D(0.7071067, -0.4055798, 0.579228, 0, 0.81915206, 0.57357645, -0.7071067, -0.4055798, 0.579228, 1.25, 1.25, 1.25)
+fov = 60.0
+metadata/_edit_lock_ = true
+
+[node name="Chat" type="Control" parent="." unique_id=295325971]
+layout_mode = 3
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = -350.0
+offset_right = 522.0
+offset_bottom = -50.0
+grow_vertical = 0
+script = SubResource("GDScript_c4arg")
+
+[node name="BackgroundRect" type="ColorRect" parent="Chat" unique_id=290110707]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.39215687)
+
+[node name="ChatHistory" type="RichTextLabel" parent="Chat" unique_id=1260182835]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.776
+offset_bottom = 0.03199768
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SendChat" type="LineEdit" parent="Chat" unique_id=1702082528]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -31.0
+grow_horizontal = 2
+grow_vertical = 0
+placeholder_text = "Enter text..."
+drag_and_drop_selection_enabled = false
+
+[connection signal="text_submitted" from="Chat/SendChat" to="Chat" method="_on_send_chat_text_submitted"]

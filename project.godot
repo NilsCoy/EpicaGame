@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 
 G="*uid://37ngxtvnw0do"
 SaveSystem="*uid://nsupueetcdkv"
+ChatManager="*uid://48u6r55dqft0"
 
 [debug]
 
@@ -184,6 +185,8 @@ right_click={
 3d_physics/layer_1="world_mesh"
 3d_physics/layer_2="block_grid"
 3d_physics/layer_3="player"
+3d_physics/layer_4="entity"
+3d_physics/layer_5="item"
 
 [physics]
 

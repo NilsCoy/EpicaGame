@@ -37,14 +37,14 @@ func save_file(path: String, node: Node, root_dir: bool = true) -> void:
 	if file:
 		file.store_string(json_string)
 		file.close()
-		print("Safe node!")
+		#print("Safe node!")
 
 func load_file(path: String, scene: PackedScene, root_dir: bool = true) -> Variant:
 	var result: Dictionary = read_json(get_file_path(path, root_dir))
 	if result:
 		var node: Variant = scene.instantiate()
 		node.load_data(result)
-		print("Load node!")
+		#print("Load node!")
 		return node
 
 	return null

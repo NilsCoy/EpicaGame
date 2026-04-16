@@ -2,19 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cpdmc0mhc4j10"
-path="res://.godot/imported/human_0.png-80a958c244cc37fa6edb1c4cc03eb936.ctex"
+uid="uid://d2dxovuwxytdr"
+path="res://.godot/imported/iron_sword.png-b85ec9fef7f527beaeaee231c9aec20c.ctex"
 metadata={
 "vram_texture": false
-}
-generator_parameters={
-"md5": "ac03e4c80121c8604d5e1980858962e8"
 }
 
 [deps]
 
-source_file="res://Assets/Models/human_0.png"
-dest_files=["res://.godot/imported/human_0.png-80a958c244cc37fa6edb1c4cc03eb936.ctex"]
+source_file="res://Resources/Items/Assets/iron_sword.png"
+dest_files=["res://.godot/imported/iron_sword.png-b85ec9fef7f527beaeaee231c9aec20c.ctex"]
 
 [params]
 

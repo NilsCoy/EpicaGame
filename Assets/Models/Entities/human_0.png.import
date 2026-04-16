@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://efjrju5bat6l"
-path="res://.godot/imported/human_2.png-22ba2e87848cb198415e4bd9a1afd4a1.ctex"
+uid="uid://cpdmc0mhc4j10"
+path="res://.godot/imported/human_0.png-25c4528274d98a193e38a713302157db.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "d90061ca1e4db02b9bb39b65ba36f3c0"
+"md5": "ac03e4c80121c8604d5e1980858962e8"
 }
 
 [deps]
 
-source_file="res://Assets/Models/human_2.png"
-dest_files=["res://.godot/imported/human_2.png-22ba2e87848cb198415e4bd9a1afd4a1.ctex"]
+source_file="res://Assets/Models/Entities/human_0.png"
+dest_files=["res://.godot/imported/human_0.png-25c4528274d98a193e38a713302157db.ctex"]
 
 [params]
 
