@@ -1,0 +1,108 @@
+[gd_scene format=3 uid="uid://cm4jgqdf45be"]
+
+[sub_resource type="GDScript" id="GDScript_eft0f"]
+script/source = "extends Node3D
+
+@export var parent: Node
+
+@export var texture: Texture2D
+@export var pixel_size: float = 0.1
+@export var depth: float = 0.1
+@export var pivot: Vector2 = Vector2.ZERO
+
+@export var collision_size: Vector3 = Vector3(0.5, 1.0, 0.2)
+@export var collision_offset: Vector3 = Vector3.ZERO
+
+@export var start_attack: float = 0.5
+@export var end_attack: float = 0.5
+
+@onready var area: Area3D = $Area3D
+@onready var collision_shape: CollisionShape3D = $Area3D/CollisionShape3D
+@onready var start_timer: Timer = $Area3D/StartTimer
+@onready var end_timer: Timer = $Area3D/EndTimer
+
+func _ready() -> void:
+	rebuild()
+
+func rebuild() -> void:
+	var image: Image = texture.get_image()
+
+	var shape: BoxShape3D = BoxShape3D.new()
+	shape.size = collision_size
+	collision_shape.shape = shape
+
+	collision_shape.position = collision_offset
+	
+	start_timer.wait_time = start_attack
+	end_timer.wait_time = end_attack
+
+	for x: int in image.get_width():
+		for y: int in image.get_height():
+			var color: Color = image.get_pixel(x, y)
+
+			# Пропускаем прозрачные пиксели
+			if color.a < 0.1:
+				continue
+
+			var cube: MeshInstance3D = MeshInstance3D.new()
+			cube.mesh = BoxMesh.new()
+			cube.scale = Vector3(pixel_size, pixel_size, depth)
+
+			var material: StandardMaterial3D = StandardMaterial3D.new()
+			material.albedo_color = color
+			cube.material_override = material
+
+			var local_x: float = (x - pivot.x) * pixel_size
+			var local_y: float = (y - pivot.y) * pixel_size
+
+			cube.position = Vector3(
+				local_x,
+				-local_y,
+				0
+			)
+
+			add_child(cube)
+
+func _on_area_3d_body_entered(body: Node3D) -> void:
+	var component: Node = body.components.get_component('HealthComponent')
+	if component != null:
+		if body != parent:
+			component.take_damage(parent, 10)
+
+func _on_start_timer_timeout() -> void:
+	$Area3D/CollisionShape3D.disabled = false
+	end_timer.start()
+
+func _on_end_timer_timeout() -> void:
+	$Area3D/CollisionShape3D.disabled = true
+
+func attack() -> void:
+	start_timer.start()
+"
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_eft0f"]
+
+[node name="TextureModel" type="Node3D" unique_id=1094807894]
+script = SubResource("GDScript_eft0f")
+collision_size = Vector3(0.5, 0.5, 0.5)
+
+[node name="Area3D" type="Area3D" parent="." unique_id=1817064744]
+transform = Transform3D(0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 0, 0, 1, 0, 0, 0)
+collision_layer = 0
+collision_mask = 12
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D" unique_id=235247536]
+shape = SubResource("BoxShape3D_eft0f")
+disabled = true
+debug_color = Color(0.8117647, 0, 0.13333334, 0.6431373)
+
+[node name="StartTimer" type="Timer" parent="Area3D" unique_id=1253562006]
+one_shot = true
+
+[node name="EndTimer" type="Timer" parent="Area3D" unique_id=973590926]
+one_shot = true
+
+[connection signal="body_entered" from="Area3D" to="." method="_on_area_3d_body_entered"]
+[connection signal="timeout" from="Area3D/StartTimer" to="." method="_on_start_timer_timeout"]
+[connection signal="timeout" from="Area3D/EndTimer" to="." method="_on_end_timer_timeout"]

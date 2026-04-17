@@ -7,9 +7,31 @@
 [sub_resource type="GDScript" id="GDScript_uhc0p"]
 script/source = "extends CharacterBody3D
 
+@onready var components: Node = $Components
+var is_life: bool = true
+
+func _ready() -> void:
+	$Sprite3D/SubViewport/Damage.text = ''
+
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
+	
+	move_and_slide()
+
+
+func _on_health_component_damaged(dmg: float, to_target: Node, from_target: Node) -> void:
+	$Sprite3D/SubViewport/Damage.text = str(dmg)
+	if is_life == true:
+		$Sprite3D/SubViewport/Health.text = str($Components/HealthComponent.health) + ' / ' + str($Components/HealthComponent.max_health)
+	$Sprite3D/TextTimer.start()
+
+func _on_health_component_died(reason: String) -> void:
+	is_life = false
+	$Sprite3D/SubViewport/Health.text = 'Died' + ' / ' + str($Components/HealthComponent.max_health)
+
+func _on_text_timer_timeout() -> void:
+	$Sprite3D/SubViewport/Damage.text = ''
 "
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_gaqyi"]
@@ -61,12 +83,16 @@ script/source = "@tool
 extends SubViewport
 
 func _process(delta: float) -> void:
-	size = $Label.size
+	if $Damage.size.x >= $Health.size.x:
+		size.x = $Damage.size.x
+	else:
+		size.x = $Health.size.x
+	size.y = $Health.size.y + $Damage.size.y
 	
 "
 
 [node name="TraningDummy" type="CharacterBody3D" unique_id=601348322]
-collision_mask = 8
+collision_layer = 8
 script = SubResource("GDScript_uhc0p")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=201044103]
@@ -97,16 +123,29 @@ texture = SubResource("ViewportTexture_uhc0p")
 
 [node name="SubViewport" type="SubViewport" parent="Sprite3D" unique_id=435145236]
 transparent_bg = true
-size = Vector2i(200, 50)
+size = Vector2i(111, 46)
 script = SubResource("GDScript_gaqyi")
 
-[node name="Label" type="Label" parent="Sprite3D/SubViewport" unique_id=700441942]
+[node name="Health" type="Label" parent="Sprite3D/SubViewport" unique_id=700441942]
 offset_right = 111.0
 offset_bottom = 23.0
-text = "тут типо урон"
+text = "100/100"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="Damage" type="Label" parent="Sprite3D/SubViewport" unique_id=1479063758]
+offset_top = 23.0
+offset_right = 111.0
+offset_bottom = 46.0
+text = "10000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TextTimer" type="Timer" parent="Sprite3D" unique_id=1868608783]
+one_shot = true
+
 [connection signal="damaged" from="Components/HealthComponent" to="." method="_on_health_component_damaged"]
+[connection signal="died" from="Components/HealthComponent" to="." method="_on_health_component_died"]
+[connection signal="timeout" from="Sprite3D/TextTimer" to="." method="_on_text_timer_timeout"]
 
 [editable path="Model/blockbench_export"]

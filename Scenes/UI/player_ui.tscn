@@ -2,6 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://bky2jo0bab0sv" path="res://Assets/Textures/crosshair.png" id="1_c4arg"]
 [ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/InventorySystem/inventory_data.gd" id="2_deklj"]
+[ext_resource type="Texture2D" uid="uid://doq5i1ep3wl6l" path="res://Assets/Textures/Health Overlay.png" id="2_nwg7q"]
 [ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/InventorySystem/slot_data.gd" id="3_nwg7q"]
 [ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="4_6nfne"]
 [ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="5_21gwg"]
@@ -98,9 +99,11 @@ script/source = "extends Control
 
 func _on_send_chat_text_submitted(new_text: String) -> void:
 	var from: Node = get_parent().get_parent()
+	$SendChat
 	
-	ChatManager.send(from, new_text)
-	$SendChat.text = ''
+	if new_text != '':
+		ChatManager.send(from, new_text)
+		$SendChat.text = ''
 "
 
 [node name="UI" type="CanvasLayer" unique_id=1293807617]
@@ -161,6 +164,17 @@ scale = Vector2(3, 3)
 texture = ExtResource("1_c4arg")
 centered = false
 metadata/_edit_lock_ = true
+
+[node name="HealthOverlay" type="TextureRect" parent="HUD" unique_id=2057527995]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_nwg7q")
+expand_mode = 1
 
 [node name="CreativeInventory" type="Control" parent="." unique_id=1941891616]
 layout_mode = 3
@@ -261,6 +275,7 @@ anchor_bottom = 0.776
 offset_bottom = 0.03199768
 grow_horizontal = 2
 grow_vertical = 2
+scroll_following = true
 
 [node name="SendChat" type="LineEdit" parent="Chat" unique_id=1702082528]
 layout_mode = 1
@@ -272,6 +287,8 @@ offset_top = -31.0
 grow_horizontal = 2
 grow_vertical = 0
 placeholder_text = "Enter text..."
+emoji_menu_enabled = false
 drag_and_drop_selection_enabled = false
+flat = true
 
 [connection signal="text_submitted" from="Chat/SendChat" to="Chat" method="_on_send_chat_text_submitted"]

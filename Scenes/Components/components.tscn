@@ -3,11 +3,18 @@
 [sub_resource type="GDScript" id="GDScript_mx023"]
 script/source = "extends Node
 
+@onready var parent: Node = get_parent()
+
 func has_component(component_name: String) -> bool:
+	if get_component(component_name) != null:
+		return true
+	return false
+
+func get_component(component_name: String) -> Node:
 	for child: Node in get_children():
 		if child.name == component_name:
-			return true
-	return false
+			return child
+	return null
 "
 
 [node name="Components" type="Node" unique_id=365846116]

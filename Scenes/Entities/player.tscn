@@ -25,15 +25,19 @@ var direction: Vector3
 @export_range(0, 2, 1) var gamemode: int = 1 # 0=spectator, 1=survival, 2=creative
 @export_range(0, 2, 1) var move_state: int = 1 # 0=crawl, 1=walk, 2=run
 var fly: bool = true
+var spawn_position: Vector3 = Vector3(0, 10, 30)
+var spawn_rotation: Vector3 = Vector3.ZERO
 
 # Utils
 var curr_block: String = \"\"
+var is_life: bool = true
 
 @onready var inventory: Control = $UI/CreativeInventory
 @onready var model: Node3D = $Model
 @onready var camera: Node3D = $Model/Camera
 @onready var animation: AnimationTree = $AnimationTree
 @onready var chat: RichTextLabel = $UI/Chat/ChatHistory
+@onready var components: Node = $Components
 
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -53,13 +57,14 @@ func _input(event: InputEvent) -> void:
 
 func _attack(e: InputEvent) -> void:
 	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		if Input.is_action_just_pressed(\"left_click\") and  animation.is_attack() == false:
+		if Input.is_action_just_pressed(\"left_click\") and animation.is_attack() == false:
 			if animation.move_state == 'jump':
 				animation.start_attack_animation('strong')
 			elif animation.move_state == 'run':
 				animation.start_attack_animation('lunge')
 			else:
 				animation.start_attack_animation('attack')
+			$Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip/TextureModel.attack()
 		if Input.is_action_pressed(\"right_click\") and animation.is_attack() == false:
 			if animation.is_block() == false:
 				animation.start_attack_animation('block_pressed')
@@ -112,10 +117,10 @@ func _break_block() -> void:
 func _move(delta: float) -> void:
 	if is_on_floor() or fly == true:
 		var anim_switch: bool = true
-		if $FallTimer.is_stopped():
+		if $AnimationTree/FallTimer.is_stopped():
 			if animation.move_state == 'jump' or animation.move_state == 'fall':
 				anim_switch = false
-		$FallTimer.stop()
+		$AnimationTree/FallTimer.stop()
 		if is_weapon == false:
 			if anim_switch == true:
 				if velocity:
@@ -229,10 +234,17 @@ func _ui(e: InputEvent) -> void:
 	if Input.is_action_just_pressed(\"tab\"):
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-			$UI/Inventory/ScrollContainer.show()
+			$UI/CreativeInventory/ScrollContainer.show()
 		else:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-			$UI/Inventory/ScrollContainer.hide()
+			$UI/CreativeInventory/ScrollContainer.hide()
+	
+	if Input.is_action_just_pressed(\"chat\"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			$UI/Chat/SendChat.grab_focus()
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		if fly:
@@ -282,7 +294,7 @@ func _survival_move(delta: float) -> void:
 			if Input.is_action_just_pressed(\"space\") and animation.is_block() == false and animation.is_attack() == false:
 				velocity.y = JUMP_VELOCITY
 				animation.update_move_state('jump')
-				$FallTimer.start()
+				$AnimationTree/FallTimer.start()
 			
 			if Input.is_action_pressed(\"shift\") and animation.is_block() == false:
 				if animation.is_attack() == false or animation.get_attack() == 'lunge':
@@ -295,7 +307,7 @@ func _survival_move(delta: float) -> void:
 	else:
 		velocity += get_gravity() * delta
 		if animation.move_state != 'jump':
-			$FallTimer.start()
+			$AnimationTree/FallTimer.start()
 			animation.update_move_state('jump')
 
 func _try_step() -> void:
@@ -328,7 +340,7 @@ func _try_step() -> void:
 			translate(step_up + (move_dir*0.2))
 
 func _creative_move(delta: float) -> void:
-	var fly_switch_timer: Timer = $FlySwitchTimer
+	var fly_switch_timer: Timer = $AnimationTree/FlySwitchTimer
 	if Input.is_action_just_pressed(\"space\"):
 		if fly_switch_timer.is_stopped(): fly_switch_timer.start()
 		else: 
@@ -345,6 +357,25 @@ func switch_gamemode(to_gamemode: int) -> void:
 	else:
 		model.switch_camera(3)
 		$CollisionShape3D.disabled = false
+
+
+func _on_health_component_damaged(dmg: float, to_target: Node, from_target: Node) -> void:
+	var health: float = $Components/HealthComponent.health
+	var max_health: float = $Components/HealthComponent.max_health
+	var overlay_visible: float = (max_health-health)/max_health/2
+	$UI/HUD/HealthOverlay.modulate = Color(1, 1, 1, overlay_visible)
+
+func _on_health_component_died(reason: String) -> void:
+	is_life = false
+	spawn()
+
+func spawn() -> void:
+	$UI/HUD/HealthOverlay.modulate = Color(1, 1, 1, 0)
+	var health_component: Node = $Components/HealthComponent
+	health_component.health = health_component.max_health
+	position = spawn_position
+	rotation = spawn_rotation
+	is_life = true
 "
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_x3wgy"]
@@ -489,7 +520,7 @@ input_0/break_loop_at_end = false
 input_0/reset = true
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_f1ek2"]
-graph_offset = Vector2(-798.5993, 1.3074036)
+graph_offset = Vector2(-936.07587, -73.882164)
 nodes/output/position = Vector2(1280, 320)
 nodes/move_blend_tree/node = ExtResource("6_3smsa")
 nodes/move_blend_tree/position = Vector2(500, 260)
@@ -741,6 +772,14 @@ script = SubResource("GDScript_8erm5")
 wait_time = 1.2999999999999998
 one_shot = true
 
+[node name="FallTimer" type="Timer" parent="AnimationTree" unique_id=2070106158]
+wait_time = 0.8
+one_shot = true
+
+[node name="FlySwitchTimer" type="Timer" parent="AnimationTree" unique_id=2109156986]
+wait_time = 0.2
+one_shot = true
+
 [node name="Model" type="Node3D" parent="." unique_id=2038029055]
 script = SubResource("GDScript_3smsa")
 
@@ -775,12 +814,12 @@ metadata/_edit_lock_ = true
 
 [node name="blockbench_export" parent="Model/Model/Import" unique_id=1966122651 instance=ExtResource("7_f1ek2")]
 
-[node name="Skeleton3D" parent="Model/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(1966122651, 1127894481) index="0" unique_id=1536167094]
+[node name="Skeleton3D" parent="Model/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(1966122651, 1861649802) index="0" unique_id=1209808334]
 bones/0/position = Vector3(0, -0.01875, 0)
-bones/1/rotation = Quaternion(-0.002336654, 0, 0, 0.99999726)
-bones/11/rotation = Quaternion(-0.16317153, -0.10328004, 0.0865174, 0.9773551)
+bones/1/rotation = Quaternion(-0.006870458, 0, 0, 0.99997646)
+bones/11/rotation = Quaternion(-0.16344371, -0.10284875, 0.08393599, 0.9775803)
 bones/12/rotation = Quaternion(0.087155744, 0, 0, 0.9961947)
-bones/14/rotation = Quaternion(0.05021056, 0.19312422, -0.04601074, 0.978808)
+bones/14/rotation = Quaternion(0.049696393, 0.19325714, -0.043405578, 0.9789269)
 bones/15/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
 bones/17/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
 bones/18/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
@@ -788,12 +827,13 @@ bones/19/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
 bones/20/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
 
 [node name="right_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="1" unique_id=455013527]
-transform = Transform3D(0.96369594, -0.17331389, -0.2031069, 0.20363048, 0.96909624, 0.13923699, 0.17269845, -0.17554088, 0.9692062, 0.4259148, 0.88664603, 0.111995734)
+transform = Transform3D(0.96475375, -0.1681886, -0.20239255, 0.20009562, 0.9683665, 0.14909033, 0.17091489, -0.18433335, 0.9678891, 0.42342922, 0.88673264, 0.11059472)
 bone_name = "right_equip"
 bone_idx = 13
 
-[node name="TextureModel" parent="Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip" unique_id=1094807894 instance=ExtResource("8_f1ek2")]
+[node name="TextureModel" parent="Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip" unique_id=1094807894 node_paths=PackedStringArray("parent") instance=ExtResource("8_f1ek2")]
 transform = Transform3D(-3.090862e-08, -3.0908623e-08, 1.0000001, -0.70710677, 0.7071068, 0, -0.70710677, -0.7071068, -4.3711392e-08, 0, 0, 0)
+parent = NodePath("../../../../../../../..")
 texture = ExtResource("9_tx1dd")
 pixel_size = 0.05
 depth = 0.05
@@ -802,22 +842,16 @@ collision_size = Vector3(0.3, 0.8, 0.3)
 collision_offset = Vector3(0, 0.6, 0)
 
 [node name="left_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="2" unique_id=636606705]
-transform = Transform3D(0.9211721, 0.14159621, 0.36248097, -0.072465226, 0.97757727, -0.19771601, -0.38234898, 0.1558632, 0.9107777, -0.41350743, 0.85724366, -0.05708173)
+transform = Transform3D(0.92153525, 0.13639472, 0.3635509, -0.071025506, 0.97969013, -0.18751723, -0.3817436, 0.14698237, 0.9125065, -0.41085044, 0.85585773, -0.058209985)
 bone_name = "left_equip"
 bone_idx = 16
-
-[node name="FlySwitchTimer" type="Timer" parent="." unique_id=2109156986]
-wait_time = 0.2
-one_shot = true
-
-[node name="FallTimer" type="Timer" parent="." unique_id=2070106158]
-wait_time = 0.8
-one_shot = true
 
 [node name="Components" parent="." unique_id=365846116 instance=ExtResource("10_gymyn")]
 
 [node name="HealthComponent" parent="Components" unique_id=1135595511 instance=ExtResource("11_pu2lt")]
 
 [connection signal="animation_finished" from="AnimationTree" to="AnimationTree" method="_on_animation_finished"]
+[connection signal="damaged" from="Components/HealthComponent" to="." method="_on_health_component_damaged"]
+[connection signal="died" from="Components/HealthComponent" to="." method="_on_health_component_died"]
 
 [editable path="Model/Model/Import/blockbench_export"]
