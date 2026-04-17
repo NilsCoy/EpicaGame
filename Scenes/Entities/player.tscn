@@ -39,7 +39,57 @@ var is_life: bool = true
 @onready var chat: RichTextLabel = $UI/Chat/ChatHistory
 @onready var components: Node = $Components
 
+func save_data() -> Dictionary:
+	return {
+		\"name\": name,
+		\"position\": [position.x, position.y, position.z],
+		\"rotation\": [model.model.rotation.x, model.model.rotation.y, model.model.rotation.z],
+		\"spawn_position\": [spawn_position.x, spawn_position.y, spawn_position.z],
+		\"spawn_rotation\": [spawn_rotation.x, spawn_rotation.y, spawn_rotation.z],
+		\"health\": $Components/HealthComponent.health,
+		\"max_health\": $Components/HealthComponent.max_health,
+		\"fly\": fly,
+		\"gamemode\": gamemode
+	}
+
+func load_data(data: Dictionary) -> void:
+	self.name = data.get(\"name\", 'unknown')
+	
+	self.position.x = data.get(\"position\", Vector3.ZERO)[0]
+	self.position.y = data.get(\"position\", Vector3.ZERO)[1]
+	self.position.z = data.get(\"position\", Vector3.ZERO)[2]
+	
+	model.model.rotation.x = data.get(\"rotation\", Vector3.ZERO)[0]
+	model.model.rotation.y = data.get(\"rotation\", Vector3.ZERO)[1]
+	model.model.rotation.z = data.get(\"rotation\", Vector3.ZERO)[2]
+	
+	self.spawn_position.x = data.get(\"spawn_position\", Vector3.ZERO)[0]
+	self.spawn_position.y = data.get(\"spawn_position\", Vector3.ZERO)[1]
+	self.spawn_position.z = data.get(\"spawn_position\", Vector3.ZERO)[2]
+	
+	self.spawn_rotation.x = data.get(\"spawn_rotation\", Vector3.ZERO)[0]
+	self.spawn_rotation.y = data.get(\"spawn_rotation\", Vector3.ZERO)[1]
+	self.spawn_rotation.z = data.get(\"spawn_rotation\", Vector3.ZERO)[2]
+	
+	$Components/HealthComponent.health = data.get(\"health\", 100.0)
+	$Components/HealthComponent.max_health = data.get(\"max_health\", 100.0)
+	
+	fly = data.get(\"fly\", false)
+	gamemode = data.get(\"gamemode\", 2)
+
+func save() -> void:
+	SaveSystem.save_file('World/players/'+name+'.json', self)
+func _load() -> void:
+	var chunk_scene: Resource = preload(\"res://Scenes/Entities/player.tscn\")
+	var files: Array = SaveSystem.get_files_in_directory('World/players')
+	if files != []:
+		for file: String in files:
+			print(file)
+			var result: Dictionary = SaveSystem.read_json(SaveSystem.get_file_path('World/players/'+file, true))
+			self.load_data(result)
+
 func _ready() -> void:
+	_load()
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	$UI/HUD/ItemName.text = str(curr_block)
 	switch_gamemode(gamemode)
@@ -816,10 +866,10 @@ metadata/_edit_lock_ = true
 
 [node name="Skeleton3D" parent="Model/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(1966122651, 1861649802) index="0" unique_id=1209808334]
 bones/0/position = Vector3(0, -0.01875, 0)
-bones/1/rotation = Quaternion(-0.006870458, 0, 0, 0.99997646)
-bones/11/rotation = Quaternion(-0.16344371, -0.10284875, 0.08393599, 0.9775803)
+bones/1/rotation = Quaternion(-0.001514291, 0, 0, 0.9999989)
+bones/11/rotation = Quaternion(-0.16365997, -0.10250425, 0.08187671, 0.9777549)
 bones/12/rotation = Quaternion(0.087155744, 0, 0, 0.9961947)
-bones/14/rotation = Quaternion(0.049696393, 0.19325714, -0.043405578, 0.9789269)
+bones/14/rotation = Quaternion(0.0492905, 0.19336107, -0.04134999, 0.97901595)
 bones/15/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
 bones/17/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
 bones/18/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
@@ -827,7 +877,7 @@ bones/19/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
 bones/20/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
 
 [node name="right_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="1" unique_id=455013527]
-transform = Transform3D(0.96475375, -0.1681886, -0.20239255, 0.20009562, 0.9683665, 0.14909033, 0.17091489, -0.18433335, 0.9678891, 0.42342922, 0.88673264, 0.11059472)
+transform = Transform3D(0.9655782, -0.16409749, -0.20181876, 0.19418739, 0.9709855, 0.13956496, 0.17306085, -0.17395154, 0.969428, 0.4214433, 0.8848126, 0.11225613)
 bone_name = "right_equip"
 bone_idx = 13
 
@@ -842,7 +892,7 @@ collision_size = Vector3(0.3, 0.8, 0.3)
 collision_offset = Vector3(0, 0.6, 0)
 
 [node name="left_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="2" unique_id=636606705]
-transform = Transform3D(0.92153525, 0.13639472, 0.3635509, -0.071025506, 0.97969013, -0.18751723, -0.3817436, 0.14698237, 0.9125065, -0.41085044, 0.85585773, -0.058209985)
+transform = Transform3D(0.92180336, 0.13228819, 0.3643877, -0.063061565, 0.97862357, -0.19575296, -0.38249418, 0.15746686, 0.9104408, -0.4087509, 0.85580313, -0.056869805)
 bone_name = "left_equip"
 bone_idx = 16
 

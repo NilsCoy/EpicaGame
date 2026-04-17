@@ -18,13 +18,31 @@ func send_command(from: Node, command: Array) -> void:
 		"damage": _command_damage(from, command)
 		"gamemode": _command_gamemode(from, command)
 		"spawnpoint": _command_spawnpoint(from, command)
+		"save": _command_save(from, command)
+		"restart": _command_restart(from, command)
 		_:
 			send_message(from, 'Неправильная команда!')
 			send_message(from, 'Список команд: /help')
 
 
 
+func _command_restart(from: Node, command: Array) -> void:
+	if command.size() == 2:
+		match command[1]:
+			'game':
+				get_tree().reload_current_scene()
+			'server':
+				pass
+			_:
+				send_message(from, 'Неправильная команда!')
+				send_message(from, 'Используй: /restart <game/server>')
+	else:
+		send_message(from, 'Неправильная команда!')
+		send_message(from, 'Используй: /restart <game/server>')
 
+func _command_save(from: Node, command: Array) -> void:
+	send_message(from, 'Мир сохранен!')
+	SaveSystem.call_save_on_all_nodes(get_tree().root)
 
 func _command_spawnpoint(from: Node, command: Array) -> void:
 	if command.size() == 1:

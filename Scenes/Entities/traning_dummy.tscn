@@ -10,8 +10,33 @@ script/source = "extends CharacterBody3D
 @onready var components: Node = $Components
 var is_life: bool = true
 
+func save_data() -> Dictionary:
+	return {
+		\"type\": scene_file_path.get_file().get_basename(),
+		\"name\": name,
+		\"position\": [position.x, position.y, position.z],
+		\"rotation\": [rotation.x, rotation.y, rotation.z],
+		\"health\": $Components/HealthComponent.health,
+		\"max_health\": $Components/HealthComponent.max_health,
+	}
+
+func load_data(data: Dictionary) -> void:
+	self.name = data.get(\"name\", 'unknown')
+	
+	self.position.x = data.get(\"position\", Vector3.ZERO)[0]
+	self.position.y = data.get(\"position\", Vector3.ZERO)[1]
+	self.position.z = data.get(\"position\", Vector3.ZERO)[2]
+	
+	self.rotation.x = data.get(\"rotation\", Vector3.ZERO)[0]
+	self.rotation.y = data.get(\"rotation\", Vector3.ZERO)[1]
+	self.rotation.z = data.get(\"rotation\", Vector3.ZERO)[2]
+	
+	$Components/HealthComponent.health = data.get(\"health\", 100.0)
+	$Components/HealthComponent.max_health = data.get(\"max_health\", 100.0)
+
 func _ready() -> void:
 	$Sprite3D/SubViewport/Damage.text = ''
+	_health_update()
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
@@ -22,13 +47,18 @@ func _physics_process(delta: float) -> void:
 
 func _on_health_component_damaged(dmg: float, to_target: Node, from_target: Node) -> void:
 	$Sprite3D/SubViewport/Damage.text = str(dmg)
-	if is_life == true:
-		$Sprite3D/SubViewport/Health.text = str($Components/HealthComponent.health) + ' / ' + str($Components/HealthComponent.max_health)
+	_health_update()
 	$Sprite3D/TextTimer.start()
 
 func _on_health_component_died(reason: String) -> void:
 	is_life = false
-	$Sprite3D/SubViewport/Health.text = 'Died' + ' / ' + str($Components/HealthComponent.max_health)
+	_health_update()
+
+func _health_update() -> void:
+	if is_life:
+		$Sprite3D/SubViewport/Health.text = str($Components/HealthComponent.health) + ' / ' + str($Components/HealthComponent.max_health)
+	else:
+		$Sprite3D/SubViewport/Health.text = 'Died' + ' / ' + str($Components/HealthComponent.max_health)
 
 func _on_text_timer_timeout() -> void:
 	$Sprite3D/SubViewport/Damage.text = ''

@@ -3,6 +3,15 @@
 [ext_resource type="PackedScene" uid="uid://5jwrhpdhgtm8" path="res://Scenes/Entities/player.tscn" id="1_bo1nx"]
 [ext_resource type="PackedScene" uid="uid://b2doj54r58x6h" path="res://Scenes/MapSystem/map.tscn" id="2_8gbba"]
 
+[sub_resource type="GDScript" id="GDScript_bo1nx"]
+script/source = "extends Node3D
+
+func _on_save_timer_timeout() -> void:
+	$Map.save()
+	$Player.save()
+	print(\"Save data!\")
+"
+
 [sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_8gbba"]
 energy_multiplier = 3.0
 
@@ -22,6 +31,7 @@ fog_density = 0.7
 fog_sky_affect = 0.5
 
 [node name="Main" type="Node3D" unique_id=193794405]
+script = SubResource("GDScript_bo1nx")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=89933525]
 environment = SubResource("Environment_a02cp")
@@ -38,3 +48,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.655326, 29.914026)
 gamemode = 2
 
 [node name="Map" parent="." unique_id=1381430335 instance=ExtResource("2_8gbba")]
+
+[node name="SaveTimer" type="Timer" parent="." unique_id=1286163748]
+wait_time = 900.0
+one_shot = true
+autostart = true
+
+[connection signal="timeout" from="SaveTimer" to="." method="_on_save_timer_timeout"]

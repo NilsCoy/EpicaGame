@@ -39,12 +39,21 @@ func save_file(path: String, node: Node, root_dir: bool = true) -> void:
 		file.close()
 		#print("Safe node!")
 
-func load_file(path: String, scene: PackedScene, root_dir: bool = true) -> Variant:
+func load_file(path: String, scene: PackedScene, root_dir: bool = true) -> Node:
 	var result: Dictionary = read_json(get_file_path(path, root_dir))
 	if result:
-		var node: Variant = scene.instantiate()
+		var node: Node = scene.instantiate()
 		node.load_data(result)
 		#print("Load node!")
 		return node
 
 	return null
+
+func call_save_on_all_nodes(node: Node) -> void:
+	_recursive_save_call(node)
+
+func _recursive_save_call(node: Node) -> void:
+	if node.has_method("save"):
+		node.save()  
+	for child: Node in node.get_children():
+		_recursive_save_call(child)
