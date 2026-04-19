@@ -9,7 +9,7 @@ script/source = "extends Node3D
 func _on_save_timer_timeout() -> void:
 	$Map.save()
 	$Player.save()
-	print(\"Save data!\")
+	print(\"Auto save!\")
 "
 
 [sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_8gbba"]

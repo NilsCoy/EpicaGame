@@ -18,7 +18,7 @@ const RUN_SPEED: float = 5.0
 const AIR_SPEED: float = 8.0
 var FLY_SPEED: float = 5.0
 var current_speed: float = WALK_SPEED
-var is_weapon: bool = true
+var has_weapon: bool = true
 var direction: Vector3
 
 # Player settings
@@ -84,7 +84,6 @@ func _load() -> void:
 	var files: Array = SaveSystem.get_files_in_directory('World/players')
 	if files != []:
 		for file: String in files:
-			print(file)
 			var result: Dictionary = SaveSystem.read_json(SaveSystem.get_file_path('World/players/'+file, true))
 			self.load_data(result)
 
@@ -93,6 +92,9 @@ func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	$UI/HUD/ItemName.text = str(curr_block)
 	switch_gamemode(gamemode)
+	animation.update_has_weapon(has_weapon, 'one_sword')
+	if has_weapon:
+		$Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip/TextureModel.show()
 
 func _physics_process(delta: float) -> void:
 	$UI/HUD/FPS.text = str(int(Performance.get_monitor(Performance.TIME_FPS)))
@@ -106,21 +108,22 @@ func _input(event: InputEvent) -> void:
 	_attack(event)
 
 func _attack(e: InputEvent) -> void:
-	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		if Input.is_action_just_pressed(\"left_click\") and animation.is_attack() == false:
-			if animation.move_state == 'jump':
-				animation.start_attack_animation('strong')
-			elif animation.move_state == 'run':
-				animation.start_attack_animation('lunge')
+	if has_weapon:
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			if Input.is_action_just_pressed(\"left_click\") and animation.is_attack() == false:
+				if animation.move_state == 'jump':
+					animation.start_attack_animation('strong')
+				elif animation.move_state == 'run':
+					animation.start_attack_animation('lunge')
+				else:
+					animation.start_attack_animation('attack')
+				$Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip/TextureModel.attack()
+			if Input.is_action_pressed(\"right_click\") and animation.is_attack() == false:
+				if animation.is_block() == false:
+					animation.start_attack_animation('block_pressed')
 			else:
-				animation.start_attack_animation('attack')
-			$Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip/TextureModel.attack()
-		if Input.is_action_pressed(\"right_click\") and animation.is_attack() == false:
-			if animation.is_block() == false:
-				animation.start_attack_animation('block_pressed')
-		else:
-			if animation.is_block() == true:
-				animation.start_attack_animation('block_relesed')
+				if animation.is_block() == true:
+					animation.start_attack_animation('block_relesed')
 
 func _get_rotation_from_forward(forward: Vector3) -> Vector3:
 	if abs(forward.x) > abs(forward.z):
@@ -171,7 +174,7 @@ func _move(delta: float) -> void:
 			if animation.move_state == 'jump' or animation.move_state == 'fall':
 				anim_switch = false
 		$AnimationTree/FallTimer.stop()
-		if is_weapon == false:
+		if has_weapon == false:
 			if anim_switch == true:
 				if velocity:
 					model.sum_rotation(delta)
@@ -203,21 +206,21 @@ func _move(delta: float) -> void:
 		Vector2(0, -1): #FORWARD
 			animation.update_move_direction(\"forward\")
 			animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta))
-			if not is_weapon:
+			if not has_weapon:
 				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
 		Vector2(0, 1): #BACK
 			animation.update_move_direction(\"back\")
 			animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
-			if not is_weapon:
+			if not has_weapon:
 				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
 		Vector2(-1, 0): #LEFT
-			if is_weapon:
+			if has_weapon:
 				animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(-1, 0), rot_speed*delta))
 			else:
 				animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
 				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(90), rot_speed * delta)
 		Vector2(1, 0): #RIGHT
-			if is_weapon:
+			if has_weapon:
 				animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(1, 0), rot_speed*delta))
 			else:
 				animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
@@ -228,28 +231,28 @@ func _move(delta: float) -> void:
 		_:
 			if (input_dir.x < 0 and input_dir.y < 0):
 				animation.update_move_direction(\"forward\")
-				if is_weapon:
+				if has_weapon:
 					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(-1, 1), rot_speed*delta))
 				else:
 					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta))
 					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(45), rot_speed * delta)
 			elif (input_dir.x > 0 and input_dir.y > 0):
 				animation.update_move_direction(\"back\")
-				if is_weapon:
+				if has_weapon:
 					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(1, -1), rot_speed*delta))
 				else:
 					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
 					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(45), rot_speed * delta)
 			elif (input_dir.x > 0 and input_dir.y < 0):
 				animation.update_move_direction(\"forward\")
-				if is_weapon:
+				if has_weapon:
 					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(1, 1), rot_speed*delta))
 				else:
 					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta))
 					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(45), rot_speed * delta)
 			elif (input_dir.x < 0 and input_dir.y > 0):
 				animation.update_move_direction(\"back\")
-				if is_weapon:
+				if has_weapon:
 					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(-1, -1), rot_speed*delta))
 				else:
 					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
@@ -570,7 +573,7 @@ input_0/break_loop_at_end = false
 input_0/reset = true
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_f1ek2"]
-graph_offset = Vector2(-936.07587, -73.882164)
+graph_offset = Vector2(-544.07587, 512.7845)
 nodes/output/position = Vector2(1280, 320)
 nodes/move_blend_tree/node = ExtResource("6_3smsa")
 nodes/move_blend_tree/position = Vector2(500, 260)
@@ -584,8 +587,8 @@ nodes/weapon_move_state/node = SubResource("AnimationNodeTransition_ukyrk")
 nodes/weapon_move_state/position = Vector2(-760, -80)
 nodes/sword_run/node = SubResource("AnimationNodeAnimation_tx1dd")
 nodes/sword_run/position = Vector2(-980, 80)
-nodes/is_weapon/node = SubResource("AnimationNodeTransition_8erm5")
-nodes/is_weapon/position = Vector2(760, 320)
+nodes/has_weapon/node = SubResource("AnimationNodeTransition_8erm5")
+nodes/has_weapon/position = Vector2(746.6667, 320)
 nodes/AnimationNodeBlendTree/node = ExtResource("6_3smsa")
 nodes/AnimationNodeBlendTree/position = Vector2(80, 820)
 nodes/sword_jump/node = SubResource("AnimationNodeAnimation_f1ek2")
@@ -612,7 +615,7 @@ nodes/sword_is_block/node = SubResource("AnimationNodeTransition_tx1dd")
 nodes/sword_is_block/position = Vector2(-460, 80)
 nodes/sword_attack/node = SubResource("AnimationNodeBlendTree_tx1dd")
 nodes/sword_attack/position = Vector2(-180, 720)
-node_connections = [&"output", 0, &"is_weapon", &"weapon_blend", 0, &"weapon_type", &"weapon_blend", 1, &"AnimationNodeBlendTree", &"weapon_move_state", 0, &"sword_idle", &"weapon_move_state", 1, &"sword_walk", &"weapon_move_state", 2, &"sword_run", &"weapon_move_state", 3, &"sword_jump", &"weapon_move_state", 4, &"sword_fall", &"is_weapon", 0, &"move_blend_tree", &"is_weapon", 1, &"weapon_blend", &"on_attack", 0, &"sword_is_block", &"on_attack", 1, &"attack_type", &"attack_type", 0, &"sword_attack_1", &"attack_type", 1, &"sword_attack_2", &"attack_type", 2, &"sword_attack_strong", &"attack_type", 3, &"sword_attack_lunge", &"weapon_type", 0, &"on_attack", &"sword_is_block", 0, &"weapon_move_state", &"sword_is_block", 1, &"sword_block"]
+node_connections = [&"output", 0, &"has_weapon", &"weapon_blend", 0, &"weapon_type", &"weapon_blend", 1, &"AnimationNodeBlendTree", &"weapon_move_state", 0, &"sword_idle", &"weapon_move_state", 1, &"sword_walk", &"weapon_move_state", 2, &"sword_run", &"weapon_move_state", 3, &"sword_jump", &"weapon_move_state", 4, &"sword_fall", &"has_weapon", 0, &"move_blend_tree", &"has_weapon", 1, &"weapon_blend", &"on_attack", 0, &"sword_is_block", &"on_attack", 1, &"attack_type", &"attack_type", 0, &"sword_attack_1", &"attack_type", 1, &"sword_attack_2", &"attack_type", 2, &"sword_attack_strong", &"attack_type", 3, &"sword_attack_lunge", &"weapon_type", 0, &"on_attack", &"sword_is_block", 0, &"weapon_move_state", &"sword_is_block", 1, &"sword_block"]
 
 [sub_resource type="GDScript" id="GDScript_8erm5"]
 script/source = "extends AnimationTree
@@ -620,7 +623,7 @@ script/source = "extends AnimationTree
 @export_enum('idle', 'walk', 'run', 'jump', 'fall') var move_state: String = 'idle'
 @export_enum('forward', 'back') var move_direction: String = 'forward'
 @export var move_rotate_direction: Vector2 = Vector2.ZERO
-@export var is_weapon: bool = false
+@export var has_weapon: bool = false
 
 func _ready() -> void:
 	update_move_state(move_state)
@@ -654,6 +657,12 @@ func update_move_rotate_direction(rotate_direction: Vector2) -> void:
 	self[\"parameters/AnimationNodeBlendTree/walk_rotate_direction/blend_position\"] = move_rotate_direction
 	self[\"parameters/AnimationNodeBlendTree/run_rotate_direction/blend_position\"] = move_rotate_direction
 	self[\"parameters/AnimationNodeBlendTree/jump_rotate_direction/blend_position\"] = move_rotate_direction
+
+func update_has_weapon(has: bool, type: String) -> void:
+	has_weapon = has
+	print(str(has))
+	self[\"parameters/has_weapon/transition_request\"] = str(has)
+	self[\"parameters/weapon_type/transition_request\"] = type
 
 func start_attack_animation(state: String) -> void:
 	match state:
@@ -786,9 +795,9 @@ parameters/weapon_blend/add_amount = 1.0
 parameters/weapon_move_state/current_state = "idle"
 parameters/weapon_move_state/transition_request = ""
 parameters/weapon_move_state/current_index = 0
-parameters/is_weapon/current_state = "true"
-parameters/is_weapon/transition_request = ""
-parameters/is_weapon/current_index = 1
+parameters/has_weapon/current_state = "false"
+parameters/has_weapon/transition_request = ""
+parameters/has_weapon/current_index = 0
 parameters/AnimationNodeBlendTree/move_state/current_state = "idle"
 parameters/AnimationNodeBlendTree/move_state/transition_request = ""
 parameters/AnimationNodeBlendTree/move_state/current_index = 0
@@ -865,24 +874,25 @@ metadata/_edit_lock_ = true
 [node name="blockbench_export" parent="Model/Model/Import" unique_id=1966122651 instance=ExtResource("7_f1ek2")]
 
 [node name="Skeleton3D" parent="Model/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(1966122651, 1861649802) index="0" unique_id=1209808334]
-bones/0/position = Vector3(0, -0.01875, 0)
-bones/1/rotation = Quaternion(-0.001514291, 0, 0, 0.9999989)
-bones/11/rotation = Quaternion(-0.16365997, -0.10250425, 0.08187671, 0.9777549)
-bones/12/rotation = Quaternion(0.087155744, 0, 0, 0.9961947)
-bones/14/rotation = Quaternion(0.0492905, 0.19336107, -0.04134999, 0.97901595)
-bones/15/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
-bones/17/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
-bones/18/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
-bones/19/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
-bones/20/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
+bones/0/position = Vector3(0, -0.03125, 0)
+bones/1/rotation = Quaternion(0, 0, -0.009039183, 0.99995923)
+bones/11/rotation = Quaternion(-0.055952355, 0.0017189949, 9.263663e-05, 0.99843204)
+bones/12/rotation = Quaternion(0.087155655, -0.00012358978, -0.0014126376, 0.9961937)
+bones/14/rotation = Quaternion(0.16417174, -0.041329358, 0.0068884, 0.9855416)
+bones/15/rotation = Quaternion(0.08710686, 0.0029181738, 0.033354882, 0.99563617)
+bones/17/rotation = Quaternion(0.2933449, 0, 0, 0.9560067)
+bones/18/rotation = Quaternion(-0.2829062, 0, 0, 0.95914763)
+bones/19/rotation = Quaternion(-0.037795115, 0, 0, 0.9992856)
+bones/20/rotation = Quaternion(-0.0832207, 0, 0, 0.9965311)
 
 [node name="right_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="1" unique_id=455013527]
-transform = Transform3D(0.9655782, -0.16409749, -0.20181876, 0.19418739, 0.9709855, 0.13956496, 0.17306085, -0.17395154, 0.969428, 0.4214433, 0.8848126, 0.11225613)
+transform = Transform3D(0.99977666, 0.021057302, 0.0018124508, -0.020902693, 0.99782157, -0.06257106, -0.003126081, 0.06251921, 0.9980388, 0.34507465, 0.832397, -0.021730766)
 bone_name = "right_equip"
 bone_idx = 13
 
 [node name="TextureModel" parent="Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip" unique_id=1094807894 node_paths=PackedStringArray("parent") instance=ExtResource("8_f1ek2")]
 transform = Transform3D(-3.090862e-08, -3.0908623e-08, 1.0000001, -0.70710677, 0.7071068, 0, -0.70710677, -0.7071068, -4.3711392e-08, 0, 0, 0)
+visible = false
 parent = NodePath("../../../../../../../..")
 texture = ExtResource("9_tx1dd")
 pixel_size = 0.05
@@ -892,7 +902,7 @@ collision_size = Vector3(0.3, 0.8, 0.3)
 collision_offset = Vector3(0, 0.6, 0)
 
 [node name="left_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="2" unique_id=636606705]
-transform = Transform3D(0.92180336, 0.13228819, 0.3643877, -0.063061565, 0.97862357, -0.19575296, -0.38249418, 0.15746686, 0.9104408, -0.4087509, 0.85580313, -0.056869805)
+transform = Transform3D(0.9934201, -0.09030396, -0.07043803, 0.045369104, 0.87502396, -0.48194888, 0.10515685, 0.4755821, 0.8733634, -0.30405533, 0.90808165, -0.23898233)
 bone_name = "left_equip"
 bone_idx = 16
 

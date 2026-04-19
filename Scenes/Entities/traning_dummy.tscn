@@ -7,6 +7,7 @@
 [sub_resource type="GDScript" id="GDScript_uhc0p"]
 script/source = "extends CharacterBody3D
 
+@onready var animation: AnimationTree = $AnimationTree
 @onready var components: Node = $Components
 var is_life: bool = true
 
@@ -49,6 +50,14 @@ func _on_health_component_damaged(dmg: float, to_target: Node, from_target: Node
 	$Sprite3D/SubViewport/Damage.text = str(dmg)
 	_health_update()
 	$Sprite3D/TextTimer.start()
+	
+	animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+	if from_target.scene_file_path.get_file().get_basename() == 'player':
+		var direction3: Vector3 = (from_target.global_transform.origin - global_transform.origin)
+		var direction: Vector2 = Vector2(direction3.x, direction3.z)
+		
+		#print(direction)
+		animation[\"parameters/damage_direction/blend_position\"] = direction
 
 func _on_health_component_died(reason: String) -> void:
 	is_life = false
@@ -96,14 +105,14 @@ blend_point_3/pos = Vector2(1, 0)
 animation = &"idle"
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_b6lmq"]
-graph_offset = Vector2(-574.7627, 54.60115)
-nodes/DamageDirection/node = SubResource("AnimationNodeBlendSpace2D_gaqyi")
-nodes/DamageDirection/position = Vector2(-260, 300)
-nodes/OneShot/node = SubResource("AnimationNodeOneShot_cs86c")
-nodes/OneShot/position = Vector2(20, 140)
+graph_offset = Vector2(-673.3333, 170.66667)
+nodes/damage_direction/node = SubResource("AnimationNodeBlendSpace2D_gaqyi")
+nodes/damage_direction/position = Vector2(-260, 300)
+nodes/damaged/node = SubResource("AnimationNodeOneShot_cs86c")
+nodes/damaged/position = Vector2(20, 140)
 nodes/idle/node = SubResource("AnimationNodeAnimation_da680")
 nodes/idle/position = Vector2(-220, 80)
-node_connections = [&"output", 0, &"OneShot", &"OneShot", 0, &"idle", &"OneShot", 1, &"DamageDirection"]
+node_connections = [&"output", 0, &"damaged", &"damaged", 0, &"idle", &"damaged", 1, &"damage_direction"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_uhc0p"]
 viewport_path = NodePath("Sprite3D/SubViewport")
@@ -137,10 +146,10 @@ shape = SubResource("CylinderShape3D_gaqyi")
 root_node = NodePath("../Model/blockbench_export")
 tree_root = SubResource("AnimationNodeBlendTree_b6lmq")
 anim_player = NodePath("../Model/blockbench_export/AnimationPlayer")
-parameters/DamageDirection/blend_position = Vector2(0, 0)
-parameters/OneShot/active = false
-parameters/OneShot/internal_active = false
-parameters/OneShot/request = 0
+parameters/damage_direction/blend_position = Vector2(0, 0)
+parameters/damaged/active = false
+parameters/damaged/internal_active = false
+parameters/damaged/request = 0
 
 [node name="Model" type="Node3D" parent="." unique_id=1992072933]
 
