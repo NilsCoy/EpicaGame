@@ -20,11 +20,14 @@ func send_command(from: Node, command: Array) -> void:
 		"spawnpoint": _command_spawnpoint(from, command)
 		"save": _command_save(from, command)
 		"restart": _command_restart(from, command)
+		"test": _command_test(from, command)
 		_:
 			send_message(from, 'Неправильная команда!')
 			send_message(from, 'Список команд: /help')
 
 
+func _command_test(from: Node, command: Array) -> void:
+	MultiplayerManager.send_message("Hello server!")
 
 func _command_restart(from: Node, command: Array) -> void:
 	if command.size() == 2:
@@ -42,7 +45,7 @@ func _command_restart(from: Node, command: Array) -> void:
 
 func _command_save(from: Node, command: Array) -> void:
 	send_message(from, 'Мир сохранен!')
-	SaveSystem.call_save_on_all_nodes(get_tree().root)
+	SaveManager.call_save_on_all_nodes(get_tree().root)
 
 func _command_spawnpoint(from: Node, command: Array) -> void:
 	if command.size() == 1:

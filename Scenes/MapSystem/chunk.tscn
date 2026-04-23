@@ -134,7 +134,8 @@ func rebuild() -> void:
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	material.roughness = 1.0
 
-	mesh.surface_set_material(0, material)
+	if mesh.get_surface_count() != 0:
+		mesh.surface_set_material(0, material)
 
 	mesh_instance.mesh = mesh
 	collision_shape.shape = mesh.create_trimesh_shape()
@@ -144,7 +145,7 @@ func add_model_block(x: int, y: int, z: int, block_id: String, block_rotation: V
 	var scene: Resource = load(atlas_generator.blocks[block_id][\"asset\"])
 	var instance: Variant = scene.instantiate()
 
-	G.create_collision(instance,[1],[1])
+	Global.create_collision(instance,[1],[1])
 	var static_instance: StaticBody3D = StaticBody3D.new()
 	#instance = G.replace_to_static(instance)
 	static_instance.add_child(instance)
@@ -393,7 +394,7 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 			#nx = clamp(abs(nx), 0, CHUNK_SIZE - 1)
 			#ny = clamp(abs(ny), 0, CHUNK_SIZE - 1)
 			#nz = clamp(abs(nz), 0, CHUNK_SIZE - 1)
-			print(nx, ny, nz)
+			#print(nx, ny, nz)
 			chunk.generate_blocks()
 			if atlas_generator.blocks[block_id][\"type\"] == \"model\":
 				chunk.blocks[nx][ny][nz] = {

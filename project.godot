@@ -21,9 +21,11 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-G="*uid://37ngxtvnw0do"
-SaveSystem="*uid://nsupueetcdkv"
+Global="*uid://37ngxtvnw0do"
+SaveManager="*uid://nsupueetcdkv"
 ChatManager="*uid://48u6r55dqft0"
+MultiplayerManager="*uid://bvr1gyml37fhx"
+ConsoleManager="*uid://betlpu28upd4t"
 
 [debug]
 

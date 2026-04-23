@@ -23,7 +23,8 @@ script/source = "extends Node3D
 var attacked: Array
 
 func _ready() -> void:
-	rebuild()
+	if not(OS.has_feature(\"dedicated_server\")):
+		rebuild()
 
 func rebuild() -> void:
 	var image: Image = texture.get_image()

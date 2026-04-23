@@ -18,7 +18,7 @@ const RUN_SPEED: float = 5.0
 const AIR_SPEED: float = 8.0
 var FLY_SPEED: float = 5.0
 var current_speed: float = WALK_SPEED
-var has_weapon: bool = true
+var has_weapon: bool = false
 var direction: Vector3
 
 # Player settings
@@ -78,13 +78,13 @@ func load_data(data: Dictionary) -> void:
 	gamemode = data.get(\"gamemode\", 2)
 
 func save() -> void:
-	SaveSystem.save_file('World/players/'+name+'.json', self)
+	SaveManager.save_file('World/players/'+name+'.json', self)
 func _load() -> void:
 	var chunk_scene: Resource = preload(\"res://Scenes/Entities/player.tscn\")
-	var files: Array = SaveSystem.get_files_in_directory('World/players')
+	var files: Array = SaveManager.get_files_in_directory('World/players')
 	if files != []:
 		for file: String in files:
-			var result: Dictionary = SaveSystem.read_json(SaveSystem.get_file_path('World/players/'+file, true))
+			var result: Dictionary = SaveManager.read_json(SaveManager.get_file_path('World/players/'+file, true))
 			self.load_data(result)
 
 func _ready() -> void:
@@ -92,7 +92,7 @@ func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	$UI/HUD/ItemName.text = str(curr_block)
 	switch_gamemode(gamemode)
-	animation.update_has_weapon(has_weapon, 'one_sword')
+	animation.update_has_weapon(true, 'one_sword')
 	if has_weapon:
 		$Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip/TextureModel.show()
 
@@ -660,7 +660,7 @@ func update_move_rotate_direction(rotate_direction: Vector2) -> void:
 
 func update_has_weapon(has: bool, type: String) -> void:
 	has_weapon = has
-	print(str(has))
+	#print(str(has))
 	self[\"parameters/has_weapon/transition_request\"] = str(has)
 	self[\"parameters/weapon_type/transition_request\"] = type
 
@@ -875,24 +875,23 @@ metadata/_edit_lock_ = true
 
 [node name="Skeleton3D" parent="Model/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(1966122651, 1861649802) index="0" unique_id=1209808334]
 bones/0/position = Vector3(0, -0.03125, 0)
-bones/1/rotation = Quaternion(0, 0, -0.009039183, 0.99995923)
-bones/11/rotation = Quaternion(-0.055952355, 0.0017189949, 9.263663e-05, 0.99843204)
-bones/12/rotation = Quaternion(0.087155655, -0.00012358978, -0.0014126376, 0.9961937)
-bones/14/rotation = Quaternion(0.16417174, -0.041329358, 0.0068884, 0.9855416)
-bones/15/rotation = Quaternion(0.08710686, 0.0029181738, 0.033354882, 0.99563617)
-bones/17/rotation = Quaternion(0.2933449, 0, 0, 0.9560067)
-bones/18/rotation = Quaternion(-0.2829062, 0, 0, 0.95914763)
-bones/19/rotation = Quaternion(-0.037795115, 0, 0, 0.9992856)
-bones/20/rotation = Quaternion(-0.0832207, 0, 0, 0.9965311)
+bones/1/rotation = Quaternion(0, -7.2759585e-12, -0.009186402, 0.99995786)
+bones/11/rotation = Quaternion(-0.047143158, 0.0033217354, 0.00015294937, 0.99888265)
+bones/12/rotation = Quaternion(0.08715544, -0.00023185261, -0.0026500877, 0.9961912)
+bones/14/rotation = Quaternion(0.1554825, -0.0398056, 0.006274355, 0.98701644)
+bones/15/rotation = Quaternion(0.08711043, 0.0028099692, 0.032118097, 0.9956768)
+bones/17/rotation = Quaternion(0.2701492, 0, 0, 0.9628185)
+bones/18/rotation = Quaternion(-0.2941878, 0, 0, 0.9557476)
+bones/19/rotation = Quaternion(-0.024783839, 0, 0, 0.99969286)
+bones/20/rotation = Quaternion(-0.08136734, 0, 0, 0.9966842)
 
 [node name="right_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="1" unique_id=455013527]
-transform = Transform3D(0.99977666, 0.021057302, 0.0018124508, -0.020902693, 0.99782157, -0.06257106, -0.003126081, 0.06251921, 0.9980388, 0.34507465, 0.832397, -0.021730766)
+transform = Transform3D(0.99970084, 0.024091678, 0.0042316336, -0.023674918, 0.9964965, -0.08021402, -0.0061492985, 0.080089815, 0.9967687, 0.3443715, 0.83299965, -0.030954242)
 bone_name = "right_equip"
 bone_idx = 13
 
 [node name="TextureModel" parent="Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip" unique_id=1094807894 node_paths=PackedStringArray("parent") instance=ExtResource("8_f1ek2")]
 transform = Transform3D(-3.090862e-08, -3.0908623e-08, 1.0000001, -0.70710677, 0.7071068, 0, -0.70710677, -0.7071068, -4.3711392e-08, 0, 0, 0)
-visible = false
 parent = NodePath("../../../../../../../..")
 texture = ExtResource("9_tx1dd")
 pixel_size = 0.05
@@ -902,7 +901,7 @@ collision_size = Vector3(0.3, 0.8, 0.3)
 collision_offset = Vector3(0, 0.6, 0)
 
 [node name="left_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="2" unique_id=636606705]
-transform = Transform3D(0.9934201, -0.09030396, -0.07043803, 0.045369104, 0.87502396, -0.48194888, 0.10515685, 0.4755821, 0.8733634, -0.30405533, 0.90808165, -0.23898233)
+transform = Transform3D(0.9940433, -0.0846887, -0.06859769, 0.043079227, 0.8834873, -0.46647006, 0.100109935, 0.4607363, 0.881873, -0.3060695, 0.90390104, -0.23113541)
 bone_name = "left_equip"
 bone_idx = 16
 

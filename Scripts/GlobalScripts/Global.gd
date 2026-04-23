@@ -1,5 +1,8 @@
 extends Node
 
+func has_flag(flag: String) -> bool:
+	return flag in OS.get_cmdline_args()
+
 func create_collision(target: Variant, layers: Array[int], masks: Array[int]) -> void:
 	var tree: Array = []
 	tree = target.get_children()

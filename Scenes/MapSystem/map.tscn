@@ -8,26 +8,27 @@ script/source = "extends Node
 @onready var players: Node = $Players
 
 func _ready() -> void:
-	load_entities()
-	load_chunks()
+	if not(OS.has_feature(\"dedicated_server\")):
+		load_entities()
+		load_chunks()
 
 func load_entities() -> void:
-	var files: Array = SaveSystem.get_files_in_directory('World/entities')
+	var files: Array = SaveManager.get_files_in_directory('World/entities')
 	if files != []:
 		for file: String in files:
 			var path: String = 'World/entities/'+file
-			var data: Dictionary = SaveSystem.read_json(SaveSystem.get_file_path(path, true))
+			var data: Dictionary = SaveManager.read_json(SaveManager.get_file_path(path, true))
 			var entity_scene: Resource = load(\"res://Scenes/Entities/{type}.tscn\".format({\"type\": data.type}))
-			var entity: Node = SaveSystem.load_file(path, entity_scene)
+			var entity: Node = SaveManager.load_file(path, entity_scene)
 			entities.add_child(entity)
 
 func load_chunks() -> void:
 	var chunk_scene: Resource = preload(\"res://Scenes/MapSystem/chunk.tscn\")
-	var files: Array = SaveSystem.get_files_in_directory('World/chunks')
+	var files: Array = SaveManager.get_files_in_directory('World/chunks')
 	if files != []:
 		for file: String in files:
 			var chunk: Node3D
-			chunk = SaveSystem.load_file('World/chunks/'+file, chunk_scene)
+			chunk = SaveManager.load_file('World/chunks/'+file, chunk_scene)
 			chunks.add_child(chunk)
 	else:
 		var chunk: Node3D
@@ -40,15 +41,15 @@ func load_chunks() -> void:
 	#if Input.is_action_just_pressed('fast_save'):
 		#for chunk: Node in chunks.get_children():
 			#if 'chunk' in chunk.name:
-				#SaveSystem.save_file('World/chunks/'+chunk.name+'.json', chunk)
+				#SaveManager.save_file('World/chunks/'+chunk.name+'.json', chunk)
 
 func save() -> void:
 	for chunk: Node in chunks.get_children():
-		SaveSystem.save_file('World/chunks/'+chunk.name+'.json', chunk)
+		SaveManager.save_file('World/chunks/'+chunk.name+'.json', chunk)
 	for entity: Node in entities.get_children():
-		SaveSystem.save_file('World/entities/'+entity.name+'.json', entity)
+		SaveManager.save_file('World/entities/'+entity.name+'.json', entity)
 	for player: Node in players.get_children():
-		SaveSystem.save_file('World/players/'+player.name+'.json', player)
+		SaveManager.save_file('World/players/'+player.name+'.json', player)
 	
 "
 

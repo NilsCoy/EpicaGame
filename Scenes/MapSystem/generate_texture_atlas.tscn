@@ -62,10 +62,10 @@ func _ready() -> void:
 
 func get_blocks() -> Dictionary:
 	var result: Dictionary = {}
-	var files: Array = SaveSystem.get_files_in_directory('Resources/Blocks/Data/')
+	var files: Array = SaveManager.get_files_in_directory('Resources/Blocks/Data/')
 	if files != []:
 		for file: String in files:
-			var block: Dictionary = SaveSystem.read_json(SaveSystem.get_file_path('Resources/Blocks/Data/'+file, true))
+			var block: Dictionary = SaveManager.read_json(SaveManager.get_file_path('Resources/Blocks/Data/'+file, true))
 			result[file.split(\".\")[0]] = block
 	return result
 

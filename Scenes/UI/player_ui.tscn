@@ -17,12 +17,12 @@ var grabbed_slot_data: SlotData
 @onready var grabbed_slot_container: Control = $GrabbedSlotContainer
 
 func _ready() -> void:
-	var files: Array = SaveSystem.get_files_in_directory('Resources/Blocks/Data/')
+	var files: Array = SaveManager.get_files_in_directory('Resources/Blocks/Data/')
 	for file: String in files:
 		var slot: SlotData = SlotData.new()
 		var item: ItemData = ItemData.new()
 		item.name = file.split(\".\")[0]
-		var block: Dictionary = SaveSystem.read_json(SaveSystem.get_file_path('Resources/Blocks/Data/'+file, true))
+		var block: Dictionary = SaveManager.read_json(SaveManager.get_file_path('Resources/Blocks/Data/'+file, true))
 		if block[\"type\"] == \"block\":
 			var atlas_texture: Texture2D = load(block[\"textures\"][\"side\"])
 			var texture: AtlasTexture = AtlasTexture.new()

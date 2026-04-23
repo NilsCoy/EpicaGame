@@ -105,7 +105,6 @@ blend_point_3/pos = Vector2(1, 0)
 animation = &"idle"
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_b6lmq"]
-graph_offset = Vector2(-673.3333, 170.66667)
 nodes/damage_direction/node = SubResource("AnimationNodeBlendSpace2D_gaqyi")
 nodes/damage_direction/position = Vector2(-260, 300)
 nodes/damaged/node = SubResource("AnimationNodeOneShot_cs86c")
