@@ -18,11 +18,11 @@ const RUN_SPEED: float = 5.0
 const AIR_SPEED: float = 8.0
 var FLY_SPEED: float = 5.0
 var current_speed: float = WALK_SPEED
-var has_weapon: bool = false
+var has_weapon: bool = true
 var direction: Vector3
 
 # Player settings
-@export_range(0, 2, 1) var gamemode: int = 1 # 0=spectator, 1=survival, 2=creative
+@export_range(0, 2, 1) var gamemode: int = 0 # 0=survival, 1=creative, 2=spectator
 @export_range(0, 2, 1) var move_state: int = 1 # 0=crawl, 1=walk, 2=run
 var fly: bool = true
 var spawn_position: Vector3 = Vector3(0, 10, 30)
@@ -31,6 +31,8 @@ var spawn_rotation: Vector3 = Vector3.ZERO
 # Utils
 var curr_block: String = \"\"
 var is_life: bool = true
+@export var player_id: int = 1
+@export var nickname: String = \"Player\"
 
 @onready var inventory: Control = $UI/CreativeInventory
 @onready var model: Node3D = $Model
@@ -42,6 +44,7 @@ var is_life: bool = true
 func save_data() -> Dictionary:
 	return {
 		\"name\": name,
+		\"nickname\": nickname,
 		\"position\": [position.x, position.y, position.z],
 		\"rotation\": [model.model.rotation.x, model.model.rotation.y, model.model.rotation.z],
 		\"spawn_position\": [spawn_position.x, spawn_position.y, spawn_position.z],
@@ -54,6 +57,7 @@ func save_data() -> Dictionary:
 
 func load_data(data: Dictionary) -> void:
 	self.name = data.get(\"name\", 'unknown')
+	self.nickname = data.get(\"nickname\", 'unknown')
 	
 	self.position.x = data.get(\"position\", Vector3.ZERO)[0]
 	self.position.y = data.get(\"position\", Vector3.ZERO)[1]
@@ -78,25 +82,49 @@ func load_data(data: Dictionary) -> void:
 	gamemode = data.get(\"gamemode\", 2)
 
 func save() -> void:
-	SaveManager.save_file('World/players/'+name+'.json', self)
+	FileManager.save_file('./world/players/'+nickname+'.json', self)
 func _load() -> void:
 	var chunk_scene: Resource = preload(\"res://Scenes/Entities/player.tscn\")
-	var files: Array = SaveManager.get_files_in_directory('World/players')
+	var files: Array = FileManager.get_files_in_directory('./world/players')
 	if files != []:
 		for file: String in files:
-			var result: Dictionary = SaveManager.read_json(SaveManager.get_file_path('World/players/'+file, true))
-			self.load_data(result)
+			if file.split('.')[0] == nickname:
+				var result: Dictionary = FileManager.read_json(FileManager.get_file_path('./world/players/'+file, true))
+				self.load_data(result)
 
 func _ready() -> void:
-	_load()
+	if not(multiplayer.is_server()):
+		rpc_id(1, \"get_sunc_data\")
+	position = Vector3(-1, 0, -1)
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	$UI/HUD/ItemName.text = str(curr_block)
+
+@rpc(\"any_peer\")
+func get_sunc_data() -> void:
+	rpc_id(multiplayer.get_remote_sender_id(), \"init_sunc\", save_data(), player_id)
+	set_multiplayer_authority(player_id)
+
+@rpc(\"authority\")
+func init_sunc(data: Dictionary, id: int) -> void:
+	load_data(data)
+	player_id = id
+	if player_id == multiplayer.get_unique_id():
+		set_multiplayer_authority(player_id)
+		model.switch_camera(3)
 	switch_gamemode(gamemode)
 	animation.update_has_weapon(true, 'one_sword')
 	if has_weapon:
 		$Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip/TextureModel.show()
 
 func _physics_process(delta: float) -> void:
+	#print(multiplayer.get_unique_id())
+	#print(player_id)
+	if player_id != multiplayer.get_unique_id():
+		return
+	#if multiplayer.get_unique_id() != 1:
+		#print(get_multiplayer_authority())
+		#print(multiplayer.get_unique_id())
+	
 	$UI/HUD/FPS.text = str(int(Performance.get_monitor(Performance.TIME_FPS)))
 
 	_move(delta)
@@ -104,6 +132,9 @@ func _physics_process(delta: float) -> void:
 	#animation.animation_update()
 
 func _input(event: InputEvent) -> void:
+	if player_id != multiplayer.get_unique_id():
+		return
+	
 	_ui(event)
 	_attack(event)
 
@@ -192,9 +223,9 @@ func _move(delta: float) -> void:
 				else: animation.update_move_state(\"idle\")
 	
 	match gamemode:
-		0: _spectator_move(delta)
-		1: _survival_move(delta)
-		2: _creative_move(delta)
+		0: _survival_move(delta)
+		1: _creative_move(delta)
+		2: _spectator_move(delta)
 	
 	var input_dir: Vector2 = Input.get_vector(\"left\", \"right\", \"up\", \"down\")
 	if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
@@ -404,9 +435,10 @@ func _creative_move(delta: float) -> void:
 
 func switch_gamemode(to_gamemode: int) -> void:
 	gamemode = to_gamemode
-	if to_gamemode == 0:
+	if to_gamemode == 2:
 		model.switch_camera(1)
 		$CollisionShape3D.disabled = true
+		fly = true
 	else:
 		model.switch_camera(3)
 		$CollisionShape3D.disabled = false
@@ -573,7 +605,7 @@ input_0/break_loop_at_end = false
 input_0/reset = true
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_f1ek2"]
-graph_offset = Vector2(-544.07587, 512.7845)
+graph_offset = Vector2(-260, 368)
 nodes/output/position = Vector2(1280, 320)
 nodes/move_blend_tree/node = ExtResource("6_3smsa")
 nodes/move_blend_tree/position = Vector2(500, 260)
@@ -741,9 +773,27 @@ func sum_rotation(delta: float) -> void:
 	model.rotation.y = lerp_angle(model.rotation.y, camera.rotation.y, rot_speed * delta)
 "
 
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_ofjh0"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath("Model/Model:rotation:y")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath(".:gamemode")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+properties/3/path = NodePath("Components/HealthComponent:health")
+properties/3/spawn = true
+properties/3/replication_mode = 1
+properties/4/path = NodePath("Components/HealthComponent:max_health")
+properties/4/spawn = true
+properties/4/replication_mode = 1
+
 [node name="Player" type="CharacterBody3D" unique_id=877482764]
 collision_layer = 4
 script = SubResource("GDScript_f60y1")
+gamemode = 1
 metadata/_edit_lock_ = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1863849229]
@@ -861,7 +911,6 @@ metadata/_edit_lock_ = true
 
 [node name="Camera3D" type="Camera3D" parent="Model/Camera/ThirdCamera/OffsetCamera" unique_id=995003801]
 transform = Transform3D(-4.371139e-08, 0.1650476, -0.9862856, 0, 0.9862856, 0.1650476, 1, 7.2144597e-09, -4.3111914e-08, 0, 0, 0.6)
-current = true
 fov = 90.0
 metadata/_edit_lock_ = true
 
@@ -874,19 +923,19 @@ metadata/_edit_lock_ = true
 [node name="blockbench_export" parent="Model/Model/Import" unique_id=1966122651 instance=ExtResource("7_f1ek2")]
 
 [node name="Skeleton3D" parent="Model/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(1966122651, 1861649802) index="0" unique_id=1209808334]
-bones/0/position = Vector3(0, -0.03125, 0)
-bones/1/rotation = Quaternion(0, -7.2759585e-12, -0.009186402, 0.99995786)
-bones/11/rotation = Quaternion(-0.047143158, 0.0033217354, 0.00015294937, 0.99888265)
-bones/12/rotation = Quaternion(0.08715544, -0.00023185261, -0.0026500877, 0.9961912)
-bones/14/rotation = Quaternion(0.1554825, -0.0398056, 0.006274355, 0.98701644)
-bones/15/rotation = Quaternion(0.08711043, 0.0028099692, 0.032118097, 0.9956768)
-bones/17/rotation = Quaternion(0.2701492, 0, 0, 0.9628185)
-bones/18/rotation = Quaternion(-0.2941878, 0, 0, 0.9557476)
-bones/19/rotation = Quaternion(-0.024783839, 0, 0, 0.99969286)
-bones/20/rotation = Quaternion(-0.08136734, 0, 0, 0.9966842)
+bones/0/position = Vector3(0, -0.030016981, 0)
+bones/1/rotation = Quaternion(0, 1.4551915e-11, -0.00968084, 0.99995315)
+bones/11/rotation = Quaternion(0.07032774, 0.024636135, -0.001761111, 0.9972182)
+bones/12/rotation = Quaternion(0.08713872, -0.0017221518, -0.019684283, 0.99600023)
+bones/14/rotation = Quaternion(0.038658135, -0.018915532, 0.000755548, 0.99907327)
+bones/15/rotation = Quaternion(0.08714572, 0.0013217812, 0.015108027, 0.99608016)
+bones/17/rotation = Quaternion(0.10443749, 0, 0, 0.9945315)
+bones/18/rotation = Quaternion(-0.37178817, 0, 0, 0.92831767)
+bones/19/rotation = Quaternion(0.066122115, 0, 0, 0.99781156)
+bones/20/rotation = Quaternion(-0.06841009, 0, 0, 0.9976573)
 
 [node name="right_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="1" unique_id=455013527]
-transform = Transform3D(0.99970084, 0.024091678, 0.0042316336, -0.023674918, 0.9964965, -0.08021402, -0.0061492985, 0.080089815, 0.9967687, 0.3443715, 0.83299965, -0.030954242)
+transform = Transform3D(0.9967789, 0.07260009, 0.034071773, -0.058476694, 0.94869727, -0.31073138, -0.05488293, 0.30773813, 0.9498869, 0.32933283, 0.85849977, -0.15051778)
 bone_name = "right_equip"
 bone_idx = 13
 
@@ -901,13 +950,17 @@ collision_size = Vector3(0.3, 0.8, 0.3)
 collision_offset = Vector3(0, 0.6, 0)
 
 [node name="left_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="2" unique_id=636606705]
-transform = Transform3D(0.9940433, -0.0846887, -0.06859769, 0.043079227, 0.8834873, -0.46647006, 0.100109935, 0.4607363, 0.881873, -0.3060695, 0.90390104, -0.23113541)
+transform = Transform3D(0.9991325, -0.020576116, -0.03620358, 0.010942567, 0.96857154, -0.24849395, 0.040178806, 0.24788225, 0.9679566, -0.32905692, 0.86198086, -0.11905812)
 bone_name = "left_equip"
 bone_idx = 16
 
 [node name="Components" parent="." unique_id=365846116 instance=ExtResource("10_gymyn")]
 
 [node name="HealthComponent" parent="Components" unique_id=1135595511 instance=ExtResource("11_pu2lt")]
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1543259093]
+replication_config = SubResource("SceneReplicationConfig_ofjh0")
+visibility_update_mode = 1
 
 [connection signal="animation_finished" from="AnimationTree" to="AnimationTree" method="_on_animation_finished"]
 [connection signal="damaged" from="Components/HealthComponent" to="." method="_on_health_component_damaged"]

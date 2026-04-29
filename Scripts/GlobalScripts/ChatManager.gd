@@ -18,6 +18,7 @@ func send_command(from: Node, command: Array) -> void:
 		"damage": _command_damage(from, command)
 		"gamemode": _command_gamemode(from, command)
 		"spawnpoint": _command_spawnpoint(from, command)
+		"setspawn": _command_setspawn(from, command)
 		"save": _command_save(from, command)
 		"restart": _command_restart(from, command)
 		"test": _command_test(from, command)
@@ -28,6 +29,12 @@ func send_command(from: Node, command: Array) -> void:
 
 func _command_test(from: Node, command: Array) -> void:
 	MultiplayerManager.send_message("Hello server!")
+
+func _command_setspawn(from: Node, command: Array) -> void:
+	if command.size() == 1:
+		send_message(from, 'Точка мирового спавна переопределена на координаты игрока')
+		Settings.world['settings']['spawn_position'] = from.position
+		Settings.world['settings']['spawn_rotation'] = from.model.model.rotation
 
 func _command_restart(from: Node, command: Array) -> void:
 	if command.size() == 2:
@@ -45,13 +52,13 @@ func _command_restart(from: Node, command: Array) -> void:
 
 func _command_save(from: Node, command: Array) -> void:
 	send_message(from, 'Мир сохранен!')
-	SaveManager.call_save_on_all_nodes(get_tree().root)
+	FileManager.call_save_on_all_nodes(get_tree().root)
 
 func _command_spawnpoint(from: Node, command: Array) -> void:
 	if command.size() == 1:
 		send_message(from, 'Точка спавна переопределена на координаты игрока')
 		from.spawn_position = from.position
-		from.spawn_rotation = from.rotation
+		from.spawn_rotation = from.model.model.rotation
 	elif command.size() == 4:
 		send_message(from, 'Точка спавна переопределена на координаты: {x}, {y}, {z}'.format(
 			{'x':command[1], 'y':command[2], 'z':command[3]}
@@ -70,21 +77,21 @@ func _command_gamemode(from: Node, command: Array) -> void:
 		if int(command[1]) >= 0 and int(command[1]) <= 2:
 			from.switch_gamemode(int(command[1]))
 			match command[1]:
-				"0": send_message(from, "Ваш режим сменен на spectator")
-				"1": send_message(from, "Ваш режим сменен на survival")
-				"2": send_message(from, "Ваш режим сменен на creative")
+				"0": send_message(from, "Ваш режим сменен на survival")
+				"1": send_message(from, "Ваш режим сменен на creative")
+				"2": send_message(from, "Ваш режим сменен на spectator")
 		else:
 			send_message(from, 'Неправильная команда!')
 			send_message(from, 'Используй: /gamemode <number>')
-			send_message(from, '0: spectator')
-			send_message(from, '1: survival')
-			send_message(from, '2: creative')
+			send_message(from, '0: survival')
+			send_message(from, '1: creative')
+			send_message(from, '2: spectator')
 	else:
 		send_message(from, 'Неправильная команда!')
 		send_message(from, 'Используй: /gamemode <number>')
-		send_message(from, '0: spectator')
-		send_message(from, '1: survival')
-		send_message(from, '2: creative')
+		send_message(from, '0: survival')
+		send_message(from, '1: creative')
+		send_message(from, '2: spectator')
 
 func _command_help(from: Node, command: Array) -> void:
 	send_message(from, "")

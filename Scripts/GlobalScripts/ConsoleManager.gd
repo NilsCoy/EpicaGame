@@ -16,7 +16,6 @@ func _ready() -> void:
 """)
 		print("Console ready. Type commands in terminal.")
 		thread.start(_stdin_thread)
-		#var handler: Timer
 
 func _stdin_thread() -> void:
 	while true:
@@ -26,13 +25,16 @@ func _stdin_thread() -> void:
 			if line != "":
 				call_deferred("execute", line)
 
-func execute(cmd: String) -> void:
-	var args: Array = cmd.split(" ")
+func execute(line: String) -> void:
+	var args: Array = line.split(" ")
 	match args[0]:
 		"stop": _command_stop()
 		#"kick": print("Kick player:", args[1])
-		#"say": print("Broadcast:", cmd.substr(4))
 		"test": print("This is test message!")
 
 func _command_stop() -> void:
+	print('Server is stopping')
+	get_tree().root.get_node("Main/Map").save()
+	print('Map saved')
+	print('Server is stoped')
 	OS.kill(OS.get_process_id())

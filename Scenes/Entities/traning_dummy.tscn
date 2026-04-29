@@ -10,11 +10,12 @@ script/source = "extends CharacterBody3D
 @onready var animation: AnimationTree = $AnimationTree
 @onready var components: Node = $Components
 var is_life: bool = true
+var id: String = Global.generate_uuid_v4()
 
 func save_data() -> Dictionary:
 	return {
 		\"type\": scene_file_path.get_file().get_basename(),
-		\"name\": name,
+		\"id\": id,
 		\"position\": [position.x, position.y, position.z],
 		\"rotation\": [rotation.x, rotation.y, rotation.z],
 		\"health\": $Components/HealthComponent.health,
@@ -22,7 +23,7 @@ func save_data() -> Dictionary:
 	}
 
 func load_data(data: Dictionary) -> void:
-	self.name = data.get(\"name\", 'unknown')
+	self.id = data.get(\"id\", Global.generate_uuid_v4())
 	
 	self.position.x = data.get(\"position\", Vector3.ZERO)[0]
 	self.position.y = data.get(\"position\", Vector3.ZERO)[1]
@@ -36,6 +37,7 @@ func load_data(data: Dictionary) -> void:
 	$Components/HealthComponent.max_health = data.get(\"max_health\", 100.0)
 
 func _ready() -> void:
+	name = id
 	$Sprite3D/SubViewport/Damage.text = ''
 	_health_update()
 

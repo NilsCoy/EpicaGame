@@ -24,7 +24,6 @@ func create_collision(target: Variant, layers: Array[int], masks: Array[int]) ->
 		tree = temp_tree
 
 func replace_to_static(node_from: Variant) -> StaticBody3D:
-
 	var new_node: StaticBody3D = StaticBody3D.new()
 	new_node.name = node_from.name
 	new_node.transform = node_from.transform
@@ -35,3 +34,17 @@ func replace_to_static(node_from: Variant) -> StaticBody3D:
 		new_node.add_child(child)
 
 	return new_node
+
+func generate_uuid_v4() -> String:
+	var crypto: Crypto = Crypto.new()
+	var b: PackedByteArray = crypto.generate_random_bytes(16)
+	# UUID v4 правки битов
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
+	return "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x" % [
+		b[0], b[1], b[2], b[3],
+		b[4], b[5],
+		b[6], b[7],
+		b[8], b[9],
+		b[10], b[11], b[12], b[13], b[14], b[15]
+	]

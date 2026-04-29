@@ -1,0 +1,126 @@
+[gd_scene format=3 uid="uid://cd36x2mlp1cj2"]
+
+[sub_resource type="GDScript" id="GDScript_fxl7y"]
+script/source = "extends Node
+
+var blocks: Dictionary
+#var blocks: Dictionary = {
+	#\"grass_block\": {
+		#\"type\": \"block\",
+		#\"textures\": {
+			#\"top\": \"res://Assets/Blocks/grass_block_tint.png\",
+			#\"bottom\": \"res://Assets/Blocks/dirt.png\",
+			#\"side\": \"res://Assets/Blocks/grass_block_side.png\",
+		#},
+		#\"is_rotate\": false
+	#},
+	#\"dirt\": {
+		#\"type\": \"block\",
+		#\"textures\": {
+			#\"top\": \"res://Assets/Blocks/dirt.png\",
+			#\"bottom\": \"res://Assets/Blocks/dirt.png\",
+			#\"side\": \"res://Assets/Blocks/dirt.png\",
+		#},
+		#\"is_rotate\": false
+	#},
+	#\"stone\": {
+		#\"type\": \"block\",
+		#\"textures\": {
+			#\"top\": \"res://Assets/Blocks/stone.png\",
+			#\"bottom\": \"res://Assets/Blocks/stone.png\",
+			#\"side\": \"res://Assets/Blocks/stone.png\",
+		#},
+		#\"is_rotate\": false
+	#},
+	#\"cobblestone\": {
+		#\"type\": \"block\",
+		#\"textures\": {
+			#\"top\": \"res://Assets/Blocks/cobblestone.png\",
+			#\"bottom\": \"res://Assets/Blocks/cobblestone.png\",
+			#\"side\": \"res://Assets/Blocks/cobblestone.png\",
+		#},
+		#\"is_rotate\": false
+	#},
+	#\"stone_stairs\": {
+		#\"type\": \"model\",
+		#\"asset\": \"res://Assets/Blocks/stairs.gltf\",
+		#\"is_rotate\": true
+	#},
+#}
+
+var atlas_texture: Texture2D
+var block_uv_map: Dictionary = {}
+
+var ATLAS_SIZE: int = 0
+var TILE_SIZE: float = 0.0
+
+var texture_uv_lookup: Dictionary = {}
+
+func _ready() -> void:
+	blocks = get_blocks()
+	generate_texture_atlas()
+
+func get_blocks() -> Dictionary:
+	var result: Dictionary = {}
+	var files: Array = FileManager.get_files_in_directory('Resources/Blocks/Data/')
+	if files != []:
+		for file: String in files:
+			var block: Dictionary = FileManager.read_json(FileManager.get_file_path('Resources/Blocks/Data/'+file, true))
+			result[file.split(\".\")[0]] = block
+	return result
+
+func generate_texture_atlas() -> void:
+	var unique_paths: Array = []
+
+	for block_id: String in blocks:
+		if blocks[block_id]['type'] == 'block':
+			for face: String in blocks[block_id]['textures']:
+				var path: String = blocks[block_id]['textures'][face]
+				if not unique_paths.has(path):
+					unique_paths.append(path)
+
+	var texture_count: int = unique_paths.size()
+	var first_tex: Texture2D = load(unique_paths[0])
+	var tile_px_size: int = first_tex.get_width()
+
+	ATLAS_SIZE = int(ceil(sqrt(texture_count)))
+	TILE_SIZE = 1.0 / ATLAS_SIZE
+
+	var atlas_px_size: int = ATLAS_SIZE * tile_px_size
+	var atlas_image: Image = Image.create(atlas_px_size, atlas_px_size, false, Image.FORMAT_RGBA8)
+	atlas_image.fill(Color(0,0,0,0))
+
+	for i: int in texture_count:
+		var tex: Texture2D = load(unique_paths[i])
+		var img: Image = tex.get_image()
+
+		if img.is_compressed():
+			img.decompress()
+		if img.get_format() != Image.FORMAT_RGBA8:
+			img.convert(Image.FORMAT_RGBA8)
+
+		var x: int = i % ATLAS_SIZE
+		var y: int = i / ATLAS_SIZE
+
+		atlas_image.blit_rect(
+			img,
+			Rect2i(0, 0, tile_px_size, tile_px_size),
+			Vector2i(x * tile_px_size, y * tile_px_size)
+		)
+
+		texture_uv_lookup[unique_paths[i]] = Vector2i(x, y)
+
+	# Теперь собираем UV для блоков
+	for block_id: String in blocks:
+		if blocks[block_id][\"type\"] == \"block\":
+			block_uv_map[block_id] = {
+				\"top\": texture_uv_lookup[blocks[block_id]['textures'][\"top\"]],
+				\"bottom\": texture_uv_lookup[blocks[block_id]['textures'][\"bottom\"]],
+				\"side\": texture_uv_lookup[blocks[block_id]['textures'][\"side\"]]
+			}
+
+	atlas_texture = ImageTexture.create_from_image(atlas_image)
+"
+
+[node name="GenerateTextureAtlas" type="Node" unique_id=174601223]
+script = SubResource("GDScript_fxl7y")

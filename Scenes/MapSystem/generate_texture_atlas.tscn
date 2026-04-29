@@ -58,14 +58,17 @@ var texture_uv_lookup: Dictionary = {}
 
 func _ready() -> void:
 	blocks = get_blocks()
+	
+	if OS.has_feature(\"dedicated_server\"):
+		return
 	generate_texture_atlas()
 
 func get_blocks() -> Dictionary:
 	var result: Dictionary = {}
-	var files: Array = SaveManager.get_files_in_directory('Resources/Blocks/Data/')
+	var files: Array = FileManager.get_files_in_directory(FileManager.get_file_path('Resources/Blocks/Data/', true))
 	if files != []:
 		for file: String in files:
-			var block: Dictionary = SaveManager.read_json(SaveManager.get_file_path('Resources/Blocks/Data/'+file, true))
+			var block: Dictionary = FileManager.read_json(FileManager.get_file_path('Resources/Blocks/Data/'+file, true))
 			result[file.split(\".\")[0]] = block
 	return result
 

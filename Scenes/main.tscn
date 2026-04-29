@@ -1,6 +1,5 @@
 [gd_scene format=3 uid="uid://cp0u50t6q8pqi"]
 
-[ext_resource type="PackedScene" uid="uid://5jwrhpdhgtm8" path="res://Scenes/Entities/player.tscn" id="1_bo1nx"]
 [ext_resource type="PackedScene" uid="uid://b2doj54r58x6h" path="res://Scenes/MapSystem/map.tscn" id="2_8gbba"]
 [ext_resource type="PackedScene" uid="uid://c3xksff8g5t4q" path="res://Scenes/main_menu.tscn" id="3_8gbba"]
 
@@ -8,9 +7,9 @@
 script/source = "extends Node3D
 
 func _on_save_timer_timeout() -> void:
-	$Map.save()
-	$Player.save()
-	print(\"Auto save!\")
+	if OS.has_feature(\"dedicated_server\"):
+		$Map.save()
+		print(\"Auto save!\")
 "
 
 [sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_8gbba"]
@@ -43,10 +42,6 @@ light_energy = 2.0
 shadow_enabled = true
 shadow_bias = 0.05
 shadow_opacity = 0.8
-
-[node name="Player" parent="." unique_id=877482764 instance=ExtResource("1_bo1nx")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.655326, 29.914026)
-gamemode = 2
 
 [node name="Map" parent="." unique_id=1381430335 instance=ExtResource("2_8gbba")]
 

@@ -7,9 +7,9 @@ script/source = "extends Node3D
 
 const CHUNK_SIZE: int = 16
 @export var starter_block: bool = false
-var loaded_chunk: bool = false
+@export var loaded_chunk: bool = false
 
-var blocks: Array = []
+@export var blocks: Array = []
 
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 @onready var collision_shape: CollisionShape3D = $StaticBody3D/CollisionShape3D
@@ -54,6 +54,15 @@ func load_data(data: Dictionary) -> void:
 	)
 	
 	loaded_chunk = true
+
+func serialize_and_compress() -> PackedByteArray:
+	var data: Dictionary = {
+		\"name\" = name,
+		\"blocks\" = blocks,
+		\"position\" = position
+	}
+	var bytes: PackedByteArray = var_to_bytes(data)
+	return bytes.compress(FileAccess.COMPRESSION_GZIP)
 
 func _ready() -> void:
 	if blocks == []:
@@ -101,6 +110,9 @@ func is_block(x: int, y: int, z: int) -> bool:
 
 # Перестроение меша
 func rebuild() -> void:
+	if OS.has_feature(\"dedicated_server\"):
+		return
+	
 	var has_ModelBlock: bool = false
 	for child: Node in get_children():
 		if 'ModelBlock' in child.name:

@@ -6,29 +6,59 @@ script/source = "extends Node
 @onready var chunks: Node = $Chunks
 @onready var entities: Node = $Entities
 @onready var players: Node = $Players
+@onready var spawn: Node3D = $Spawn
+
+@rpc(\"authority\", \"reliable\")
+func receive_chunk(pocket: Array) -> void:
+	var chunk_scene: Resource = load(\"res://Scenes/MapSystem/chunk.tscn\")
+	var decompressed: PackedByteArray = pocket[0].decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+	var chunk_data: Dictionary = bytes_to_var(decompressed)
+	var chunk: Node3D = chunk_scene.instantiate()
+	chunk.name = chunk_data.name
+	chunk.blocks = chunk_data.blocks
+	chunk.position = chunk_data.position
+	chunks.add_child(chunk)
+	chunk.rebuild()
+
+@rpc(\"any_peer\", \"reliable\")
+func load_scene() -> void:
+	if multiplayer.is_server():
+		for child: Node in chunks.get_children():
+			rpc_id(multiplayer.get_remote_sender_id(), \"receive_chunk\", [child.serialize_and_compress()])
+	
 
 func _ready() -> void:
-	if not(OS.has_feature(\"dedicated_server\")):
+	if OS.has_feature(\"dedicated_server\"):
+		spawn.position = Vector3(
+			Settings.world['settings']['spawn_position'][0],
+			Settings.world['settings']['spawn_position'][1],
+			Settings.world['settings']['spawn_position'][2]
+			)
+		spawn.rotation = Vector3(
+			Settings.world['settings']['spawn_rotation'][0],
+			Settings.world['settings']['spawn_rotation'][1],
+			Settings.world['settings']['spawn_rotation'][2]
+			)
 		load_entities()
 		load_chunks()
 
 func load_entities() -> void:
-	var files: Array = SaveManager.get_files_in_directory('World/entities')
+	var files: Array = FileManager.get_files_in_directory('./world/entities')
 	if files != []:
 		for file: String in files:
-			var path: String = 'World/entities/'+file
-			var data: Dictionary = SaveManager.read_json(SaveManager.get_file_path(path, true))
+			var path: String = './world/entities/'+file
+			var data: Dictionary = FileManager.read_json(FileManager.get_file_path(path, true))
 			var entity_scene: Resource = load(\"res://Scenes/Entities/{type}.tscn\".format({\"type\": data.type}))
-			var entity: Node = SaveManager.load_file(path, entity_scene)
+			var entity: Node = FileManager.load_file(path, entity_scene)
 			entities.add_child(entity)
 
 func load_chunks() -> void:
-	var chunk_scene: Resource = preload(\"res://Scenes/MapSystem/chunk.tscn\")
-	var files: Array = SaveManager.get_files_in_directory('World/chunks')
+	var chunk_scene: Resource = load(\"res://Scenes/MapSystem/chunk.tscn\")
+	var files: Array = FileManager.get_files_in_directory('./world/chunks')
 	if files != []:
 		for file: String in files:
 			var chunk: Node3D
-			chunk = SaveManager.load_file('World/chunks/'+file, chunk_scene)
+			chunk = FileManager.load_file('./world/chunks/'+file, chunk_scene)
 			chunks.add_child(chunk)
 	else:
 		var chunk: Node3D
@@ -37,20 +67,17 @@ func load_chunks() -> void:
 		chunk.starter_block = true
 		chunks.add_child(chunk)
 
-#func _input(event: InputEvent) -> void:
-	#if Input.is_action_just_pressed('fast_save'):
-		#for chunk: Node in chunks.get_children():
-			#if 'chunk' in chunk.name:
-				#SaveManager.save_file('World/chunks/'+chunk.name+'.json', chunk)
-
 func save() -> void:
 	for chunk: Node in chunks.get_children():
-		SaveManager.save_file('World/chunks/'+chunk.name+'.json', chunk)
+		FileManager.save_file('./world/chunks/'+chunk.name+'.json', chunk)
 	for entity: Node in entities.get_children():
-		SaveManager.save_file('World/entities/'+entity.name+'.json', entity)
+		FileManager.save_file('./world/entities/'+entity.name+'.json', entity)
 	for player: Node in players.get_children():
-		SaveManager.save_file('World/players/'+player.name+'.json', player)
-	
+		FileManager.save_file('./world/players/'+player.name+'.json', player)
+
+func rebuild_chunks() -> void:
+	for chunk: Node in chunks.get_children():
+		chunk.rebuild()
 "
 
 [node name="Map" type="Node" unique_id=616319268]
@@ -61,3 +88,13 @@ script = SubResource("GDScript_58wgy")
 [node name="Entities" type="Node" parent="." unique_id=1761748697]
 
 [node name="Players" type="Node" parent="." unique_id=548145297]
+
+[node name="MultiplayerPlayers" type="MultiplayerSpawner" parent="." unique_id=1974709537]
+_spawnable_scenes = PackedStringArray("uid://5jwrhpdhgtm8")
+spawn_path = NodePath("../Players")
+
+[node name="MultiplayerEntities" type="MultiplayerSpawner" parent="." unique_id=1882678770]
+_spawnable_scenes = PackedStringArray("uid://v7tblekak3iq")
+spawn_path = NodePath("../Entities")
+
+[node name="Spawn" type="Node3D" parent="." unique_id=1320067427]
