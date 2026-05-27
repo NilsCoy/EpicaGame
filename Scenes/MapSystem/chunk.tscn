@@ -55,7 +55,7 @@ func load_data(data: Dictionary) -> void:
 	
 	loaded_chunk = true
 
-func serialize_and_compress() -> PackedByteArray:
+func serialize() -> PackedByteArray:
 	var data: Dictionary = {
 		\"name\" = name,
 		\"blocks\" = blocks,

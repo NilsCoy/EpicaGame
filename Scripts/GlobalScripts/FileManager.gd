@@ -39,8 +39,15 @@ func read_json(path: String) -> Dictionary:
 		return JSON.parse_string(json_string)
 	else: return {}
 
+func save_json(path: String, data: Dictionary) -> void:
+	var json_string: String = JSON.stringify(data)
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	if file:
+		file.store_string(json_string)
+		file.close()
+
 func save_file(path: String, node: Node) -> void:
-	var json_string: String = JSON.stringify(node.save_data())  # превращаем словарь в строку JSON
+	var json_string: String = JSON.stringify(node.save_data())
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file:
 		file.store_string(json_string)

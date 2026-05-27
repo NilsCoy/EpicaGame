@@ -3,6 +3,8 @@
 [sub_resource type="GDScript" id="GDScript_58wgy"]
 script/source = "extends Node
 
+signal load_completed_signal
+
 @onready var chunks: Node = $Chunks
 @onready var entities: Node = $Entities
 @onready var players: Node = $Players
@@ -12,33 +14,42 @@ script/source = "extends Node
 func receive_chunk(pocket: Array) -> void:
 	var chunk_scene: Resource = load(\"res://Scenes/MapSystem/chunk.tscn\")
 	var decompressed: PackedByteArray = pocket[0].decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
-	var chunk_data: Dictionary = bytes_to_var(decompressed)
+	var data: Dictionary = bytes_to_var(decompressed)
 	var chunk: Node3D = chunk_scene.instantiate()
-	chunk.name = chunk_data.name
-	chunk.blocks = chunk_data.blocks
-	chunk.position = chunk_data.position
+	chunk.name = data.name
+	chunk.blocks = data.blocks
+	chunk.position = data.position
 	chunks.add_child(chunk)
 	chunk.rebuild()
+
+@rpc(\"authority\", \"reliable\")
+func add_player(pocket: Array) -> void:
+	var scene: Resource = load(\"res://Scenes/Entities/player.tscn\")
+	var decompressed: PackedByteArray = pocket[0].decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+	var data: Dictionary = bytes_to_var(decompressed)
+	var player: Node3D = scene.instantiate()
+	player.load_data(data)
+	player.player_id = data.get(\"player_id\", 1)
+	player.set_multiplayer_authority(player.player_id)
+	players.add_child(player)
+
+@rpc(\"authority\", \"reliable\")
+func load_completed() -> void:
+	emit_signal(\"load_completed_signal\")
 
 @rpc(\"any_peer\", \"reliable\")
 func load_scene() -> void:
 	if multiplayer.is_server():
 		for child: Node in chunks.get_children():
-			rpc_id(multiplayer.get_remote_sender_id(), \"receive_chunk\", [child.serialize_and_compress()])
-	
+			rpc_id(multiplayer.get_remote_sender_id(), \"receive_chunk\", [child.serialize()])
+		for player: Node in players.get_children():
+			rpc_id(multiplayer.get_remote_sender_id(), \"add_player\", [player.serialize()])
+		rpc_id(multiplayer.get_remote_sender_id(), \"load_completed\")
 
-func _ready() -> void:
+func _enter_tree() -> void:
+	MultiplayerManager.map = self
 	if OS.has_feature(\"dedicated_server\"):
-		spawn.position = Vector3(
-			Settings.world['settings']['spawn_position'][0],
-			Settings.world['settings']['spawn_position'][1],
-			Settings.world['settings']['spawn_position'][2]
-			)
-		spawn.rotation = Vector3(
-			Settings.world['settings']['spawn_rotation'][0],
-			Settings.world['settings']['spawn_rotation'][1],
-			Settings.world['settings']['spawn_rotation'][2]
-			)
+		update_spawn()
 		load_entities()
 		load_chunks()
 
@@ -78,7 +89,27 @@ func save() -> void:
 func rebuild_chunks() -> void:
 	for chunk: Node in chunks.get_children():
 		chunk.rebuild()
+
+func update_spawn() -> void:
+	spawn.position = Vector3(
+		Settings.world['settings']['spawn_position'][0],
+		Settings.world['settings']['spawn_position'][1],
+		Settings.world['settings']['spawn_position'][2]
+		)
+	spawn.rotation = Vector3(
+		Settings.world['settings']['spawn_rotation'][0],
+		Settings.world['settings']['spawn_rotation'][1],
+		Settings.world['settings']['spawn_rotation'][2]
+		)
 "
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_hupx5"]
+properties/0/path = NodePath("Spawn:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath("Spawn:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
 
 [node name="Map" type="Node" unique_id=616319268]
 script = SubResource("GDScript_58wgy")
@@ -89,12 +120,11 @@ script = SubResource("GDScript_58wgy")
 
 [node name="Players" type="Node" parent="." unique_id=548145297]
 
-[node name="MultiplayerPlayers" type="MultiplayerSpawner" parent="." unique_id=1974709537]
-_spawnable_scenes = PackedStringArray("uid://5jwrhpdhgtm8")
-spawn_path = NodePath("../Players")
-
 [node name="MultiplayerEntities" type="MultiplayerSpawner" parent="." unique_id=1882678770]
 _spawnable_scenes = PackedStringArray("uid://v7tblekak3iq")
 spawn_path = NodePath("../Entities")
 
 [node name="Spawn" type="Node3D" parent="." unique_id=1320067427]
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1572019836]
+replication_config = SubResource("SceneReplicationConfig_hupx5")

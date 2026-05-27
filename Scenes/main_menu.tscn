@@ -17,13 +17,18 @@ func _on_connect_button_pressed() -> void:
 			if MultiplayerManager.get_connect() != 'connected' or MultiplayerManager.get_connect() != 'connection':
 				MultiplayerManager.create_client()
 
-
 func _on_server_button_pressed() -> void:
 	MultiplayerManager.create_server()
 
 @rpc(\"authority\")
 func register_player() -> void:
-	MultiplayerManager.rpc_id(1, \"create_player\", username.text)
+	MultiplayerManager.map.load_completed_signal.connect(world_loaded)
+
+func world_loaded() -> void:
+	MultiplayerManager.rpc_id(1, \"create_player\", multiplayer.get_unique_id(), username.text)
+	print(\"Map loaded\")
+	
+	
 "
 
 [node name="MainMenu" type="Control" unique_id=1962272188]

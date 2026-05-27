@@ -40,3 +40,7 @@ func get_server_settings() -> Dictionary:
 		var file_name: String = file.split('.')[0]
 		settings[file_name] = FileManager.read_json('./configs/'+file)
 	return settings
+
+func save_world_settings() -> void:
+	for file: String in world.keys():
+		FileManager.save_json('./world/'+file+'.json', world[file])
