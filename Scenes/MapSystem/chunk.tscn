@@ -110,8 +110,8 @@ func is_block(x: int, y: int, z: int) -> bool:
 
 # Перестроение меша
 func rebuild() -> void:
-	if OS.has_feature(\"dedicated_server\"):
-		return
+	#if OS.has_feature(\"dedicated_server\"):
+		#return
 	
 	var has_ModelBlock: bool = false
 	for child: Node in get_children():

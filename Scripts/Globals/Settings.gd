@@ -4,7 +4,7 @@ var player: Dictionary
 var world: Dictionary
 var server: Dictionary
 
-func _ready() -> void:
+func _enter_tree() -> void:
 	if OS.has_feature("dedicated_server"):
 		world = get_world_settings()
 		server = get_server_settings()

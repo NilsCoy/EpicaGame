@@ -59,8 +59,8 @@ var texture_uv_lookup: Dictionary = {}
 func _ready() -> void:
 	blocks = get_blocks()
 	
-	if OS.has_feature(\"dedicated_server\"):
-		return
+	#if OS.has_feature(\"dedicated_server\"):
+		#return
 	generate_texture_atlas()
 
 func get_blocks() -> Dictionary:

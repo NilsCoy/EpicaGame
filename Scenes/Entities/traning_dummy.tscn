@@ -2,15 +2,15 @@
 
 [ext_resource type="PackedScene" uid="uid://dux5dykrlscah" path="res://Scenes/Components/components.tscn" id="1_5wm0g"]
 [ext_resource type="PackedScene" uid="uid://c4j0e0v04j0vy" path="res://Scenes/Components/health_component.tscn" id="2_uhc0p"]
-[ext_resource type="PackedScene" uid="uid://bograg6yleqiq" path="res://Assets/Models/Entities/traning_dummy.gltf" id="3_uhc0p"]
+[ext_resource type="PackedScene" uid="uid://bo8h0lspkd545" path="res://Assets/Models/Entities/traning_dummy.gltf" id="3_uhc0p"]
 
 [sub_resource type="GDScript" id="GDScript_uhc0p"]
 script/source = "extends CharacterBody3D
 
 @onready var animation: AnimationTree = $AnimationTree
 @onready var components: Node = $Components
-var is_life: bool = true
-var id: String = Global.generate_uuid_v4()
+@export var is_life: bool = true
+@export var id: String
 
 func save_data() -> Dictionary:
 	return {
@@ -37,7 +37,9 @@ func load_data(data: Dictionary) -> void:
 	$Components/HealthComponent.max_health = data.get(\"max_health\", 100.0)
 
 func _ready() -> void:
-	name = id
+	if get_multiplayer_authority() == multiplayer.get_unique_id():
+		id = Global.generate_uuid_v4()
+		name = id
 	$Sprite3D/SubViewport/Damage.text = ''
 	_health_update()
 
@@ -48,18 +50,25 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 
-func _on_health_component_damaged(dmg: float, to_target: Node, from_target: Node) -> void:
+func _on_health_component_damaged(dmg: float, to_target: Dictionary, from_target: Dictionary) -> void:
 	$Sprite3D/SubViewport/Damage.text = str(dmg)
 	_health_update()
 	$Sprite3D/TextTimer.start()
 	
-	animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
-	if from_target.scene_file_path.get_file().get_basename() == 'player':
-		var direction3: Vector3 = (from_target.global_transform.origin - global_transform.origin)
-		var direction: Vector2 = Vector2(direction3.x, direction3.z)
-		
-		#print(direction)
-		animation[\"parameters/damage_direction/blend_position\"] = direction
+	if from_target.get(\"type\") == \"player\":
+		for player: CharacterBody3D in get_tree().root.get_node('Main/Map').players.get_children():
+			if player.name == from_target.get(\"name\"):
+				animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+				var direction3: Vector3 = (player.global_transform.origin - global_transform.origin)
+				var direction: Vector2 = Vector2(direction3.x, direction3.z)
+				animation[\"parameters/damage_direction/blend_position\"] = direction
+	elif from_target.get(\"type\") == \"entity\":
+		for entity: CharacterBody3D in get_tree().root.get_node('Main/Map').entites.get_children():
+			if entity.id == from_target.get(\"id\"):
+				animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+				var direction3: Vector3 = (entity.global_transform.origin - global_transform.origin)
+				var direction: Vector2 = Vector2(direction3.x, direction3.z)
+				animation[\"parameters/damage_direction/blend_position\"] = direction
 
 func _on_health_component_died(reason: String) -> void:
 	is_life = false
@@ -107,10 +116,11 @@ blend_point_3/pos = Vector2(1, 0)
 animation = &"idle"
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_b6lmq"]
+graph_offset = Vector2(-693.5673, 64.86145)
 nodes/damage_direction/node = SubResource("AnimationNodeBlendSpace2D_gaqyi")
 nodes/damage_direction/position = Vector2(-260, 300)
 nodes/damaged/node = SubResource("AnimationNodeOneShot_cs86c")
-nodes/damaged/position = Vector2(20, 140)
+nodes/damaged/position = Vector2(26.666666, 133.33333)
 nodes/idle/node = SubResource("AnimationNodeAnimation_da680")
 nodes/idle/position = Vector2(-220, 80)
 node_connections = [&"output", 0, &"damaged", &"damaged", 0, &"idle", &"damaged", 1, &"damage_direction"]
@@ -130,6 +140,26 @@ func _process(delta: float) -> void:
 	size.y = $Health.size.y + $Damage.size.y
 	
 "
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_ymciu"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath("Components/HealthComponent:health")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+properties/3/path = NodePath("Components/HealthComponent:max_health")
+properties/3/spawn = true
+properties/3/replication_mode = 1
+properties/4/path = NodePath(".:id")
+properties/4/spawn = true
+properties/4/replication_mode = 1
+properties/5/path = NodePath(".:is_life")
+properties/5/spawn = true
+properties/5/replication_mode = 1
 
 [node name="TraningDummy" type="CharacterBody3D" unique_id=601348322]
 collision_layer = 8
@@ -183,6 +213,9 @@ vertical_alignment = 1
 
 [node name="TextTimer" type="Timer" parent="Sprite3D" unique_id=1868608783]
 one_shot = true
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=508694356]
+replication_config = SubResource("SceneReplicationConfig_ymciu")
 
 [connection signal="damaged" from="Components/HealthComponent" to="." method="_on_health_component_damaged"]
 [connection signal="died" from="Components/HealthComponent" to="." method="_on_health_component_died"]

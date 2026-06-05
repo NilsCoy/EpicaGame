@@ -8,8 +8,9 @@ script/source = "extends Node3D
 
 func _on_save_timer_timeout() -> void:
 	if OS.has_feature(\"dedicated_server\"):
-		$Map.save()
-		print(\"Auto save!\")
+		#$Map.save()
+		#print(\"Auto save!\")
+		pass
 "
 
 [sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_8gbba"]

@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://ctg2xy8v1tood"]
 
 [ext_resource type="Texture2D" uid="uid://bky2jo0bab0sv" path="res://Assets/Textures/crosshair.png" id="1_c4arg"]
-[ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/InventorySystem/inventory_data.gd" id="2_deklj"]
+[ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/Classes/InventorySystem/inventory_data.gd" id="2_deklj"]
 [ext_resource type="Texture2D" uid="uid://doq5i1ep3wl6l" path="res://Assets/Textures/Health Overlay.png" id="2_nwg7q"]
-[ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/InventorySystem/slot_data.gd" id="3_nwg7q"]
+[ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/Classes/InventorySystem/slot_data.gd" id="3_nwg7q"]
 [ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="4_6nfne"]
 [ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="5_21gwg"]
 
@@ -269,8 +269,8 @@ color = Color(0, 0, 0, 0.39215687)
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
-anchor_bottom = 0.776
-offset_bottom = 0.03199768
+anchor_bottom = 0.897
+offset_bottom = -0.1000061
 grow_horizontal = 2
 grow_vertical = 2
 scroll_following = true

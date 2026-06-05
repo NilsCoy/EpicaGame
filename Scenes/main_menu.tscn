@@ -27,8 +27,17 @@ func register_player() -> void:
 func world_loaded() -> void:
 	MultiplayerManager.rpc_id(1, \"create_player\", multiplayer.get_unique_id(), username.text)
 	print(\"Map loaded\")
-	
-	
+
+func _on_username_edit_text_changed(new_text: String) -> void:
+	var regex: RegEx = RegEx.new()
+	regex.compile(\"^[a-zA-Z0-9_]*$\")
+	if regex.search(new_text) == null and new_text != \"\":
+		var clean_text: String = \"\"
+		var allowed_regex: RegEx = RegEx.new()
+		allowed_regex.compile(\"[^a-zA-Z0-9_]\")
+		clean_text = allowed_regex.sub(new_text, \"\", true)
+		username.text = clean_text
+		username.caret_column = clean_text.length()
 "
 
 [node name="MainMenu" type="Control" unique_id=1962272188]
@@ -68,6 +77,7 @@ custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 placeholder_text = "Nickname"
 alignment = 1
+max_length = 15
 context_menu_enabled = false
 emoji_menu_enabled = false
 
@@ -80,5 +90,6 @@ visible = false
 layout_mode = 2
 text = "Host"
 
+[connection signal="text_changed" from="GridContainer/UsernameEdit" to="." method="_on_username_edit_text_changed"]
 [connection signal="pressed" from="GridContainer/ConnectButton" to="." method="_on_connect_button_pressed"]
 [connection signal="pressed" from="GridContainer/ServerButton" to="." method="_on_server_button_pressed"]

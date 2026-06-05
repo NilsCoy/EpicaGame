@@ -46,8 +46,10 @@ func load_scene() -> void:
 			rpc_id(multiplayer.get_remote_sender_id(), \"add_player\", [player.serialize()])
 		rpc_id(multiplayer.get_remote_sender_id(), \"load_completed\")
 
-func _enter_tree() -> void:
+func _ready() -> void:
 	MultiplayerManager.map = self
+	MultiplayerManager.players = $Players
+	MultiplayerManager.player_spawn = $Spawn
 	if OS.has_feature(\"dedicated_server\"):
 		update_spawn()
 		load_entities()
