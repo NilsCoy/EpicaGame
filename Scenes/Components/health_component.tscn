@@ -12,9 +12,9 @@ signal died(reason: String)
 @export var max_health: float = 100.0
 
 @rpc(\"any_peer\", \"reliable\", \"call_local\")
-func change_health(new_value: float, reason: String) -> void:
-	if get_multiplayer_authority() != multiplayer.get_unique_id():
-		rpc_id(get_multiplayer_authority(), 'change_health', new_value, reason)
+func set_health(new_value: float, reason: String) -> void:
+	#if get_multiplayer_authority() != multiplayer.get_unique_id():
+		#rpc_id(get_multiplayer_authority(), 'set_health', new_value, reason)
 	var old_health: float = health
 	health = new_value
 	emit_signal(\"changed_health\", old_health, health, reason)
@@ -22,9 +22,9 @@ func change_health(new_value: float, reason: String) -> void:
 		die(reason)
 
 @rpc(\"any_peer\", \"reliable\", \"call_local\")
-func change_max_health(new_value: float, reason: String) -> void:
+func set_max_health(new_value: float, reason: String) -> void:
 	#if get_multiplayer_authority() != multiplayer.get_unique_id():
-		#rpc_id(get_multiplayer_authority(), 'change_max_health', new_value, reason)
+		#rpc_id(get_multiplayer_authority(), 'set_max_health', new_value, reason)
 	var old_max_health: float = max_health
 	max_health = new_value
 	emit_signal(\"changed_max_health\", old_max_health, max_health, reason)
