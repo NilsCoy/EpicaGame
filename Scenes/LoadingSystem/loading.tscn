@@ -1,0 +1,171 @@
+[gd_scene format=3 uid="uid://bp20wxg1s4h35"]
+
+[ext_resource type="Texture2D" uid="uid://d0a0j8l0go675" path="res://Assets/Textures/Loading/Loading Indicator 1.svg" id="1_bynri"]
+
+[sub_resource type="GDScript" id="GDScript_bynri"]
+script/source = "extends Control
+
+var rotation_speed: float = 1.0
+var last_texture_num: int = -1
+var textures: Array[String] = [
+	\"res://Assets/Textures/Loading/Screen1.png\",
+	\"res://Assets/Textures/Loading/Screen2.png\",
+	\"res://Assets/Textures/Loading/Screen3.png\",
+	]
+var promts: Array[String] = [
+	\"Если вы умерли, то не бойтесь! Ваши вещи будут ждать вас в мешочке.\",
+	\"Если вы голодны — не ешьте подозрительные грибы! Да, они восстанавливают здоровье, но ваш персонаж может увидеть радужных единорогов. А это лечится только смертью.\",
+	\"Если в пещере стало темно — не паникуйте! Просто зажгите факел. Но помните: в этой игре монстры тоже боятся света, поэтому они могут погасить его из принципа.\",
+	\"Если вы взяли квест у старика в деревне — готовьтесь бегать туда-сюда 10 раз. Ваши ноги устанут, а награда будет такая маленькая, что проще было умереть и потерять вещи, чем тратить на это время.\",
+	]
+
+func _ready() -> void:
+	_change_texture()
+	_change_promt()
+
+func _process(delta: float) -> void:
+	$Footer/Loading/LoadingIndicator.rotation = wrapf($Footer/Loading/LoadingIndicator.rotation + rotation_speed * delta, 0.0, 2 * PI)
+
+func _on_texture_change_timer_timeout() -> void:
+	$AnimationPlayer.play(\"Fade\")
+	await get_tree().create_timer(1).timeout
+	_change_texture()
+	$AnimationPlayer.play_backwards(\"Fade\")
+	await get_tree().create_timer(1).timeout
+	$TextureChangeTimer.start()
+
+func _change_texture() -> void:
+	var num: int = last_texture_num
+	while num == last_texture_num:
+		num = randi_range(0, len(textures)-1)
+		if num != last_texture_num:
+			var texture_name: String = textures[num]
+			var texture: Resource = ResourceLoader.load(texture_name)
+			texture.load(texture_name)
+			$ImageTexture.texture = texture
+	last_texture_num = num
+	
+func _change_promt() -> void:
+	$Footer/PromtText.text = promts[randi_range(0, len(promts)-1)]
+	
+"
+
+[sub_resource type="Animation" id="Animation_av6f6"]
+resource_name = "Fade"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Fade:color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(0, 0, 0, 0), Color(0, 0, 0, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_bynri"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Fade:color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(0, 0, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_xw05s"]
+_data = {
+&"Fade": SubResource("Animation_av6f6"),
+&"RESET": SubResource("Animation_bynri")
+}
+
+[node name="Loading" type="Control" unique_id=1678772310]
+clip_contents = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_bynri")
+metadata/_edit_lock_ = true
+
+[node name="Backgound" type="ColorRect" parent="." unique_id=694415019]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+metadata/_edit_lock_ = true
+
+[node name="ImageTexture" type="TextureRect" parent="." unique_id=857182054]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Fade" type="ColorRect" parent="." unique_id=60900582]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0)
+metadata/_edit_lock_ = true
+
+[node name="Footer" type="PanelContainer" parent="." unique_id=1115188521]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="PromtText" type="Label" parent="Footer" unique_id=1669871199]
+custom_minimum_size = Vector2(800, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="Loading" type="Control" parent="Footer" unique_id=1861773946]
+custom_minimum_size = Vector2(108, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 4
+
+[node name="LoadingIndicator" type="Sprite2D" parent="Footer/Loading" unique_id=1996381192]
+texture_filter = 2
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("1_bynri")
+
+[node name="MarginContainer" type="MarginContainer" parent="Footer" unique_id=1293116775]
+layout_mode = 2
+theme_override_constants/margin_top = 70
+theme_override_constants/margin_bottom = 70
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=716330638]
+libraries/ = SubResource("AnimationLibrary_xw05s")
+
+[node name="TextureChangeTimer" type="Timer" parent="." unique_id=1955263704]
+wait_time = 10.0
+one_shot = true
+autostart = true
+
+[connection signal="timeout" from="TextureChangeTimer" to="." method="_on_texture_change_timer_timeout"]
