@@ -1,0 +1,209 @@
+[gd_scene format=3 uid="uid://crbqpvsf1ipfm"]
+
+[ext_resource type="Texture2D" uid="uid://b03jyruw40dr2" path="res://Assets/Textures/Intro/SKALM.png" id="1_nj2pb"]
+[ext_resource type="Texture2D" uid="uid://biu736tovaanu" path="res://Assets/Textures/Intro/overlay.png" id="2_8xfus"]
+[ext_resource type="VideoStream" uid="uid://di8atgfnl4715" path="res://Assets/Textures/Intro/LostLogicLogo.ogv" id="3_8xfus"]
+[ext_resource type="AudioStream" uid="uid://bkjsw7r8t7s3k" path="res://Assets/Textures/Intro/SkalmSound.mp3" id="4_2rdj5"]
+
+[sub_resource type="GDScript" id="GDScript_gxatp"]
+script/source = "extends Control
+
+func _ready() -> void:
+	_play_team_logo()
+
+
+func _on_video_stream_player_finished() -> void:
+	$AnimationPlayer.play_backwards(\"intro\")
+	await get_tree().create_timer(1).timeout
+	$VideoStreamPlayer.visible = false
+	_play_game_logo()
+
+func _play_team_logo() -> void:
+	$AnimationPlayer.play(\"intro\")
+	$VideoStreamPlayer.play()
+
+func _play_game_logo() -> void:
+	$AnimationPlayer.play(\"intro\")
+	$AudioStreamPlayer2D.play()
+	await get_tree().create_timer(3).timeout
+	$AnimationPlayer.play_backwards(\"intro\")
+	await get_tree().create_timer(1).timeout
+	queue_free()
+"
+
+[sub_resource type="Animation" id="Animation_gxatp"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Fade:color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(0, 0, 0, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_rrtpq"]
+resource_name = "intro"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Fade:color")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(0, 0, 0, 1), Color(0, 0, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_nj2pb"]
+_data = {
+&"RESET": SubResource("Animation_gxatp"),
+&"intro": SubResource("Animation_rrtpq")
+}
+
+[node name="Intro" type="Control" unique_id=1857147256]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_gxatp")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=2088988954]
+libraries/ = SubResource("AnimationLibrary_nj2pb")
+
+[node name="Background" type="ColorRect" parent="." unique_id=493606994]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="LogoPos" type="Control" parent="." unique_id=537374018]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_lock_ = true
+
+[node name="LogoTexture" type="Sprite2D" parent="LogoPos" unique_id=1471350328]
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("1_nj2pb")
+metadata/_edit_lock_ = true
+
+[node name="OverlayPos" type="Control" parent="." unique_id=948832193]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 256.0
+offset_bottom = 256.0
+metadata/_edit_lock_ = true
+
+[node name="OverlayTexture" type="Sprite2D" parent="OverlayPos" unique_id=2079942498]
+modulate = Color(0.63529414, 0.078431375, 0.078431375, 1)
+scale = Vector2(4, 4)
+texture = ExtResource("2_8xfus")
+centered = false
+offset = Vector2(5, 5)
+flip_v = true
+metadata/_edit_lock_ = true
+
+[node name="OverlayPos2" type="Control" parent="." unique_id=679305705]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -256.0
+offset_bottom = 256.0
+grow_horizontal = 0
+metadata/_edit_lock_ = true
+
+[node name="OverlayTexture" type="Sprite2D" parent="OverlayPos2" unique_id=1804630612]
+modulate = Color(0.63529414, 0.078431375, 0.078431375, 1)
+scale = Vector2(4, 4)
+texture = ExtResource("2_8xfus")
+centered = false
+offset = Vector2(-5, 5)
+flip_h = true
+flip_v = true
+metadata/_edit_lock_ = true
+
+[node name="OverlayPos3" type="Control" parent="." unique_id=446533043]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -256.0
+offset_right = 256.0
+grow_vertical = 0
+metadata/_edit_lock_ = true
+
+[node name="OverlayTexture" type="Sprite2D" parent="OverlayPos3" unique_id=209350415]
+modulate = Color(0.63529414, 0.078431375, 0.078431375, 1)
+scale = Vector2(4, 4)
+texture = ExtResource("2_8xfus")
+centered = false
+offset = Vector2(5, -5)
+metadata/_edit_lock_ = true
+
+[node name="OverlayPos4" type="Control" parent="." unique_id=551826675]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -256.0
+offset_top = -256.0
+grow_horizontal = 0
+grow_vertical = 0
+metadata/_edit_lock_ = true
+
+[node name="OverlayTexture" type="Sprite2D" parent="OverlayPos4" unique_id=860738219]
+modulate = Color(0.63529414, 0.078431375, 0.078431375, 1)
+scale = Vector2(4, 4)
+texture = ExtResource("2_8xfus")
+centered = false
+offset = Vector2(-5, -5)
+flip_h = true
+metadata/_edit_lock_ = true
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="." unique_id=1474070569]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stream = ExtResource("3_8xfus")
+
+[node name="Fade" type="ColorRect" parent="." unique_id=1610860534]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="." unique_id=1300862005]
+stream = ExtResource("4_2rdj5")
+volume_db = 1.0
+
+[connection signal="finished" from="VideoStreamPlayer" to="." method="_on_video_stream_player_finished"]

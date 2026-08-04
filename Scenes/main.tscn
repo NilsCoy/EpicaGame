@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://cp0u50t6q8pqi"]
 
+[ext_resource type="PackedScene" uid="uid://crbqpvsf1ipfm" path="res://Scenes/Loading/intro.tscn" id="1_8gbba"]
 [ext_resource type="PackedScene" uid="uid://b2doj54r58x6h" path="res://Scenes/MapSystem/map.tscn" id="2_8gbba"]
 [ext_resource type="PackedScene" uid="uid://c3xksff8g5t4q" path="res://Scenes/main_menu.tscn" id="3_8gbba"]
 
@@ -54,5 +55,7 @@ autostart = true
 [node name="UI" type="CanvasLayer" parent="." unique_id=1553560628]
 
 [node name="MainMenu" parent="UI" unique_id=1962272188 instance=ExtResource("3_8gbba")]
+
+[node name="Intro" parent="UI" unique_id=1857147256 instance=ExtResource("1_8gbba")]
 
 [connection signal="timeout" from="SaveTimer" to="." method="_on_save_timer_timeout"]

@@ -14,12 +14,14 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="Epica"
+config/name="Skalm"
 run/main_scene="uid://cp0u50t6q8pqi"
 config/use_custom_user_dir=true
-config/custom_user_dir_name="Epica"
+config/custom_user_dir_name="Skalm"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://icon.svg"
+boot_splash/bg_color=Color(0, 0, 0, 1)
+boot_splash/show_image=false
+config/icon="uid://cqbu0lvclb1tj"
 
 [autoload]
 
