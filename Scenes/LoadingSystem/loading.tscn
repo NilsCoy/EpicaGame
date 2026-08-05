@@ -14,25 +14,36 @@ var textures: Array[String] = [
 	]
 var promts: Array[String] = [
 	\"Если вы умерли, то не бойтесь! Ваши вещи будут ждать вас в мешочке.\",
-	\"Если вы голодны — не ешьте подозрительные грибы! Да, они восстанавливают здоровье, но ваш персонаж может увидеть радужных единорогов. А это лечится только смертью.\",
-	\"Если в пещере стало темно — не паникуйте! Просто зажгите факел. Но помните: в этой игре монстры тоже боятся света, поэтому они могут погасить его из принципа.\",
-	\"Если вы взяли квест у старика в деревне — готовьтесь бегать туда-сюда 10 раз. Ваши ноги устанут, а награда будет такая маленькая, что проще было умереть и потерять вещи, чем тратить на это время.\",
+	\"Если вы голодны - не ешьте подозрительные грибы! Да, они восстанавливают здоровье, но ваш персонаж может увидеть радужных единорогов. А это лечится только смертью.\",
+	\"Если в пещере стало темно - не паникуйте! Просто зажгите факел. Но помните: в этой игре монстры тоже боятся света, поэтому они могут погасить его из принципа.\",
+	\"Если вы взяли квест у старика в деревне - готовьтесь бегать туда-сюда 10 раз. Ваши ноги устанут, а награда будет такая маленькая, что проще было умереть и потерять вещи, чем тратить на это время.\",
 	]
+var active: bool = false
 
 func _ready() -> void:
-	_change_texture()
-	_change_promt()
+	if not(OS.has_feature(\"dedicated_server\")):
+		_change_texture()
+		_change_promt()
+	else:
+		queue_free()
 
 func _process(delta: float) -> void:
 	$Footer/Loading/LoadingIndicator.rotation = wrapf($Footer/Loading/LoadingIndicator.rotation + rotation_speed * delta, 0.0, 2 * PI)
+	if visible == true and active == false:
+		active = true
+		$TextureChangeTimer.start()
+	elif visible == false and active == true:
+		active = false
+		$TextureChangeTimer.stop()
 
 func _on_texture_change_timer_timeout() -> void:
-	$AnimationPlayer.play(\"Fade\")
-	await get_tree().create_timer(1).timeout
-	_change_texture()
-	$AnimationPlayer.play_backwards(\"Fade\")
-	await get_tree().create_timer(1).timeout
-	$TextureChangeTimer.start()
+	if active == false:
+		$AnimationPlayer.play(\"Fade\")
+		await get_tree().create_timer(1).timeout
+		_change_texture()
+		$AnimationPlayer.play_backwards(\"Fade\")
+		await get_tree().create_timer(1).timeout
+		$TextureChangeTimer.start()
 
 func _change_texture() -> void:
 	var num: int = last_texture_num

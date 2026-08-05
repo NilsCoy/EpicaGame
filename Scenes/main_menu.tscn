@@ -6,15 +6,22 @@ script/source = "extends Control
 @onready var username: LineEdit = $GridContainer/UsernameEdit
 
 func _ready() -> void:
-	multiplayer.connected_to_server.connect(_on_connected)
+	if not(OS.has_feature(\"dedicated_server\")):
+		multiplayer.connected_to_server.connect(_on_connected)
+		multiplayer.connection_failed.connect(_on_failed)
+	else:
+		hide()
 
 func _on_connected() -> void:
 	hide()
+func _on_failed() -> void:
+	get_parent().loading.visible = false
 
 func _on_connect_button_pressed() -> void:
 	if username.text != '':
 		if username.text.strip_edges() != '':
 			if MultiplayerManager.get_connect() != 'connected' or MultiplayerManager.get_connect() != 'connection':
+				get_parent().loading.visible = true
 				MultiplayerManager.create_client()
 
 func _on_server_button_pressed() -> void:
@@ -26,6 +33,7 @@ func register_player() -> void:
 
 func world_loaded() -> void:
 	MultiplayerManager.rpc_id(1, \"create_player\", multiplayer.get_unique_id(), username.text)
+	get_parent().loading.visible = false
 	print(\"Map loaded\")
 
 func _on_username_edit_text_changed(new_text: String) -> void:
