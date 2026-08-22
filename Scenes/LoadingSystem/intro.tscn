@@ -8,6 +8,10 @@
 [sub_resource type="GDScript" id="GDScript_gxatp"]
 script/source = "extends Control
 
+func _input(event: InputEvent) -> void:
+	if Input.is_action_just_pressed('space'):
+		queue_free()
+
 func _ready() -> void:
 	if OS.has_feature(\"dedicated_server\"):
 		queue_free()

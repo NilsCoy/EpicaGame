@@ -1,17 +1,15 @@
-[gd_scene format=3 uid="uid://5gnvuxk7h2ub"]
-
-[sub_resource type="GDScript" id="GDScript_4iv1n"]
-script/source = "extends Component
+extends Component
+class_name RagDollComponent
 
 @export var model: Node3D
 
 func generate_ragdoll() -> Node3D:
 	var ragdoll: Node3D = model.duplicate()
 	for child: Node3D in ragdoll.get_child(0).get_children():
-		if child.is_class(\"PhysicalBoneSimulator3D\"):
+		if child.is_class("PhysicalBoneSimulator3D"):
 			child.active = true
 			for child2: Node3D in child.get_children():
-				if child2.get_child(0).is_class(\"CollisionShape3D\"):
+				if child2.get_child(0).is_class("CollisionShape3D"):
 					child2.get_child(0).disabled = false
 			break
 	ragdoll.position = get_parent().get_parent().position
@@ -25,17 +23,12 @@ func generate_ragdoll() -> Node3D:
 	ragdoll.add_child(timer)
 	return ragdoll
 
-@rpc(\"any_peer\", \"unreliable\", \"call_local\")
+@rpc("any_peer", "unreliable", "call_local")
 func spawn_ragdoll() -> void:
 	var ragdoll: Node3D = generate_ragdoll()
 	get_tree().root.get_node('Main/Map').entities.add_child(ragdoll)
 	await get_tree().create_timer(0.05, false).timeout
 	for child: Node3D in ragdoll.get_child(0).get_children():
-		if child.is_class(\"PhysicalBoneSimulator3D\"):
+		if child.is_class("PhysicalBoneSimulator3D"):
 			child.physical_bones_start_simulation()
 			break
-"
-
-[node name="RagDollComponent" type="Node" unique_id=1914003084]
-script = SubResource("GDScript_4iv1n")
-metadata/_custom_type_script = "uid://dr4mk7nu6b0yr"

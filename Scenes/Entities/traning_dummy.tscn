@@ -1,14 +1,14 @@
 [gd_scene format=3 uid="uid://v7tblekak3iq"]
 
-[ext_resource type="PackedScene" uid="uid://dux5dykrlscah" path="res://Scenes/Components/components.tscn" id="1_5wm0g"]
-[ext_resource type="PackedScene" uid="uid://c4j0e0v04j0vy" path="res://Scenes/Components/health_component.tscn" id="2_uhc0p"]
+[ext_resource type="Script" uid="uid://cq8ts751yfvxb" path="res://Scripts/Classes/Components/ComponentContainer.gd" id="2_i7d65"]
+[ext_resource type="Script" uid="uid://ba3p1tiqgc6vs" path="res://Scripts/Classes/Components/HealthComponent.gd" id="2_ymciu"]
 [ext_resource type="PackedScene" uid="uid://bo8h0lspkd545" path="res://Assets/Models/Entities/traning_dummy.gltf" id="3_uhc0p"]
 
 [sub_resource type="GDScript" id="GDScript_uhc0p"]
 script/source = "extends CharacterBody3D
 
 @onready var animation: AnimationTree = $AnimationTree
-@onready var components: Node = $Components
+@onready var components: Node = $ComponentContainer
 @export var is_life: bool = true
 @export var id: String
 
@@ -18,8 +18,8 @@ func save_data() -> Dictionary:
 		\"id\": id,
 		\"position\": [position.x, position.y, position.z],
 		\"rotation\": [rotation.x, rotation.y, rotation.z],
-		\"health\": $Components/HealthComponent.health,
-		\"max_health\": $Components/HealthComponent.max_health,
+		\"health\": $ComponentContainer/HealthComponent.health,
+		\"max_health\": $ComponentContainer/HealthComponent.max_health,
 	}
 
 func load_data(data: Dictionary) -> void:
@@ -33,8 +33,8 @@ func load_data(data: Dictionary) -> void:
 	self.rotation.y = data.get(\"rotation\", Vector3.ZERO)[1]
 	self.rotation.z = data.get(\"rotation\", Vector3.ZERO)[2]
 	
-	$Components/HealthComponent.health = data.get(\"health\", 100.0)
-	$Components/HealthComponent.max_health = data.get(\"max_health\", 100.0)
+	$ComponentContainer/HealthComponent.health = data.get(\"health\", 100.0)
+	$ComponentContainer/HealthComponent.max_health = data.get(\"max_health\", 100.0)
 
 func _ready() -> void:
 	if get_multiplayer_authority() == multiplayer.get_unique_id():
@@ -76,9 +76,9 @@ func _on_health_component_died(reason: String) -> void:
 
 func _health_update() -> void:
 	if is_life:
-		$Sprite3D/SubViewport/Health.text = str($Components/HealthComponent.health) + ' / ' + str($Components/HealthComponent.max_health)
+		$Sprite3D/SubViewport/Health.text = str($ComponentContainer/HealthComponent.health) + ' / ' + str($ComponentContainer/HealthComponent.max_health)
 	else:
-		$Sprite3D/SubViewport/Health.text = 'Died' + ' / ' + str($Components/HealthComponent.max_health)
+		$Sprite3D/SubViewport/Health.text = 'Died' + ' / ' + str($ComponentContainer/HealthComponent.max_health)
 
 func _on_text_timer_timeout() -> void:
 	$Sprite3D/SubViewport/Damage.text = ''
@@ -103,12 +103,16 @@ animation = &"damaged_right"
 [sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_gaqyi"]
 blend_point_0/node = SubResource("AnimationNodeAnimation_uhc0p")
 blend_point_0/pos = Vector2(0, 1)
+blend_point_0/name = &"0"
 blend_point_1/node = SubResource("AnimationNodeAnimation_gaqyi")
 blend_point_1/pos = Vector2(0, -1)
+blend_point_1/name = &"1"
 blend_point_2/node = SubResource("AnimationNodeAnimation_cs86c")
 blend_point_2/pos = Vector2(-1, 0)
+blend_point_2/name = &"2"
 blend_point_3/node = SubResource("AnimationNodeAnimation_b6lmq")
 blend_point_3/pos = Vector2(1, 0)
+blend_point_3/name = &"3"
 
 [sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_cs86c"]
 
@@ -169,10 +173,6 @@ script = SubResource("GDScript_uhc0p")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8996582, 0)
 shape = SubResource("CylinderShape3D_gaqyi")
 
-[node name="Components" parent="." unique_id=365846116 instance=ExtResource("1_5wm0g")]
-
-[node name="HealthComponent" parent="Components" unique_id=1135595511 instance=ExtResource("2_uhc0p")]
-
 [node name="AnimationTree" type="AnimationTree" parent="." unique_id=341289207]
 root_node = NodePath("../Model/blockbench_export")
 tree_root = SubResource("AnimationNodeBlendTree_b6lmq")
@@ -193,12 +193,13 @@ texture = SubResource("ViewportTexture_uhc0p")
 
 [node name="SubViewport" type="SubViewport" parent="Sprite3D" unique_id=435145236]
 transparent_bg = true
-size = Vector2i(111, 46)
+size = Vector2i(111, 51)
 script = SubResource("GDScript_gaqyi")
 
 [node name="Health" type="Label" parent="Sprite3D/SubViewport" unique_id=700441942]
 offset_right = 111.0
 offset_bottom = 23.0
+theme_override_font_sizes/font_size = 32
 text = "100/100"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -207,6 +208,7 @@ vertical_alignment = 1
 offset_top = 23.0
 offset_right = 111.0
 offset_bottom = 46.0
+theme_override_font_sizes/font_size = 24
 text = "10000"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -217,8 +219,16 @@ one_shot = true
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=508694356]
 replication_config = SubResource("SceneReplicationConfig_ymciu")
 
-[connection signal="damaged" from="Components/HealthComponent" to="." method="_on_health_component_damaged"]
-[connection signal="died" from="Components/HealthComponent" to="." method="_on_health_component_died"]
+[node name="ComponentContainer" type="Node" parent="." unique_id=251133748]
+script = ExtResource("2_i7d65")
+metadata/_custom_type_script = "uid://cq8ts751yfvxb"
+
+[node name="HealthComponent" type="Node" parent="ComponentContainer" unique_id=1599286235]
+script = ExtResource("2_ymciu")
+metadata/_custom_type_script = "uid://ba3p1tiqgc6vs"
+
 [connection signal="timeout" from="Sprite3D/TextTimer" to="." method="_on_text_timer_timeout"]
+[connection signal="damaged" from="ComponentContainer/HealthComponent" to="." method="_on_health_component_damaged"]
+[connection signal="died" from="ComponentContainer/HealthComponent" to="." method="_on_health_component_died"]
 
 [editable path="Model/blockbench_export"]

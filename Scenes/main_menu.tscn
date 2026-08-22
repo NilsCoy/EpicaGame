@@ -83,6 +83,7 @@ grow_vertical = 2
 [node name="UsernameEdit" type="LineEdit" parent="GridContainer" unique_id=124508694]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 placeholder_text = "Nickname"
 alignment = 1
 max_length = 15
@@ -91,11 +92,13 @@ emoji_menu_enabled = false
 
 [node name="ConnectButton" type="Button" parent="GridContainer" unique_id=1268256838]
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Connect"
 
 [node name="ServerButton" type="Button" parent="GridContainer" unique_id=85875312]
 visible = false
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Host"
 
 [connection signal="text_changed" from="GridContainer/UsernameEdit" to="." method="_on_username_edit_text_changed"]

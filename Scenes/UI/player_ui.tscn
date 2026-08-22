@@ -4,8 +4,57 @@
 [ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/Classes/InventorySystem/inventory_data.gd" id="2_deklj"]
 [ext_resource type="Texture2D" uid="uid://doq5i1ep3wl6l" path="res://Assets/Textures/Health Overlay.png" id="2_nwg7q"]
 [ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/Classes/InventorySystem/slot_data.gd" id="3_nwg7q"]
+[ext_resource type="Texture2D" uid="uid://cjgfu62bswrf8" path="res://Assets/Textures/UI/Health bar/hp_bar_under.png" id="3_onufr"]
 [ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="4_6nfne"]
+[ext_resource type="Texture2D" uid="uid://mledxa1kxayu" path="res://Assets/Textures/UI/Health bar/hp_bar_over.png" id="4_plo7s"]
 [ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="5_21gwg"]
+[ext_resource type="Texture2D" uid="uid://woftm7j3vygs" path="res://Assets/Textures/UI/Health bar/hp_bar_progress.png" id="5_we3k3"]
+[ext_resource type="Texture2D" uid="uid://cffr4v1l5ku2n" path="res://Assets/Textures/UI/Energy bar/energy_bar_under.png" id="6_uxa4k"]
+[ext_resource type="Texture2D" uid="uid://bmhs6hh27u36r" path="res://Assets/Textures/UI/Energy bar/energy_bar_over.png" id="7_8wddj"]
+[ext_resource type="Texture2D" uid="uid://bwgwkswrgdsqg" path="res://Assets/Textures/UI/Energy bar/energy_bar_progress.png" id="8_2h8c0"]
+[ext_resource type="Texture2D" uid="uid://b62hsjigxs16x" path="res://Assets/Textures/UI/Head overlay/head_overlay.png" id="9_plo7s"]
+[ext_resource type="PackedScene" uid="uid://c0m4ufvoff2i0" path="res://Assets/Models/Entities/human.gltf" id="10_we3k3"]
+
+[sub_resource type="GDScript" id="GDScript_2hnfo"]
+script/source = "extends Label
+
+func _process(delta: float) -> void:
+	text = str(int(Performance.get_monitor(Performance.TIME_FPS)))
+"
+
+[sub_resource type="GDScript" id="GDScript_we3k3"]
+script/source = "extends Control
+
+func update_nickname(nickname: String) -> void:
+	$NicknameLable.text = nickname
+
+func update_health(health: float, max_health: float) -> void:
+	$HealthLable.text = str(int(health))+'%'
+	$HealthBar.max_value = max_health
+	$HealthBar.value = health
+
+func update_energy(energy: float, max_energy: float) -> void:
+	$EnergyLable.text = str(int(energy))+'%'
+	$EnergyBar.max_value = max_energy
+	$EnergyBar.value = energy
+"
+
+[sub_resource type="GDScript" id="GDScript_plo7s"]
+script/source = "extends Control
+
+func _ready() -> void:
+	$HeadTexture.texture = get_texture_3d()
+
+func get_texture_3d() -> AtlasTexture:
+	var texture: AtlasTexture = AtlasTexture.new()
+	texture.atlas = $HeadScreen.get_texture()
+	return texture
+"
+
+[sub_resource type="Environment" id="Environment_3smsa"]
+
+[sub_resource type="World3D" id="World3D_8erm5"]
+environment = SubResource("Environment_3smsa")
 
 [sub_resource type="GDScript" id="GDScript_vgqql"]
 script/source = "extends Control
@@ -89,11 +138,6 @@ inv_name = "HotBar"
 slot_datas = Array[ExtResource("3_nwg7q")]([null, null, null, null, null, null, null, null, null])
 metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 
-[sub_resource type="Environment" id="Environment_3smsa"]
-
-[sub_resource type="World3D" id="World3D_8erm5"]
-environment = SubResource("Environment_3smsa")
-
 [sub_resource type="GDScript" id="GDScript_c4arg"]
 script/source = "extends Control
 
@@ -116,30 +160,29 @@ grow_vertical = 2
 metadata/_edit_use_anchors_ = true
 metadata/_edit_lock_ = true
 
-[node name="FPS" type="Label" parent="HUD" unique_id=1105957091]
-layout_mode = 0
-offset_left = 16.0
-offset_right = 56.0
-offset_bottom = 23.0
-text = "60"
+[node name="PerformanceStats" type="Control" parent="HUD" unique_id=1551538850]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
 metadata/_edit_lock_ = true
 
-[node name="ItemName" type="Label" parent="HUD" unique_id=1624363533]
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD/PerformanceStats" unique_id=2136606771]
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
+anchors_preset = 15
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -40.0
-offset_top = -111.0
-offset_right = 40.0
-offset_bottom = -88.0
 grow_horizontal = 2
-grow_vertical = 0
-text = "1"
-horizontal_alignment = 1
-vertical_alignment = 1
+grow_vertical = 2
+metadata/_edit_lock_ = true
+
+[node name="FPS" type="Label" parent="HUD/PerformanceStats/HBoxContainer" unique_id=1105957091]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 32
+text = "60"
+script = SubResource("GDScript_2hnfo")
 metadata/_edit_lock_ = true
 
 [node name="Crosshair" type="Control" parent="HUD" unique_id=1199651067]
@@ -173,6 +216,154 @@ grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("2_nwg7q")
 expand_mode = 1
+metadata/_edit_lock_ = true
+
+[node name="TopBar" type="Control" parent="HUD" unique_id=1602657204]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 30.0
+offset_top = 30.0
+offset_right = 70.0
+offset_bottom = 70.0
+offset_transform_enabled = true
+script = SubResource("GDScript_we3k3")
+
+[node name="NicknameLable" type="Label" parent="HUD/TopBar" unique_id=1262446329]
+layout_mode = 0
+offset_left = 141.0
+offset_top = 6.0
+offset_right = 237.0
+offset_bottom = 34.0
+theme_override_font_sizes/font_size = 32
+text = "Nickname"
+vertical_alignment = 1
+
+[node name="HealthBar" type="TextureProgressBar" parent="HUD/TopBar" unique_id=1273788977]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 34.0
+offset_right = 266.0
+offset_bottom = 45.0
+scale = Vector2(3, 3)
+step = 0.01
+value = 66.0
+texture_under = ExtResource("3_onufr")
+texture_over = ExtResource("4_plo7s")
+texture_progress = ExtResource("5_we3k3")
+
+[node name="HealthLable" type="Label" parent="HUD/TopBar" unique_id=798702155]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 141.0
+offset_top = 34.0
+offset_right = 147.0
+offset_bottom = 27.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 32
+text = "100%"
+vertical_alignment = 1
+
+[node name="EnergyBar" type="TextureProgressBar" parent="HUD/TopBar" unique_id=1287752480]
+layout_mode = 0
+offset_left = 123.0
+offset_top = 72.0
+offset_right = 242.0
+offset_bottom = 78.0
+scale = Vector2(3, 3)
+step = 0.1
+value = 66.0
+texture_under = ExtResource("6_uxa4k")
+texture_over = ExtResource("7_8wddj")
+texture_progress = ExtResource("8_2h8c0")
+
+[node name="EnergyLable" type="Label" parent="HUD/TopBar" unique_id=179941867]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 141.0
+offset_top = 69.0
+offset_right = 136.0
+offset_bottom = 51.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "100%"
+vertical_alignment = 1
+
+[node name="Head" type="Control" parent="HUD/TopBar" unique_id=1760191852]
+anchors_preset = 0
+offset_left = 44.0
+offset_top = 16.0
+offset_right = 84.0
+offset_bottom = 56.0
+script = SubResource("GDScript_plo7s")
+
+[node name="UpHeadOverlay" type="TextureRect" parent="HUD/TopBar/Head" unique_id=1405603367]
+layout_mode = 0
+offset_top = 6.0
+offset_right = 80.0
+offset_bottom = 46.0
+scale = Vector2(0.55, 0.55)
+offset_transform_enabled = true
+offset_transform_scale = Vector2(3, 3)
+texture = ExtResource("9_plo7s")
+flip_v = true
+
+[node name="HeadTexture" type="TextureRect" parent="HUD/TopBar/Head" unique_id=775727340]
+layout_mode = 0
+offset_left = -21.0
+offset_top = -8.0
+offset_right = 59.0
+offset_bottom = 72.0
+expand_mode = 1
+
+[node name="DownHeadOverlay" type="TextureRect" parent="HUD/TopBar/Head" unique_id=731918591]
+layout_mode = 0
+offset_top = 78.0
+offset_right = 80.0
+offset_bottom = 118.0
+scale = Vector2(0.55, 0.55)
+offset_transform_enabled = true
+offset_transform_scale = Vector2(3, 3)
+texture = ExtResource("9_plo7s")
+expand_mode = 3
+
+[node name="HeadScreen" type="SubViewport" parent="HUD/TopBar/Head" unique_id=399475229]
+own_world_3d = true
+world_3d = SubResource("World3D_8erm5")
+transparent_bg = true
+render_target_update_mode = 1
+
+[node name="Scene" type="Node3D" parent="HUD/TopBar/Head/HeadScreen" unique_id=1365261343]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+metadata/_edit_lock_ = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="HUD/TopBar/Head/HeadScreen/Scene" unique_id=1364002626]
+transform = Transform3D(-0.60737574, -0.7511338, 0.25863612, 0, 0.32556814, 0.9455186, -0.7944147, 0.57428503, -0.1977422, 0, 1, 0)
+metadata/_edit_lock_ = true
+
+[node name="blockbench_export" parent="HUD/TopBar/Head/HeadScreen" unique_id=562773184 instance=ExtResource("10_we3k3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+
+[node name="Skeleton3D" parent="HUD/TopBar/Head/HeadScreen/blockbench_export/base" parent_id_path=PackedInt32Array(562773184, 2113020208) index="0" unique_id=1981775415]
+bones/0/position = Vector3(0, -0.01875, 0)
+bones/11/rotation = Quaternion(0.04360901, 0.00095155195, 0.021794122, 0.99881047)
+bones/12/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
+bones/14/rotation = Quaternion(0.04360901, -0.00095155195, -0.021794122, 0.99881047)
+bones/15/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
+bones/17/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
+bones/18/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
+bones/19/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
+bones/20/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
+
+[node name="Camera3D" type="Camera3D" parent="HUD/TopBar/Head/HeadScreen" unique_id=189511079]
+transform = Transform3D(-0.81512773, -0.07661365, 0.57419264, 0, 0.9912155, 0.1322564, -0.5792813, 0.10780585, -0.8079673, 0.3633367, 0.8457718, -0.4523987)
+projection = 1
+fov = 60.0
 
 [node name="CreativeInventory" type="Control" parent="." unique_id=1941891616]
 layout_mode = 3
@@ -224,6 +415,7 @@ grow_horizontal = 2
 grow_vertical = 2
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 2
+metadata/_edit_lock_ = true
 
 [node name="BlocksContainer" parent="CreativeInventory/ScrollContainer" unique_id=1357003237 instance=ExtResource("4_6nfne")]
 layout_mode = 2
@@ -242,6 +434,24 @@ metadata/_edit_lock_ = true
 [node name="Camera3D" type="Camera3D" parent="CreativeInventory/BlockScreen" unique_id=1824162630]
 transform = Transform3D(0.7071067, -0.4055798, 0.579228, 0, 0.81915206, 0.57357645, -0.7071067, -0.4055798, 0.579228, 1.25, 1.25, 1.25)
 fov = 60.0
+metadata/_edit_lock_ = true
+
+[node name="ItemName" type="Label" parent="CreativeInventory" unique_id=1624363533]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -111.0
+offset_right = 40.0
+offset_bottom = -88.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
 metadata/_edit_lock_ = true
 
 [node name="Chat" type="Control" parent="." unique_id=295325971]
@@ -264,6 +474,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.39215687)
+metadata/_edit_lock_ = true
 
 [node name="ChatHistory" type="RichTextLabel" parent="Chat" unique_id=1260182835]
 layout_mode = 1
@@ -273,7 +484,13 @@ anchor_bottom = 0.897
 offset_bottom = -0.1000061
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_font_sizes/normal_font_size = 24
+theme_override_font_sizes/bold_font_size = 24
+theme_override_font_sizes/bold_italics_font_size = 24
+theme_override_font_sizes/italics_font_size = 24
+theme_override_font_sizes/mono_font_size = 24
 scroll_following = true
+metadata/_edit_lock_ = true
 
 [node name="SendChat" type="LineEdit" parent="Chat" unique_id=1702082528]
 layout_mode = 1
@@ -284,9 +501,13 @@ anchor_bottom = 1.0
 offset_top = -31.0
 grow_horizontal = 2
 grow_vertical = 0
+theme_override_font_sizes/font_size = 24
 placeholder_text = "Enter text..."
 emoji_menu_enabled = false
 drag_and_drop_selection_enabled = false
 flat = true
+metadata/_edit_lock_ = true
 
 [connection signal="text_submitted" from="Chat/SendChat" to="Chat" method="_on_send_chat_text_submitted"]
+
+[editable path="HUD/TopBar/Head/HeadScreen/blockbench_export"]
