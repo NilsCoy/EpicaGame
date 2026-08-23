@@ -51,9 +51,9 @@ func _change_texture() -> void:
 		num = randi_range(0, len(textures)-1)
 		if num != last_texture_num:
 			var texture_name: String = textures[num]
-			var texture: Resource = ResourceLoader.load(texture_name)
-			texture.load(texture_name)
-			$ImageTexture.texture = texture
+			var texture: Texture2D = load(texture_name)
+			if texture:
+				$ImageTexture.texture = texture
 	last_texture_num = num
 	
 func _change_promt() -> void:

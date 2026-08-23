@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://b2doj54r58x6h"]
 
+[ext_resource type="PackedScene" uid="uid://csirajce688aq" path="res://Scenes/Utilites/ambient_system.tscn" id="1_20ysd"]
+
 [sub_resource type="GDScript" id="GDScript_58wgy"]
 script/source = "extends Node
 
@@ -36,6 +38,7 @@ func add_player(pocket: Array) -> void:
 @rpc(\"authority\", \"reliable\")
 func load_completed() -> void:
 	emit_signal(\"load_completed_signal\")
+	$AmbientSystem.init_sound()
 
 @rpc(\"any_peer\", \"reliable\")
 func load_scene() -> void:
@@ -115,6 +118,8 @@ properties/1/replication_mode = 1
 
 [node name="Map" type="Node" unique_id=616319268]
 script = SubResource("GDScript_58wgy")
+
+[node name="AmbientSystem" parent="." unique_id=981918370 instance=ExtResource("1_20ysd")]
 
 [node name="Chunks" type="Node" parent="." unique_id=1473334747]
 

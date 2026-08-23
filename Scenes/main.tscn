@@ -8,6 +8,12 @@
 [sub_resource type="GDScript" id="GDScript_bo1nx"]
 script/source = "extends Node3D
 
+var intro_scene: bool = true
+
+func _ready() -> void:
+	if not(intro_scene):
+		$UI/Intro.queue_free()
+
 func _on_save_timer_timeout() -> void:
 	if OS.has_feature(\"dedicated_server\"):
 		#$Map.save()
