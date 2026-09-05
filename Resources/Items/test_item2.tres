@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://ddb7xqomqii4c"]
+
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_27ivj"]
+[ext_resource type="Texture2D" uid="uid://cqbu0lvclb1tj" path="res://icon.svg" id="2_37tmm"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
+atlas = ExtResource("2_37tmm")
+
+[resource]
+script = ExtResource("1_27ivj")
+name = "test item 2"
+max_stack = 10
+size = Vector2i(2, 2)
+texture = SubResource("AtlasTexture_354lq")
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://bud750atb0nn8"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_fpeqf"]
+
+[sub_resource type="GDScript" id="GDScript_fpeqf"]
+script/source = "extends PanelContainer
+
+signal slot_clicked(index: int, button: int)
+
+@export var color: Color = Color(0, 0, 0, 100)
+@export var texture: AtlasTexture
+
+@onready var backgound_texture: TextureRect = $BackgoundTexture
+@onready var backgound_color: ColorRect = $BackgoundColor
+
+func _ready() -> void:
+	backgound_texture.texture = texture
+	backgound_color.color = color
+
+func _on_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if (event.button_index == MOUSE_BUTTON_LEFT) \\
+				or (event.button_index == MOUSE_BUTTON_RIGHT) \\
+				and (event.is_pressed()):
+			slot_clicked.emit(get_index(), event.button_index)
+"
+
+[node name="MultiSlotContainer" type="PanelContainer" unique_id=1947869178]
+custom_minimum_size = Vector2(64, 64)
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_fpeqf")
+script = SubResource("GDScript_fpeqf")
+
+[node name="BackgoundTexture" type="TextureRect" parent="." unique_id=129140878]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BackgoundColor" type="ColorRect" parent="." unique_id=1291334053]
+layout_mode = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.39215687)
+
+[connection signal="gui_input" from="." to="." method="_on_gui_input"]

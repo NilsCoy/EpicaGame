@@ -1,0 +1,83 @@
+[gd_scene format=3 uid="uid://cp71jwraxlmpd"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_fpeqf"]
+
+[sub_resource type="GDScript" id="GDScript_fpeqf"]
+script/source = "extends PanelContainer
+
+signal slot_clicked(index: int, button: int)
+
+@export var color: Color = Color(0, 0, 0, 100)
+@export var texture: AtlasTexture
+
+@onready var backgound_texture: TextureRect = $BackgoundTexture
+@onready var backgound_color: ColorRect = $BackgoundColor
+
+@onready var item_texture: TextureRect = $ItemTexture
+@onready var quantity_label: Label = $QuantityLabel
+
+func _ready() -> void:
+	backgound_texture.texture = texture
+	backgound_color.color = color
+
+func _on_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if (event.button_index == MOUSE_BUTTON_LEFT) \\
+				or (event.button_index == MOUSE_BUTTON_RIGHT) \\
+				and (event.is_pressed()):
+			slot_clicked.emit(get_index(), event.button_index)
+
+func clear_slot_data() -> void:
+	item_texture.texture = null
+	tooltip_text = \"\"
+	quantity_label.hide()
+
+func set_slot_data(slot_data: SlotData) -> void:
+	var item_data: ItemData = slot_data.item_data
+
+	item_texture.texture = item_data.texture
+
+	tooltip_text = \"%s\\n%s\" % [
+		item_data.name,
+		item_data.discription
+	]
+
+	if slot_data.quantity > 1:
+		quantity_label.text = str(slot_data.quantity)
+		quantity_label.show()
+	else:
+		quantity_label.hide()
+"
+
+[node name="SingleSlotContainer" type="PanelContainer" unique_id=1947869178]
+custom_minimum_size = Vector2(64, 64)
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_fpeqf")
+script = SubResource("GDScript_fpeqf")
+
+[node name="BackgoundTexture" type="TextureRect" parent="." unique_id=129140878]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BackgoundColor" type="ColorRect" parent="." unique_id=1291334053]
+layout_mode = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.39215687)
+
+[node name="ItemTexture" type="TextureRect" parent="." unique_id=402732198]
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="QuantityLabel" type="Label" parent="." unique_id=70988679]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+text = "99"
+
+[connection signal="gui_input" from="." to="." method="_on_gui_input"]

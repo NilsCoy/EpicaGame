@@ -1,0 +1,51 @@
+[gd_scene format=3 uid="uid://74bnuimkjgne"]
+
+[sub_resource type="GDScript" id="GDScript_r0owy"]
+script/source = "extends PanelContainer
+
+@onready var item_texture: TextureRect = $ItemTexture
+@onready var quantity_label: Label = $QuantityLabel
+
+func clear_slot_data() -> void:
+	item_texture.texture = null
+	tooltip_text = \"\"
+	quantity_label.hide()
+
+func set_slot_data(slot_data: SlotData) -> void:
+	var item_data: ItemData = slot_data.item_data
+
+	item_texture.texture = item_data.texture
+
+	tooltip_text = \"%s\\n%s\" % [
+		item_data.name,
+		item_data.discription
+	]
+
+	if slot_data.quantity > 1:
+		quantity_label.text = str(slot_data.quantity)
+		quantity_label.show()
+	else:
+		quantity_label.hide()
+"
+
+[node name="ItemVisual" type="PanelContainer" unique_id=1347128411]
+custom_minimum_size = Vector2(64, 64)
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+script = SubResource("GDScript_r0owy")
+
+[node name="ItemTexture" type="TextureRect" parent="." unique_id=1614213488]
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="QuantityLabel" type="Label" parent="." unique_id=1873792072]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+text = "99"

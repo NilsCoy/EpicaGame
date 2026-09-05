@@ -1,0 +1,245 @@
+[gd_scene format=3 uid="uid://bpa5r2i2c8gv0"]
+
+[ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/Classes/InventorySystem/inventory_data.gd" id="1_o1kjb"]
+[ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/Classes/InventorySystem/slot_data.gd" id="2_qns53"]
+[ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="3_3k7iu"]
+[ext_resource type="PackedScene" uid="uid://74bnuimkjgne" path="res://Scenes/InventorySystem/item_visual.tscn" id="4_o1kjb"]
+
+[sub_resource type="GDScript" id="GDScript_vgqql"]
+script/source = "extends Control
+
+# Inventory
+@export var blocks_data: InventoryData
+@export var hot_bar_data: InventoryData
+var grabbed_slot_data: SlotData
+@onready var grabbed_slot_container: Control = $GrabbedSlotContainer
+
+#func _ready() -> void:
+	#var files: Array = FileManager.get_files_in_directory(FileManager.get_file_path('Resources/Blocks/Data', true))
+	#for file: String in files:
+		#var slot: SlotData = SlotData.new()
+		#var item: ItemData = ItemData.new()
+		#item.name = file.split(\".\")[0]
+		#var block: Dictionary = FileManager.read_json(FileManager.get_file_path('Resources/Blocks/Data/'+file, true))
+		#if block[\"type\"] == \"block\":
+			#var atlas_texture: Texture2D = load(block[\"textures\"][\"side\"])
+			#var texture: AtlasTexture = AtlasTexture.new()
+			#texture.atlas = atlas_texture
+			#item.texture = texture
+		#elif block[\"type\"] == \"model\":
+			#item.texture = get_texture_3d(block[\"asset\"])
+		#item.attributes[\"action\"] = \"block\"
+		#item.max_stack = 99
+		#slot.item_data = item
+		#slot.quantity = item.max_stack
+		#blocks_data.slot_datas.append(slot)
+	#blocks_data.inventory_interact.connect(on_inventory_interact)
+	#$ScrollContainer/BlocksContainer.set_inventory_data(blocks_data)
+	#hot_bar_data.inventory_interact.connect(on_inventory_interact)
+	#$HotBarContainer.set_inventory_data(hot_bar_data)
+
+func _ready() -> void:
+	init_inventory()
+
+func init_inventory() -> void:
+	$GrabbedSlotContainer.hide()
+	$ScrollContainer/BlocksContainer.columns = blocks_data.grid_size.x
+	$HotBarContainer.columns = hot_bar_data.grid_size.x
+	
+	var files: Array = FileManager.get_files_in_directory(
+		FileManager.get_file_path(\"Resources/Blocks/Data\", true)
+	)
+
+	for file: String in files:
+		var slot: SlotData = SlotData.new()
+		var item: ItemData = ItemData.new()
+
+		item.name = file.split(\".\")[0]
+		item.size = Vector2i(1, 1)
+
+		var block: Dictionary = FileManager.read_json(
+			FileManager.get_file_path(
+				\"Resources/Blocks/Data/\" + file,
+				true
+			)
+		)
+
+		if block[\"type\"] == \"block\":
+			var atlas_texture: Texture2D = load(
+				block[\"textures\"][\"side\"]
+			)
+
+			var texture: AtlasTexture = AtlasTexture.new()
+			texture.atlas = atlas_texture
+
+			item.texture = texture
+
+		elif block[\"type\"] == \"model\":
+			item.texture = get_texture_3d(block[\"asset\"])
+
+		item.attributes[\"action\"] = \"block\"
+		item.max_stack = 99
+
+		slot.item_data = item
+		slot.quantity = item.max_stack
+
+		blocks_data.slot_datas.append(slot)
+	
+	var rows: int = ceil(len(blocks_data.slot_datas)/blocks_data.grid_size.x)
+	blocks_data.grid_size.y = rows
+
+	blocks_data.inventory_interact.connect(on_inventory_interact)
+	$ScrollContainer/BlocksContainer.set_inventory_data(blocks_data)
+
+	hot_bar_data.inventory_interact.connect(on_inventory_interact)
+	$HotBarContainer.set_inventory_data(hot_bar_data)
+
+func _physics_process(delta: float) -> void:
+	if grabbed_slot_container.visible:
+		grabbed_slot_container.global_position = get_global_mouse_position() + Vector2(5, 5)
+
+func get_texture_3d(path: String) -> AtlasTexture:
+	for i: Node in $BlockScreen/Scene.get_children():
+		i.free()
+	var node: Variant = load(path).instantiate()
+	$BlockScreen/Scene.add_child(node)
+	var texture: AtlasTexture = AtlasTexture.new()
+	texture.atlas = $BlockScreen.get_texture()
+	return texture
+
+func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> void:
+	if Input.is_action_pressed(\"shift\"):
+		if inv_data.inv_name == \"ItemTabs\":
+			inv_data.transportation_slot_data(index, hot_bar_data)
+		elif inv_data.inv_name == \"HotBar\":
+			inv_data.transportation_slot_data(index, blocks_data)
+	else:
+		match [grabbed_slot_data, button]:
+			[null, MOUSE_BUTTON_LEFT]:
+					grabbed_slot_data = inv_data.grab_slot_data(index)
+			[_, MOUSE_BUTTON_LEFT]:
+				grabbed_slot_data = inv_data.drop_slot_data(grabbed_slot_data, index)
+			[null, MOUSE_BUTTON_RIGHT]:
+				grabbed_slot_data = inv_data.grab_hafl_slot_data(index)
+			[_, MOUSE_BUTTON_RIGHT]:
+				grabbed_slot_data = inv_data.drop_single_slot_data(grabbed_slot_data, index)
+	update_grabbed_slot()
+
+#func update_grabbed_slot() -> void:
+	#if grabbed_slot_data:
+		#grabbed_slot_container.set_slot_data(grabbed_slot_data)
+		#grabbed_slot_container.show()
+	#else: grabbed_slot_container.hide()
+func update_grabbed_slot() -> void:
+	if grabbed_slot_data:
+		grabbed_slot_container.set_slot_data(grabbed_slot_data)
+
+		#var item_size: Vector2i = grabbed_slot_data.item_data.size
+		#grabbed_slot_container.size = item_size * 64
+
+		grabbed_slot_container.show()
+	else:
+		grabbed_slot_container.hide()
+"
+
+[sub_resource type="Resource" id="Resource_fkybt"]
+script = ExtResource("1_o1kjb")
+inv_name = "ItemTabs"
+grid_size = Vector2i(9, 5)
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Resource" id="Resource_3smsa"]
+script = ExtResource("1_o1kjb")
+inv_name = "HotBar"
+grid_size = Vector2i(9, 1)
+slot_datas = Array[ExtResource("2_qns53")]([null, null, null, null, null, null, null, null, null])
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Environment" id="Environment_3smsa"]
+
+[sub_resource type="World3D" id="World3D_8erm5"]
+environment = SubResource("Environment_3smsa")
+
+[node name="CreativeInventory" type="Control" unique_id=1745702651]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_vgqql")
+blocks_data = SubResource("Resource_fkybt")
+hot_bar_data = SubResource("Resource_3smsa")
+metadata/_edit_lock_ = true
+
+[node name="HotBarContainer" parent="." unique_id=2012566676 instance=ExtResource("3_3k7iu")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -8.0
+offset_top = -16.0
+offset_right = 8.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="GrabbedSlotContainer" parent="." unique_id=1347128411 instance=ExtResource("4_o1kjb")]
+top_level = true
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=991526994]
+custom_minimum_size = Vector2(572, 500)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -4.0
+offset_right = 4.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="BlocksContainer" parent="ScrollContainer" unique_id=1445187137 instance=ExtResource("3_3k7iu")]
+layout_mode = 2
+
+[node name="BlockScreen" type="SubViewport" parent="." unique_id=698160024]
+own_world_3d = true
+world_3d = SubResource("World3D_8erm5")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="BlockScreen" unique_id=366075919]
+transform = Transform3D(0.8328903, 0.4372957, 0.3392141, -0.55343753, 0.6572007, 0.5116583, 0.00081419945, -0.61388904, 0.7893919, 0, 0, 0)
+metadata/_edit_lock_ = true
+
+[node name="Scene" type="Node3D" parent="BlockScreen" unique_id=1328785054]
+metadata/_edit_lock_ = true
+
+[node name="Camera3D" type="Camera3D" parent="BlockScreen" unique_id=706241097]
+transform = Transform3D(0.7071067, -0.4055798, 0.579228, 0, 0.81915206, 0.57357645, -0.7071067, -0.4055798, 0.579228, 1.25, 1.25, 1.25)
+fov = 60.0
+metadata/_edit_lock_ = true
+
+[node name="ItemName" type="Label" parent="." unique_id=1417582934]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -111.0
+offset_right = 40.0
+offset_bottom = -88.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_lock_ = true

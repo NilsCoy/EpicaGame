@@ -46,6 +46,16 @@ window/vsync/vsync_mode=0
 
 enabled=PackedStringArray("res://addons/fgi/plugin.cfg")
 
+[file_customization]
+
+folder_colors={
+"res://Assets/": "green",
+"res://Resources/": "teal",
+"res://Scenes/": "red",
+"res://Scripts/": "purple",
+"res://defaults/": "gray"
+}
+
 [global_group]
 
 Players=""
