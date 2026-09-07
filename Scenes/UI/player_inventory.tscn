@@ -3,8 +3,6 @@
 [ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/Classes/InventorySystem/inventory_data.gd" id="1_lc66f"]
 [ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/Classes/InventorySystem/slot_data.gd" id="2_47rqh"]
 [ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="3_62ws4"]
-[ext_resource type="Resource" uid="uid://cfpfg3lvlvwqn" path="res://Resources/Items/test_item.tres" id="3_ejrui"]
-[ext_resource type="Resource" uid="uid://ddb7xqomqii4c" path="res://Resources/Items/test_item2.tres" id="4_biyl3"]
 [ext_resource type="PackedScene" uid="uid://74bnuimkjgne" path="res://Scenes/InventorySystem/item_visual.tscn" id="4_ejrui"]
 [ext_resource type="Texture2D" uid="uid://c7r1ypg4fmyr6" path="res://Assets/Textures/UI/Inventory/Inventory Atlas.png" id="7_ejrui"]
 [ext_resource type="PackedScene" uid="uid://cp71jwraxlmpd" path="res://Scenes/InventorySystem/single_slot_container.tscn" id="8_biyl3"]
@@ -52,8 +50,10 @@ func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> 
 			[null, MOUSE_BUTTON_LEFT]:
 				get_grab_offset(inv_data, index)
 				grabbed_slot_data = inv_data.grab_slot_data(index)
+				#print(grabbed_slot_data, index)
 			[_, MOUSE_BUTTON_LEFT]:
 				grabbed_slot_data = inv_data.drop_slot_data(grabbed_slot_data, index)
+				#print(grabbed_slot_data, index)
 			[null, MOUSE_BUTTON_RIGHT]:
 				get_grab_offset(inv_data, index)
 				grabbed_slot_data = inv_data.grab_hafl_slot_data(index)
@@ -88,27 +88,17 @@ func get_grab_offset(inventory_data: InventoryData, index: int) -> void:
 	grabbed_slot_offset = Vector2(cell_offset) * 64.0
 "
 
-[sub_resource type="Resource" id="Resource_47rqh"]
-script = ExtResource("2_47rqh")
-item_data = ExtResource("3_ejrui")
-metadata/_custom_type_script = "uid://b4prui3gxwl8q"
-
-[sub_resource type="Resource" id="Resource_62ws4"]
-script = ExtResource("2_47rqh")
-item_data = ExtResource("4_biyl3")
-metadata/_custom_type_script = "uid://b4prui3gxwl8q"
-
 [sub_resource type="Resource" id="Resource_4utg2"]
 script = ExtResource("1_lc66f")
 inv_name = "PlayerInventory"
 grid_size = Vector2i(5, 9)
-slot_datas = Array[ExtResource("2_47rqh")]([SubResource("Resource_47rqh"), SubResource("Resource_62ws4")])
 metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 
 [sub_resource type="Resource" id="Resource_byfj2"]
 script = ExtResource("1_lc66f")
 inv_name = "EquipInventory"
 grid_size = Vector2i(7, 1)
+single_slots = true
 metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_s1fef"]
@@ -183,12 +173,13 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_right = -452.0
+offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 2
 script = SubResource("GDScript_vgqql")
 inventory_data = SubResource("Resource_4utg2")
 equip_data = SubResource("Resource_byfj2")
-metadata/_edit_lock_ = true
 
 [node name="Beckground" type="TextureRect" parent="." unique_id=667225199]
 layout_mode = 0
@@ -196,7 +187,6 @@ offset_right = 175.0
 offset_bottom = 160.0
 scale = Vector2(4, 4)
 texture = SubResource("AtlasTexture_s1fef")
-metadata/_edit_lock_ = true
 
 [node name="GrabbedSlotContainer" parent="." unique_id=1347128411 instance=ExtResource("4_ejrui")]
 visible = false
@@ -217,13 +207,14 @@ slot_color = Color(0, 0, 0, 0)
 
 [node name="EquipContainer" type="PanelContainer" parent="." unique_id=2012566676]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_right = 319.0
+offset_bottom = 425.0
 theme_override_styles/panel = SubResource("StyleBoxEmpty_vdgd3")
 script = SubResource("GDScript_47rqh")
 
 [node name="ItemArea" type="Control" parent="EquipContainer" unique_id=1261130932]
 layout_mode = 2
+mouse_filter = 2
 
 [node name="HeadSlot" parent="EquipContainer/ItemArea" unique_id=1947869178 instance=ExtResource("8_biyl3")]
 layout_mode = 0

@@ -4,16 +4,19 @@ class_name SlotData
 @export var item_data: ItemData
 @export_range(1, 99) var quantity: int = 1: set = set_quantity
 
+## Проверяет, может ли текущий слот объединиться с другим слотом
 func can_merge_with(other_slot_data: SlotData) -> bool:
 	return item_data == other_slot_data.item_data \
 			and item_data.max_stack > 1 \
 			and quantity < item_data.max_stack
 
+## Проверяет, может ли текущий слот полностью объединиться с другим слотом
 func can_fully_merge_with(other_slot_data: SlotData) -> bool:
 	return item_data == other_slot_data.item_data \
 			and item_data.max_stack > 1 \
 			and quantity + other_slot_data.quantity < item_data.max_stack
 
+## Проверяет, можно ли заполнить текущий слот до максимума и вернуть остаток
 func can_fully_merge_with_return(other_slot_data: SlotData) -> bool:
 	return item_data == other_slot_data.item_data \
 			and item_data.max_stack > 1 \
@@ -21,9 +24,13 @@ func can_fully_merge_with_return(other_slot_data: SlotData) -> bool:
 			and quantity < item_data.max_stack \
 			and other_slot_data.quantity < item_data.max_stack
 
+## Полностью объединяет количество из other_slot_data в текущий слот
 func fully_merge_with(other_slot_data: SlotData) -> void:
 	quantity += other_slot_data.quantity
 
+## Объединяет слоты с возвратом остатка
+## Заполняет текущий слот до максимума, а остаток возвращает в other_slot_data
+## Если остаток равен 0, возвращает null
 func fully_merge_with_return(other_slot_data: SlotData) -> SlotData:
 	var temp_quantity: int = quantity + other_slot_data.quantity
 	quantity = item_data.max_stack
@@ -33,12 +40,16 @@ func fully_merge_with_return(other_slot_data: SlotData) -> SlotData:
 	else: other_slot_data = null
 	return other_slot_data
 
+## Cоздает новый слот с одним предметом и уменьшает количество в текущем слоте на 1
+## Используется для разделения стека предметов
 func create_single_slot_data() -> SlotData:
 	var new_slot_data: SlotData = duplicate()
 	new_slot_data.quantity = 1
 	quantity -= 1
 	return new_slot_data
 
+## Сеттер для quantity с проверкой стакабельности предмета
+## Если предмет не стакабельный (max_stack == 1), сбрасывает количество на 1 и выводит ошибку
 func set_quantity(value: int) -> void:
 	quantity = value
 	if quantity > 1 and item_data.max_stack == 1:

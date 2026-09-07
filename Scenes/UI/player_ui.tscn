@@ -11,6 +11,71 @@
 [ext_resource type="Texture2D" uid="uid://b62hsjigxs16x" path="res://Assets/Textures/UI/Head overlay/head_overlay.png" id="9_plo7s"]
 [ext_resource type="PackedScene" uid="uid://c0m4ufvoff2i0" path="res://Assets/Models/Entities/human.gltf" id="10_we3k3"]
 [ext_resource type="PackedScene" uid="uid://bpa5r2i2c8gv0" path="res://Scenes/UI/creative_inventory.tscn" id="11_axtvl"]
+[ext_resource type="PackedScene" uid="uid://bddn6irh7p6vb" path="res://Scenes/UI/player_inventory.tscn" id="12_onufr"]
+
+[sub_resource type="GDScript" id="GDScript_s1fef"]
+script/source = "extends CanvasLayer
+
+func _ready() -> void:
+	close_all_windows()
+
+func _process(delta: float) -> void:
+	if get_multiplayer_authority() != multiplayer.get_unique_id():
+		return
+	
+	if Input.is_action_just_pressed(\"esc\"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			close_all_windows()
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			close_all_windows()
+	
+	if Input.is_action_just_pressed(\"tab\"):
+		match get_parent().gamemode:
+			0, 1:
+				if $PlayerInventory.visible == false:
+					Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+					open_window(\"PlayerInventory\")
+				else:
+					Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+					close_all_windows()
+			2:
+				if $CreativeInventory/ScrollContainer.visible == false:
+					Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+					open_window(\"CreativeInventory\")
+				else:
+					Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+					close_all_windows()
+	
+	if Input.is_action_just_pressed(\"chat\"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			open_window(\"Chat\")
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			close_all_windows()
+
+func close_all_windows() -> void:
+	$Background.hide()
+	$PlayerInventory.hide()
+	$CreativeInventory/ScrollContainer.hide()
+	$Chat/SendChat.release_focus()
+
+func open_window(window_name: String) -> void:
+	match window_name:
+		\"PlayerInventory\":
+			close_all_windows()
+			$PlayerInventory.show()
+			$Background.show()
+		\"CreativeInventory\":
+			close_all_windows()
+			$CreativeInventory/ScrollContainer.show()
+			$Background.show()
+		\"Chat\":
+			close_all_windows()
+			$Chat/SendChat.grab_focus()
+"
 
 [sub_resource type="GDScript" id="GDScript_2hnfo"]
 script/source = "extends Label
@@ -64,6 +129,7 @@ func _on_send_chat_text_submitted(new_text: String) -> void:
 "
 
 [node name="UI" type="CanvasLayer" unique_id=1293807617]
+script = SubResource("GDScript_s1fef")
 
 [node name="HUD" type="Control" parent="." unique_id=460458071]
 layout_mode = 3
@@ -280,8 +346,14 @@ transform = Transform3D(-0.81512773, -0.07661365, 0.57419264, 0, 0.9912155, 0.13
 projection = 1
 fov = 60.0
 
-[node name="CreativeInventory" parent="." unique_id=1745702651 instance=ExtResource("11_axtvl")]
+[node name="Background" type="ColorRect" parent="." unique_id=577186064]
 visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5882353)
 
 [node name="Chat" type="Control" parent="." unique_id=295325971]
 layout_mode = 3
@@ -336,6 +408,23 @@ emoji_menu_enabled = false
 drag_and_drop_selection_enabled = false
 flat = true
 metadata/_edit_lock_ = true
+
+[node name="CreativeInventory" parent="." unique_id=1745702651 instance=ExtResource("11_axtvl")]
+visible = false
+
+[node name="PlayerInventory" parent="." unique_id=1111068089 instance=ExtResource("12_onufr")]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -336.0
+offset_top = -324.0
+offset_right = -336.0
+offset_bottom = -324.0
+size_flags_horizontal = 4
+size_flags_vertical = 4
 
 [connection signal="text_submitted" from="Chat/SendChat" to="Chat" method="_on_send_chat_text_submitted"]
 

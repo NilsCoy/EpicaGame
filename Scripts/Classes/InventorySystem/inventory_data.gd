@@ -1,29 +1,84 @@
 extends Resource
 class_name InventoryData
 
+## Сигнал обновления инвентаря
 signal inventory_update(inventory_data: InventoryData)
+## Сигнал взаимодействия с инвентарем
 signal inventory_interact(inventory_data: InventoryData, index: int, button: int)
 
 @export var inv_name: String
 @export var grid_size: Vector2i = Vector2i(5, 5)
-@export var slot_datas: Array[SlotData]
+
+# true  = 1 слот = 1 предмет
+# false = предмет может занимать несколько клеток
 @export var single_slots: bool = false
 
+@export var slot_datas: Array[SlotData]
+
+
+## Инициализация инвентаря
 func init_inventory() -> void:
 	while slot_datas.size() < size():
 		slot_datas.append(null)
 
+	# Если массив оказался больше размера инвентаря
+	while slot_datas.size() > size():
+		slot_datas.pop_back()
+
+## Получение размера инвентаря, как в Array.size()
 func size() -> int:
 	return grid_size.x * grid_size.y
 
+
+## Получение позиции по индексу
+func index_to_pos(index: int) -> Vector2i:
+	return Vector2i(
+		index % grid_size.x,
+		index / grid_size.x
+	)
+
+## Получение индекса по позиции
+func pos_to_index(pos: Vector2i) -> int:
+	return pos.y * grid_size.x + pos.x
+
+## Получение размера предмета по слоту
+func get_item_size(slot_data: SlotData) -> Vector2i:
+	if slot_data == null:
+		return Vector2i.ONE
+
+	if single_slots:
+		return Vector2i.ONE
+
+	return slot_data.item_data.size
+
+## Получение предмета по индексу
 func get_item_at_index(index: int) -> SlotData:
-	for i: int in range(len(slot_datas)):
+
+	if index < 0 or index >= slot_datas.size():
+		return null
+
+
+	# -----------------------------------------
+	# SINGLE SLOTS
+	# -----------------------------------------
+
+	if single_slots:
+		return slot_datas[index]
+
+
+	# -----------------------------------------
+	# MULTI SLOTS
+	# -----------------------------------------
+
+	for i: int in range(slot_datas.size()):
+
 		var slot_data: SlotData = slot_datas[i]
 
 		if slot_data == null:
 			continue
 
-		var item_size: Vector2i = slot_data.item_data.size
+		var item_size: Vector2i = get_item_size(slot_data)
+
 		var start_pos: Vector2i = index_to_pos(i)
 		var target_pos: Vector2i = index_to_pos(index)
 
@@ -31,305 +86,487 @@ func get_item_at_index(index: int) -> SlotData:
 		and target_pos.x < start_pos.x + item_size.x \
 		and target_pos.y >= start_pos.y \
 		and target_pos.y < start_pos.y + item_size.y:
+
 			return slot_data
 
 	return null
 
-func place_item(slot_data: SlotData, start_index: int) -> bool:
-	if not can_place_item(slot_data, start_index):
-		return false
-
-	slot_datas[start_index] = slot_data
-	inventory_update.emit(self)
-
-	return true
-
-#func can_place_item(slot_data: SlotData, start_index: int) -> bool:
-	#var start_pos: Vector2i = index_to_pos(start_index)
-	#var item_size: Vector2i = slot_data.item_data.size
-#
-	## Проверяем, не выходит ли предмет за границы
-	#if start_pos.x + item_size.x > grid_size.x:
-		#return false
-#
-	#if start_pos.y + item_size.y > grid_size.y:
-		#return false
-#
-	## Проверяем каждую клетку, которую займёт предмет
-	#for y: int in range(item_size.y):
-		#for x: int in range(item_size.x):
-			#var check_pos: Vector2i = start_pos + Vector2i(x, y)
-			#var check_index: int = pos_to_index(check_pos)
-#
-			#if slot_datas[check_index] != null:
-				#return false
-#
-	#return true
-
+## Проверка возможности поставить предмет в слот
 func can_place_item(
 	slot_data: SlotData,
 	index: int,
 	ignore_slot_data: SlotData = null
 ) -> bool:
 
-	var start_pos: Vector2i = index_to_pos(index)
-	var item_size: Vector2i = slot_data.item_data.size
+	if slot_data == null:
+		return false
 
-	# Проверяем выход за границы
+	if index < 0 or index >= size():
+		return false
+
+
+	# -----------------------------------------
+	# SINGLE SLOTS
+	# -----------------------------------------
+
+	if single_slots:
+
+		var occupying_slot: SlotData = slot_datas[index]
+
+		if occupying_slot == null:
+			return true
+
+		if occupying_slot == ignore_slot_data:
+			return true
+
+		return false
+
+
+	# -----------------------------------------
+	# MULTI SLOTS
+	# -----------------------------------------
+
+	var start_pos: Vector2i = index_to_pos(index)
+	var item_size: Vector2i = get_item_size(slot_data)
+
+
+	# Не выходит ли предмет за границы
+
 	if start_pos.x + item_size.x > grid_size.x:
 		return false
 
 	if start_pos.y + item_size.y > grid_size.y:
 		return false
 
-	# Проверяем каждую клетку
+
+	# Проверяем все клетки
+
 	for y: int in range(item_size.y):
 		for x: int in range(item_size.x):
 
-			var check_pos: Vector2i = start_pos + Vector2i(x, y)
+			var check_pos: Vector2i = \
+				start_pos + Vector2i(x, y)
+
 			var check_index: int = pos_to_index(check_pos)
 
-			var occupying_slot: SlotData = get_item_at_index(check_index)
+			var occupying_slot: SlotData = \
+				get_item_at_index(check_index)
 
-			if occupying_slot != null and occupying_slot != ignore_slot_data:
+			if occupying_slot != null \
+			and occupying_slot != ignore_slot_data:
+
 				return false
+
 
 	return true
 
-func index_to_pos(index: int) -> Vector2i:
-	return Vector2i(
-		index % grid_size.x,
-		index / grid_size.x
-	)
+## Ставит предмет в слот
+func place_item(
+	slot_data: SlotData,
+	start_index: int
+) -> bool:
 
-func pos_to_index(pos: Vector2i) -> int:
-	return pos.y * grid_size.x + pos.x
+	if not can_place_item(slot_data, start_index):
+		return false
 
-func find_item_index(item_name: String) -> int:
-	for slot_index: int in range(len(slot_datas)):
-		var slot_data: SlotData = slot_datas[slot_index]
-		if slot_data:
-			if slot_data.item_data.name == item_name:
-				return slot_index
-	return -1
+	slot_datas[start_index] = slot_data
 
-func find_slot_data(item_name: String) -> SlotData:
-	for slot_index: int in range(len(slot_datas)):
-		var slot_data: SlotData = slot_datas[slot_index]
-		if slot_data:
-			if slot_data.item_data.name == item_name:
-				return slot_data
-	return null
+	inventory_update.emit(self)
 
-#func find_empty_slot() -> int:
-	#for slot_index: int in range(len(slot_datas)):
-		#if not(slot_datas[slot_index]): return slot_index
-	#return -1
+	return true
+
+## Ищет свободное место для установки предмета
 func find_empty_slot(slot_data: SlotData) -> int:
-	for slot_index: int in range(len(slot_datas)):
+
+	if slot_data == null:
+		return -1
+
+
+	for slot_index: int in range(size()):
+
 		if can_place_item(slot_data, slot_index):
 			return slot_index
 
+
 	return -1
 
-func transportation_slot_data(index: int, inventory_data: InventoryData) -> void:
-	var slot_data: SlotData = get_item_at_index(index)
-	if slot_data:
-		var slot_index: int = inventory_data.find_item_index(slot_data.item_data.name)
-		if slot_index != -1:
-			inventory_data.drop_slot_data(grab_slot_data(index), slot_index)
-		else:
-			slot_index = inventory_data.find_empty_slot(slot_data)
-			if slot_index != -1:
-				inventory_data.drop_slot_data(grab_slot_data(index), slot_index)
+## Ищет индекс слота по типу предмета
+func find_item_index(item_type: String) -> int:
 
-#func grab_slot_data(index: int) -> SlotData:
-	#var slot_data: SlotData = slot_datas[index]
-	#if slot_data:
-		#slot_datas[index] = null
-		#inventory_update.emit(self)
-	#return slot_data
+	for slot_index: int in range(slot_datas.size()):
+
+		var slot_data: SlotData = slot_datas[slot_index]
+
+		if slot_data != null:
+			if slot_data.item_data.type == item_type:
+				return slot_index
+
+
+	return -1
+
+## Ищет слот по типу предмета
+func find_slot_data(item_type: String) -> SlotData:
+
+	for slot_index: int in range(slot_datas.size()):
+
+		var slot_data: SlotData = slot_datas[slot_index]
+
+		if slot_data != null:
+			if slot_data.item_data.type == item_type:
+				return slot_data
+
+
+	return null
+
+## Забирает предмет из слота, на его место возвращается null если есть предмет и наоброт
 func grab_slot_data(index: int) -> SlotData:
+
 	var slot_data: SlotData = get_item_at_index(index)
 
 	if slot_data == null:
 		return null
+
 
 	var start_index: int = slot_datas.find(slot_data)
 
 	if start_index != -1:
 		slot_datas[start_index] = null
 
+
 	inventory_update.emit(self)
 
 	return slot_data
 
-#func grab_hafl_slot_data(index: int) -> SlotData:
-	#var slot_data: SlotData = get_item_at_index(index)
-	#var return_slot_data: SlotData
-	#
-	#if slot_data:
-		#return_slot_data = slot_data.duplicate()
-		#return_slot_data.quantity = ceili(float(return_slot_data.quantity)/2)
-		#slot_data.quantity = floori(float(slot_data.quantity)/2)
-		#if slot_data.quantity == 0:
-			#slot_data = null
-		#slot_datas[index] = slot_data
-		#inventory_update.emit(self)
-	#return return_slot_data
+
+## Забирает половину предметов в слоте
 func grab_hafl_slot_data(index: int) -> SlotData:
+
 	var slot_data: SlotData = get_item_at_index(index)
-	var return_slot_data: SlotData
 
-	if slot_data:
-		return_slot_data = slot_data.duplicate()
-		return_slot_data.quantity = ceili(float(slot_data.quantity) / 2.0)
-		slot_data.quantity = floori(float(slot_data.quantity) / 2.0)
-		var item_index: int = slot_datas.find(slot_data)
-		if slot_data.quantity == 0:
-			slot_datas[item_index] = null
-		inventory_update.emit(self)
-	return return_slot_data
-
-#func drop_slot_data(grabbed_slot_data: SlotData, index: int) -> SlotData:
-	#var slot_data: SlotData = slot_datas[index]
-	#var return_slot_data: SlotData
-	#if slot_data and slot_data.can_fully_merge_with(grabbed_slot_data):
-		#slot_data.fully_merge_with(grabbed_slot_data)
-	#elif slot_data and slot_data.can_fully_merge_with_return(grabbed_slot_data):
-		#return_slot_data = slot_data.fully_merge_with_return(grabbed_slot_data)
-	#else:
-		#slot_datas[index] = grabbed_slot_data
-		#return_slot_data = slot_data
-	#
-	#inventory_update.emit(self)
-	#return return_slot_data
-#func drop_slot_data(grabbed_slot_data: SlotData, index: int) -> SlotData:
-	#var slot_data: SlotData = get_item_at_index(index)
-	#var return_slot_data: SlotData
-#
-	## 1. На клетке ничего нет
-	#if slot_data == null:
-		#if can_place_item(grabbed_slot_data, index):
-			#slot_datas[index] = grabbed_slot_data
-			#return_slot_data = null
-		#else:
-			#return_slot_data = grabbed_slot_data
-#
-	## 2. Такой же предмет — пытаемся объединить
-	#elif slot_data.can_fully_merge_with(grabbed_slot_data):
-		#slot_data.fully_merge_with(grabbed_slot_data)
-#
-	## 3. Можно объединить частично
-	#elif slot_data.can_fully_merge_with_return(grabbed_slot_data):
-		#return_slot_data = slot_data.fully_merge_with_return(grabbed_slot_data)
-#
-	## 4. Другой предмет — пытаемся поменять
-	#else:
-		#var old_item_index: int = slot_datas.find(slot_data)
-#
-		#if can_place_item(grabbed_slot_data, index):
-			#slot_datas[old_item_index] = grabbed_slot_data
-			#return_slot_data = slot_data
-		#else:
-			#return_slot_data = grabbed_slot_data
-#
-	#inventory_update.emit(self)
-	#return return_slot_data
-
-func drop_slot_data(grabbed_slot_data: SlotData, index: int) -> SlotData:
-	var target_slot_data: SlotData = get_item_at_index(index)
-
-	# Пустое место
-	if target_slot_data == null:
-		if can_place_item(grabbed_slot_data, index):
-			slot_datas[index] = grabbed_slot_data
-			inventory_update.emit(self)
-			return null
-
-		inventory_update.emit(self)
-		return grabbed_slot_data
-
-
-	# Если это тот же предмет — пытаемся объединить
-	if target_slot_data.can_fully_merge_with(grabbed_slot_data):
-		target_slot_data.fully_merge_with(grabbed_slot_data)
-		inventory_update.emit(self)
+	if slot_data == null:
 		return null
 
 
-	if target_slot_data.can_fully_merge_with_return(grabbed_slot_data):
-		var return_slot_data: SlotData = \
-			target_slot_data.fully_merge_with_return(grabbed_slot_data)
+	var return_slot_data: SlotData = slot_data.duplicate()
+
+
+	# Берём половину
+
+	return_slot_data.quantity = \
+		ceili(float(slot_data.quantity) / 2.0)
+
+	slot_data.quantity = \
+		floori(float(slot_data.quantity) / 2.0)
+
+
+	# Находим настоящее место предмета
+
+	var item_index: int = slot_datas.find(slot_data)
+
+	if item_index != -1:
+
+		if slot_data.quantity <= 0:
+			slot_datas[item_index] = null
+
+
+	inventory_update.emit(self)
+
+	return return_slot_data
+
+## Кладет предмет в слот, если есть пустое место или одинаковый предмет
+func drop_slot_data(
+	grabbed_slot_data: SlotData,
+	index: int
+) -> SlotData:
+	if grabbed_slot_data == null:
+		return null
+
+
+	var target_slot_data: SlotData = \
+		get_item_at_index(index)
+
+
+	# =====================================================
+	# ПУСТОЕ МЕСТО
+	# =====================================================
+
+	if target_slot_data == null:
+
+		if can_place_item(
+			grabbed_slot_data,
+			index
+		):
+
+			slot_datas[index] = grabbed_slot_data
+
+			inventory_update.emit(self)
+
+			return null
+
 
 		inventory_update.emit(self)
+
+		return grabbed_slot_data
+
+
+	# =====================================================
+	# ОБЪЕДИНЕНИЕ
+	# =====================================================
+
+	if target_slot_data.can_fully_merge_with(
+		grabbed_slot_data
+	):
+
+		target_slot_data.fully_merge_with(
+			grabbed_slot_data
+		)
+
+		inventory_update.emit(self)
+
+		return null
+
+
+	# =====================================================
+	# ЧАСТИЧНОЕ ОБЪЕДИНЕНИЕ
+	# =====================================================
+
+	if target_slot_data.can_fully_merge_with_return(
+		grabbed_slot_data
+	):
+
+		var return_slot_data: SlotData = \
+			target_slot_data.fully_merge_with_return(
+				grabbed_slot_data
+			)
+
+		inventory_update.emit(self)
+
 		return return_slot_data
 
 
-	# -------------------------
-	# ОБМЕН ПРЕДМЕТОВ
-	# -------------------------
+	# =====================================================
+	# ОБМЕН
+	# =====================================================
 
-	# Где реально лежит старый предмет
-	var target_index: int = slot_datas.find(target_slot_data)
+	var target_index: int = \
+		slot_datas.find(target_slot_data)
 
-	# Убираем старый предмет временно
-	slot_datas[target_index] = null
 
-	# Проверяем, помещается ли новый предмет
-	# на место клика
-	if can_place_item(grabbed_slot_data, index, target_slot_data):
+	if target_index == -1:
 
-		slot_datas[index] = grabbed_slot_data
+		push_error(
+			"drop_slot_data: target_slot_data не найден"
+		)
+
+		return grabbed_slot_data
+
+
+	# -----------------------------------------
+	# SINGLE SLOTS
+	# -----------------------------------------
+
+	if single_slots:
+
+		slot_datas[target_index] = grabbed_slot_data
 
 		inventory_update.emit(self)
 
-		# Старый предмет теперь оказывается в руке
 		return target_slot_data
 
 
-	# Новый предмет не помещается.
-	# Возвращаем всё как было.
+	# -----------------------------------------
+	# MULTI SLOTS
+	# -----------------------------------------
+
+	# Временно убираем старый предмет
+
+	slot_datas[target_index] = null
+
+
+	# Новый предмет ставим на место,
+	# где был старый предмет
+
+	if can_place_item(
+		grabbed_slot_data,
+		target_index,
+		target_slot_data
+	):
+
+		slot_datas[target_index] = grabbed_slot_data
+
+		inventory_update.emit(self)
+
+		return target_slot_data
+
+
+	# Не получилось поставить.
+	# Возвращаем старый предмет.
+
 	slot_datas[target_index] = target_slot_data
 
 	inventory_update.emit(self)
 
 	return grabbed_slot_data
 
-#func drop_single_slot_data(grabbed_slot_data: SlotData, index: int) -> SlotData:
-	#var slot_data: SlotData = slot_datas[index]
-	#
-	#if not slot_data:
-		#slot_datas[index] = grabbed_slot_data.create_single_slot_data()
-	#elif slot_data.can_merge_with(grabbed_slot_data):
-		#slot_data.fully_merge_with(grabbed_slot_data.create_single_slot_data())
-	#
-	#inventory_update.emit(self)
-	#if grabbed_slot_data.quantity > 0: return grabbed_slot_data
-	#else: return null
+# Кладет 1 предмет в слот, если есть место или одинаковый предмет
+func drop_single_slot_data(
+	grabbed_slot_data: SlotData,
+	index: int
+) -> SlotData:
 
-func drop_single_slot_data(grabbed_slot_data: SlotData, index: int) -> SlotData:
-	var slot_data: SlotData = get_item_at_index(index)
-	var new_item: SlotData = grabbed_slot_data.duplicate()
-	new_item = new_item.create_single_slot_data()
+	if grabbed_slot_data == null:
+		return null
 
-	if not slot_data:
-		if can_place_item(new_item, index):
-			slot_datas[index] = grabbed_slot_data.create_single_slot_data()
+
+	var slot_data: SlotData = \
+		get_item_at_index(index)
+
+
+	var new_item: SlotData = \
+		grabbed_slot_data.create_single_slot_data()
+
+
+	# =====================================================
+	# ПУСТОЙ СЛОТ
+	# =====================================================
+
+	if slot_data == null:
+
+		if can_place_item(
+			new_item,
+			index
+		):
+
+			slot_datas[index] = new_item
+
 		else:
 			return grabbed_slot_data
 
-	elif slot_data.can_merge_with(grabbed_slot_data):
-		slot_data.fully_merge_with(grabbed_slot_data.create_single_slot_data())
+
+	# =====================================================
+	# ОБЪЕДИНЕНИЕ
+	# =====================================================
+
+	elif slot_data.can_merge_with(
+		grabbed_slot_data
+	):
+
+		slot_data.fully_merge_with(
+			new_item
+		)
+
+
 	else:
+
 		return grabbed_slot_data
+
 
 	inventory_update.emit(self)
 
+
 	if grabbed_slot_data.quantity > 0:
 		return grabbed_slot_data
-	else:
-		return null
 
-func on_slot_clicked(index: int, button: int) -> void:
-	inventory_interact.emit(self, index, button)
+
+	return null
+
+## WIP! Кладет предмет в другой инвентарь
+func transfer_slot_data(
+	index: int,
+	target_inventory: InventoryData
+) -> void:
+
+	var slot_data: SlotData = get_item_at_index(index)
+
+	if slot_data == null:
+		return
+
+
+	# Ищем свободное место в целевом инвентаре
+	var target_index: int = \
+		target_inventory.find_empty_slot(slot_data)
+
+	if target_index == -1:
+		return
+
+
+	# Забираем предмет из текущего инвентаря
+	var grabbed_data: SlotData = grab_slot_data(index)
+
+	if grabbed_data == null:
+		return
+
+
+	# Кладём его в другой инвентарь
+	target_inventory.place_item(
+		grabbed_data,
+		target_index
+	)
+
+## Кладет предмет в другой инвентарь
+func transportation_slot_data(
+	index: int,
+	inventory_data: InventoryData
+) -> void:
+
+	var slot_data: SlotData = \
+		get_item_at_index(index)
+
+
+	if slot_data == null:
+		return
+
+
+	# Уже есть такой предмет
+	var slot_index: int = \
+		inventory_data.find_item_index(
+			slot_data.item_data.type
+		)
+
+
+	if slot_index != -1:
+
+		var grabbed_data: SlotData = \
+			grab_slot_data(index)
+
+		if grabbed_data:
+			inventory_data.drop_slot_data(
+				grabbed_data,
+				slot_index
+			)
+
+		return
+
+
+	# Ищем свободное место с учётом размера
+
+	slot_index = \
+		inventory_data.find_empty_slot(slot_data)
+
+
+	if slot_index == -1:
+		return
+
+
+	var grabbed_data: SlotData = \
+		grab_slot_data(index)
+
+
+	if grabbed_data:
+
+		inventory_data.drop_slot_data(
+			grabbed_data,
+			slot_index
+		)
+
+
+## Вызывает нажатие по слоту
+func on_slot_clicked(
+	index: int,
+	button: int
+) -> void:
+	inventory_interact.emit(
+		self,
+		index,
+		button
+	)

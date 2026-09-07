@@ -8,6 +8,7 @@ atlas = ExtResource("2_q3lpy")
 
 [resource]
 script = ExtResource("1_dpxiy")
+type = "test1"
 name = "test item"
 max_stack = 10
 texture = SubResource("AtlasTexture_354lq")
