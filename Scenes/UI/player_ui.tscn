@@ -61,6 +61,7 @@ func close_all_windows() -> void:
 	$Background.hide()
 	$PlayerInventory.hide()
 	$CreativeInventory/ScrollContainer.hide()
+	$Chat/BackgroundRect.hide()
 	$Chat/SendChat.release_focus()
 
 func open_window(window_name: String) -> void:
@@ -75,6 +76,7 @@ func open_window(window_name: String) -> void:
 			$Background.show()
 		\"Chat\":
 			close_all_windows()
+			$Chat/BackgroundRect.show()
 			$Chat/SendChat.grab_focus()
 "
 
@@ -119,10 +121,6 @@ func get_texture_3d() -> AtlasTexture:
 [sub_resource type="World3D" id="World3D_8erm5"]
 environment = SubResource("Environment_3smsa")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_onufr"]
-shader = ExtResource("11_plo7s")
-shader_parameter/blur_amount = 3.0000001425
-
 [sub_resource type="GDScript" id="GDScript_c4arg"]
 script/source = "extends Control
 
@@ -132,6 +130,10 @@ func _on_send_chat_text_submitted(new_text: String) -> void:
 		ChatManager.send(from, new_text)
 		$SendChat.text = ''
 "
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_plo7s"]
+shader = ExtResource("11_plo7s")
+shader_parameter/blur_amount = 3.0000001425
 
 [node name="UI" type="CanvasLayer" unique_id=1293807617]
 script = SubResource("GDScript_s1fef")
@@ -351,16 +353,6 @@ transform = Transform3D(-0.81512773, -0.07661365, 0.57419264, 0, 0.9912155, 0.13
 projection = 1
 fov = 60.0
 
-[node name="Background" type="ColorRect" parent="." unique_id=577186064]
-visible = false
-material = SubResource("ShaderMaterial_onufr")
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.5882353)
-
 [node name="Chat" type="Control" parent="." unique_id=295325971]
 layout_mode = 3
 anchors_preset = 2
@@ -374,6 +366,7 @@ grow_vertical = 0
 script = SubResource("GDScript_c4arg")
 
 [node name="BackgroundRect" type="ColorRect" parent="Chat" unique_id=290110707]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -414,6 +407,24 @@ emoji_menu_enabled = false
 drag_and_drop_selection_enabled = false
 flat = true
 metadata/_edit_lock_ = true
+
+[node name="Background" type="ColorRect" parent="." unique_id=577186064]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5882353)
+
+[node name="Blur" type="ColorRect" parent="Background" unique_id=918712287]
+material = SubResource("ShaderMaterial_plo7s")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="CreativeInventory" parent="." unique_id=1745702651 instance=ExtResource("11_axtvl")]
 visible = false

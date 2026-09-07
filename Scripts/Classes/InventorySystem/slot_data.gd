@@ -1,8 +1,12 @@
 extends Resource
 class_name SlotData
 
+## Вложенный предмет в слот
 @export var item_data: ItemData
-@export_range(1, 99) var quantity: int = 1: set = set_quantity
+## Количество предметов в слоте
+@export_range(0, 99) var quantity: int = 0: set = set_quantity
+## Тип предмета доступный во вложение
+@export_enum('all', 'head', 'chest', 'weapon', 'consumable') var item_category: String = 'all'
 
 ## Проверяет, может ли текущий слот объединиться с другим слотом
 func can_merge_with(other_slot_data: SlotData) -> bool:
@@ -37,7 +41,7 @@ func fully_merge_with_return(other_slot_data: SlotData) -> SlotData:
 	other_slot_data.quantity = (item_data.max_stack - temp_quantity)
 	if other_slot_data.quantity != 0:
 		other_slot_data.quantity *= -1
-	else: other_slot_data = null
+	else: other_slot_data = SlotData.new()
 	return other_slot_data
 
 ## Cоздает новый слот с одним предметом и уменьшает количество в текущем слоте на 1

@@ -148,11 +148,47 @@ inv_name = "ItemTabs"
 grid_size = Vector2i(9, 5)
 metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 
+[sub_resource type="Resource" id="Resource_85s6f"]
+script = ExtResource("2_qns53")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_14y0q"]
+script = ExtResource("2_qns53")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_f5ba2"]
+script = ExtResource("2_qns53")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_kvkok"]
+script = ExtResource("2_qns53")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_at1v1"]
+script = ExtResource("2_qns53")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_pm2yg"]
+script = ExtResource("2_qns53")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_43gew"]
+script = ExtResource("2_qns53")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_udx2w"]
+script = ExtResource("2_qns53")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_aqs8i"]
+script = ExtResource("2_qns53")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
 [sub_resource type="Resource" id="Resource_3smsa"]
 script = ExtResource("1_o1kjb")
 inv_name = "HotBar"
 grid_size = Vector2i(9, 1)
-slot_datas = Array[ExtResource("2_qns53")]([null, null, null, null, null, null, null, null, null])
+slot_datas = Array[ExtResource("2_qns53")]([SubResource("Resource_85s6f"), SubResource("Resource_14y0q"), SubResource("Resource_f5ba2"), SubResource("Resource_kvkok"), SubResource("Resource_at1v1"), SubResource("Resource_pm2yg"), SubResource("Resource_43gew"), SubResource("Resource_udx2w"), SubResource("Resource_aqs8i")])
 metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 
 [sub_resource type="Environment" id="Environment_3smsa"]

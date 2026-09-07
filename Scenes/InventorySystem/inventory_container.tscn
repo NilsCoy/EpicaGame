@@ -54,7 +54,7 @@ func populate_items(inventory_data: InventoryData) -> void:
 	for index: int in range(inventory_data.slot_datas.size()):
 		var slot_data: SlotData = inventory_data.slot_datas[index]
 
-		if slot_data != null:
+		if slot_data.item_data != null:
 			create_item_visual(
 				slot_data,
 				index,

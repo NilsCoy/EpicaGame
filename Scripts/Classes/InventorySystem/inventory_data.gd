@@ -19,7 +19,7 @@ signal inventory_interact(inventory_data: InventoryData, index: int, button: int
 ## Инициализация инвентаря
 func init_inventory() -> void:
 	while slot_datas.size() < size():
-		slot_datas.append(null)
+		slot_datas.append(SlotData.new())
 
 	# Если массив оказался больше размера инвентаря
 	while slot_datas.size() > size():
@@ -43,7 +43,7 @@ func pos_to_index(pos: Vector2i) -> int:
 
 ## Получение размера предмета по слоту
 func get_item_size(slot_data: SlotData) -> Vector2i:
-	if slot_data == null:
+	if slot_data.item_data == null:
 		return Vector2i.ONE
 
 	if single_slots:
@@ -55,7 +55,7 @@ func get_item_size(slot_data: SlotData) -> Vector2i:
 func get_item_at_index(index: int) -> SlotData:
 
 	if index < 0 or index >= slot_datas.size():
-		return null
+		return SlotData.new()
 
 
 	# -----------------------------------------
@@ -74,7 +74,7 @@ func get_item_at_index(index: int) -> SlotData:
 
 		var slot_data: SlotData = slot_datas[i]
 
-		if slot_data == null:
+		if slot_data.item_data == null:
 			continue
 
 		var item_size: Vector2i = get_item_size(slot_data)
@@ -89,16 +89,16 @@ func get_item_at_index(index: int) -> SlotData:
 
 			return slot_data
 
-	return null
+	return SlotData.new()
 
 ## Проверка возможности поставить предмет в слот
 func can_place_item(
 	slot_data: SlotData,
 	index: int,
-	ignore_slot_data: SlotData = null
+	ignore_slot_data: SlotData = SlotData.new()
 ) -> bool:
 
-	if slot_data == null:
+	if slot_data.item_data == null:
 		return false
 
 	if index < 0 or index >= size():
@@ -108,13 +108,17 @@ func can_place_item(
 	# -----------------------------------------
 	# SINGLE SLOTS
 	# -----------------------------------------
-
 	if single_slots:
+
 
 		var occupying_slot: SlotData = slot_datas[index]
 
-		if occupying_slot == null:
-			return true
+		if occupying_slot.item_data == null:
+			if occupying_slot.item_category == 'all':
+				return true
+			if occupying_slot.item_category == slot_data.item_data.category:
+				return true
+			return false
 
 		if occupying_slot == ignore_slot_data:
 			return true
@@ -151,11 +155,14 @@ func can_place_item(
 
 			var occupying_slot: SlotData = \
 				get_item_at_index(check_index)
-
-			if occupying_slot != null \
+			
+			if occupying_slot.item_data != null \
 			and occupying_slot != ignore_slot_data:
-
 				return false
+			
+			if occupying_slot.item_category != 'all':
+				if occupying_slot.item_category != slot_data.item_data.category:
+					return false
 
 
 	return true
@@ -169,7 +176,8 @@ func place_item(
 	if not can_place_item(slot_data, start_index):
 		return false
 
-	slot_datas[start_index] = slot_data
+	slot_datas[start_index].item_data = slot_data.item_data
+	slot_datas[start_index].quantity = slot_data.quantity
 
 	inventory_update.emit(self)
 
@@ -178,7 +186,7 @@ func place_item(
 ## Ищет свободное место для установки предмета
 func find_empty_slot(slot_data: SlotData) -> int:
 
-	if slot_data == null:
+	if slot_data.item_data == null:
 		return -1
 
 
@@ -197,7 +205,7 @@ func find_item_index(item_type: String) -> int:
 
 		var slot_data: SlotData = slot_datas[slot_index]
 
-		if slot_data != null:
+		if slot_data.item_data != null:
 			if slot_data.item_data.type == item_type:
 				return slot_index
 
@@ -211,31 +219,33 @@ func find_slot_data(item_type: String) -> SlotData:
 
 		var slot_data: SlotData = slot_datas[slot_index]
 
-		if slot_data != null:
+		if slot_data.item_data != null:
 			if slot_data.item_data.type == item_type:
 				return slot_data
 
 
-	return null
+	return SlotData.new()
 
 ## Забирает предмет из слота, на его место возвращается null если есть предмет и наоброт
 func grab_slot_data(index: int) -> SlotData:
 
 	var slot_data: SlotData = get_item_at_index(index)
+	var gap_slot_data: SlotData = get_item_at_index(index).duplicate()
 
-	if slot_data == null:
-		return null
+	if slot_data.item_data == null:
+		return SlotData.new()
 
 
 	var start_index: int = slot_datas.find(slot_data)
 
 	if start_index != -1:
-		slot_datas[start_index] = null
+		slot_datas[start_index].item_data = null
+		slot_datas[start_index].quantity = 0
 
 
 	inventory_update.emit(self)
 
-	return slot_data
+	return gap_slot_data
 
 
 ## Забирает половину предметов в слоте
@@ -243,8 +253,8 @@ func grab_hafl_slot_data(index: int) -> SlotData:
 
 	var slot_data: SlotData = get_item_at_index(index)
 
-	if slot_data == null:
-		return null
+	if slot_data.item_data == null:
+		return slot_data
 
 
 	var return_slot_data: SlotData = slot_data.duplicate()
@@ -266,7 +276,7 @@ func grab_hafl_slot_data(index: int) -> SlotData:
 	if item_index != -1:
 
 		if slot_data.quantity <= 0:
-			slot_datas[item_index] = null
+			slot_datas[item_index].item_data = null
 
 
 	inventory_update.emit(self)
@@ -278,30 +288,30 @@ func drop_slot_data(
 	grabbed_slot_data: SlotData,
 	index: int
 ) -> SlotData:
-	if grabbed_slot_data == null:
-		return null
+	if grabbed_slot_data.item_data == null:
+		return SlotData.new()
 
 
-	var target_slot_data: SlotData = \
-		get_item_at_index(index)
+	var target_slot_data: SlotData = get_item_at_index(index)
 
 
 	# =====================================================
 	# ПУСТОЕ МЕСТО
 	# =====================================================
 
-	if target_slot_data == null:
+	if target_slot_data.item_data == null:
 
 		if can_place_item(
 			grabbed_slot_data,
 			index
 		):
 
-			slot_datas[index] = grabbed_slot_data
+			slot_datas[index].item_data = grabbed_slot_data.item_data
+			slot_datas[index].quantity = grabbed_slot_data.quantity
 
 			inventory_update.emit(self)
 
-			return null
+			return SlotData.new()
 
 
 		inventory_update.emit(self)
@@ -323,7 +333,8 @@ func drop_slot_data(
 
 		inventory_update.emit(self)
 
-		return null
+		grabbed_slot_data.item_data = null
+		return grabbed_slot_data
 
 
 	# =====================================================
@@ -380,7 +391,7 @@ func drop_slot_data(
 
 	# Временно убираем старый предмет
 
-	slot_datas[target_index] = null
+	slot_datas[target_index] = SlotData.new()
 
 
 	# Новый предмет ставим на место,
@@ -414,8 +425,8 @@ func drop_single_slot_data(
 	index: int
 ) -> SlotData:
 
-	if grabbed_slot_data == null:
-		return null
+	if grabbed_slot_data.item_data == null:
+		return grabbed_slot_data
 
 
 	var slot_data: SlotData = \
@@ -430,7 +441,7 @@ func drop_single_slot_data(
 	# ПУСТОЙ СЛОТ
 	# =====================================================
 
-	if slot_data == null:
+	if slot_data.item_data == null:
 
 		if can_place_item(
 			new_item,
@@ -468,9 +479,9 @@ func drop_single_slot_data(
 		return grabbed_slot_data
 
 
-	return null
+	return SlotData.new()
 
-## WIP! Кладет предмет в другой инвентарь
+## Кладет предмет в другой инвентарь
 func transfer_slot_data(
 	index: int,
 	target_inventory: InventoryData
@@ -478,7 +489,7 @@ func transfer_slot_data(
 
 	var slot_data: SlotData = get_item_at_index(index)
 
-	if slot_data == null:
+	if slot_data.item_data == null:
 		return
 
 
@@ -493,7 +504,7 @@ func transfer_slot_data(
 	# Забираем предмет из текущего инвентаря
 	var grabbed_data: SlotData = grab_slot_data(index)
 
-	if grabbed_data == null:
+	if grabbed_data.item_data == null:
 		return
 
 
@@ -503,7 +514,7 @@ func transfer_slot_data(
 		target_index
 	)
 
-## Кладет предмет в другой инвентарь
+## WIP! Кладет предмет в другой инвентарь
 func transportation_slot_data(
 	index: int,
 	inventory_data: InventoryData
@@ -513,7 +524,10 @@ func transportation_slot_data(
 		get_item_at_index(index)
 
 
-	if slot_data == null:
+	if slot_data.item_data == null:
+		return
+
+	if slot_data.item_data == null:
 		return
 
 

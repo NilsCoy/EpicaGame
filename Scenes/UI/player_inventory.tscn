@@ -20,7 +20,7 @@ script/source = "extends Control
 # Inventory
 @export var inventory_data: InventoryData
 @export var equip_data: InventoryData
-var grabbed_slot_data: SlotData
+var grabbed_slot_data: SlotData = SlotData.new()
 @onready var grabbed_slot_container: Control = $GrabbedSlotContainer
 var grabbed_slot_offset: Vector2 = Vector2.ZERO
 
@@ -49,15 +49,14 @@ func _physics_process(delta: float) -> void:
 func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> void:
 	if Input.is_action_pressed(\"shift\"):
 		if inv_data.inv_name == \"PlayerInventory\":
-			inv_data.transportation_slot_data(index, equip_data)
+			inv_data.transfer_slot_data(index, equip_data)
 		elif inv_data.inv_name == \"EquipInventory\":
-			inv_data.transportation_slot_data(index, inventory_data)
+			inv_data.transfer_slot_data(index, inventory_data)
 	else:
-		match [grabbed_slot_data, button]:
+		match [grabbed_slot_data.item_data, button]:
 			[null, MOUSE_BUTTON_LEFT]:
 				get_grab_offset(inv_data, index)
 				grabbed_slot_data = inv_data.grab_slot_data(index)
-				#print(grabbed_slot_data, index)
 			[_, MOUSE_BUTTON_LEFT]:
 				grabbed_slot_data = inv_data.drop_slot_data(grabbed_slot_data, index)
 				#print(grabbed_slot_data, index)
@@ -69,7 +68,8 @@ func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> 
 	update_grabbed_slot()
 
 func update_grabbed_slot() -> void:
-	if grabbed_slot_data:
+	#print(grabbed_slot_data, \" \", grabbed_slot_data.item_data)
+	if grabbed_slot_data.item_data:
 		grabbed_slot_container.set_slot_data(grabbed_slot_data)
 
 		var item_size: Vector2i = grabbed_slot_data.item_data.size
@@ -82,7 +82,7 @@ func update_grabbed_slot() -> void:
 func get_grab_offset(inventory_data: InventoryData, index: int) -> void:
 	var slot_data: SlotData = inventory_data.get_item_at_index(index)
 
-	if slot_data == null:
+	if slot_data.item_data == null:
 		return
 
 	var item_index: int = inventory_data.slot_datas.find(slot_data)
@@ -140,11 +140,47 @@ grid_size = Vector2i(5, 9)
 slot_datas = Array[ExtResource("2_47rqh")]([SubResource("Resource_37tmm"), SubResource("Resource_27ivj"), SubResource("Resource_biyl3"), SubResource("Resource_3ctg3"), SubResource("Resource_w313d"), SubResource("Resource_dyluq"), SubResource("Resource_534eo")])
 metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 
+[sub_resource type="Resource" id="Resource_celq1"]
+script = ExtResource("2_47rqh")
+item_category = "head"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_7eqxh"]
+script = ExtResource("2_47rqh")
+item_category = "chest"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_wndiu"]
+script = ExtResource("2_47rqh")
+item_category = "weapon"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_jf3nj"]
+script = ExtResource("2_47rqh")
+item_category = "weapon"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_h5dhs"]
+script = ExtResource("2_47rqh")
+item_category = "consumable"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_0abkp"]
+script = ExtResource("2_47rqh")
+item_category = "consumable"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_bqk28"]
+script = ExtResource("2_47rqh")
+item_category = "consumable"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
 [sub_resource type="Resource" id="Resource_byfj2"]
 script = ExtResource("1_lc66f")
 inv_name = "EquipInventory"
 grid_size = Vector2i(7, 1)
 single_slots = true
+slot_datas = Array[ExtResource("2_47rqh")]([SubResource("Resource_celq1"), SubResource("Resource_7eqxh"), SubResource("Resource_wndiu"), SubResource("Resource_jf3nj"), SubResource("Resource_h5dhs"), SubResource("Resource_0abkp"), SubResource("Resource_bqk28")])
 metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_s1fef"]
@@ -165,7 +201,6 @@ const ItemVisual: Resource = preload(\"res://Scenes/InventorySystem/item_visual.
 
 @onready var item_area: Control = $ItemArea
 
-
 func set_inventory_data(inventory_data: InventoryData) -> void:
 	inventory_data.init_inventory()
 	inventory_data.inventory_update.connect(populate_item_grid)
@@ -180,7 +215,7 @@ func populate_item_grid(inventory_data: InventoryData) -> void:
 			child.slot_clicked.connect(inventory_data.on_slot_clicked)
 		
 		var slot_data: SlotData = inventory_data.slot_datas[index]
-		if slot_data != null:
+		if slot_data.item_data != null:
 			child.set_slot_data(slot_data)
 
 		index += 1
@@ -194,13 +229,13 @@ region = Rect2(204, 144, 26, 26)
 atlas = ExtResource("7_ejrui")
 region = Rect2(201, 171, 32, 48)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_byfj2"]
-atlas = ExtResource("7_ejrui")
-region = Rect2(184, 171, 16, 48)
-
 [sub_resource type="AtlasTexture" id="AtlasTexture_qioty"]
 atlas = ExtResource("7_ejrui")
 region = Rect2(234, 171, 16, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_byfj2"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(184, 171, 16, 48)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_534eo"]
 atlas = ExtResource("7_ejrui")
@@ -280,16 +315,7 @@ offset_bottom = 328.0
 color = Color(0, 0, 0, 0)
 texture = SubResource("AtlasTexture_3ctg3")
 
-[node name="WeaponSlot1" parent="EquipContainer/ItemArea" unique_id=1572235871 instance=ExtResource("8_biyl3")]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 136.0
-offset_right = 88.0
-offset_bottom = 328.0
-color = Color(0, 0, 0, 0)
-texture = SubResource("AtlasTexture_byfj2")
-
-[node name="WeaponSlot2" parent="EquipContainer/ItemArea" unique_id=1092548819 instance=ExtResource("8_biyl3")]
+[node name="WeaponSlot1" parent="EquipContainer/ItemArea" unique_id=1092548819 instance=ExtResource("8_biyl3")]
 layout_mode = 0
 offset_left = 232.0
 offset_top = 136.0
@@ -297,6 +323,15 @@ offset_right = 296.0
 offset_bottom = 328.0
 color = Color(0, 0, 0, 0)
 texture = SubResource("AtlasTexture_qioty")
+
+[node name="WeaponSlot2" parent="EquipContainer/ItemArea" unique_id=1572235871 instance=ExtResource("8_biyl3")]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 136.0
+offset_right = 88.0
+offset_bottom = 328.0
+color = Color(0, 0, 0, 0)
+texture = SubResource("AtlasTexture_byfj2")
 
 [node name="UseSlot1" parent="EquipContainer/ItemArea" unique_id=612790874 instance=ExtResource("8_biyl3")]
 layout_mode = 0
