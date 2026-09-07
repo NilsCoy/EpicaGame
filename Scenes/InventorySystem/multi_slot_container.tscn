@@ -7,7 +7,7 @@ script/source = "extends PanelContainer
 
 signal slot_clicked(index: int, button: int)
 
-@export var color: Color = Color(0, 0, 0, 100)
+@export var color: Color = Color(0.0, 0.0, 0.0, 0.392)
 @export var texture: AtlasTexture
 
 @onready var backgound_texture: TextureRect = $BackgoundTexture

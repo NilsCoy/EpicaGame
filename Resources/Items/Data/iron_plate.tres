@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://mghdad62qjd1"]
+
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_jemws"]
+[ext_resource type="Texture2D" uid="uid://bb5s8yhbltxym" path="res://Resources/Items/Assets/Materials/Smith/iron_plate.png" id="2_jemws"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
+atlas = ExtResource("2_jemws")
+
+[resource]
+script = ExtResource("1_jemws")
+type = "iron_plate"
+item_name = "Iron Plate"
+max_stack = 99
+texture = SubResource("AtlasTexture_354lq")
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

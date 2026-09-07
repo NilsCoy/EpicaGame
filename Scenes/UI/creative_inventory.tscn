@@ -54,7 +54,7 @@ func init_inventory() -> void:
 		var slot: SlotData = SlotData.new()
 		var item: ItemData = ItemData.new()
 
-		item.name = file.split(\".\")[0]
+		item.item_name = file.split(\".\")[0]
 		item.size = Vector2i(1, 1)
 
 		var block: Dictionary = FileManager.read_json(

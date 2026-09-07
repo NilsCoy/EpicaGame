@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://bucowrfj7loys"]
+
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_516lf"]
+[ext_resource type="Texture2D" uid="uid://6tcoxttr53d1" path="res://Resources/Items/Assets/Materials/Smith/raw_iron.png" id="2_516lf"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
+atlas = ExtResource("2_516lf")
+
+[resource]
+script = ExtResource("1_516lf")
+type = "iron_ore"
+item_name = "Iron Ore"
+max_stack = 99
+texture = SubResource("AtlasTexture_354lq")
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

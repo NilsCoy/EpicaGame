@@ -1,5 +1,10 @@
 [gd_scene format=3 uid="uid://74bnuimkjgne"]
 
+[ext_resource type="Texture2D" uid="uid://cqbu0lvclb1tj" path="res://icon.svg" id="1_mw3nd"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mdwt4"]
+bg_color = Color(0, 0, 0, 0.39215687)
+
 [sub_resource type="GDScript" id="GDScript_r0owy"]
 script/source = "extends PanelContainer
 
@@ -15,9 +20,11 @@ func set_slot_data(slot_data: SlotData) -> void:
 	var item_data: ItemData = slot_data.item_data
 
 	item_texture.texture = item_data.texture
+	item_texture.offset_transform_rotation = item_data.texture_rotate
+	item_texture.offset_transform_scale = Vector2(item_data.texture_scale,item_data.texture_scale)
 
 	tooltip_text = \"%s\\n%s\" % [
-		item_data.name,
+		item_data.item_name,
 		item_data.discription
 	]
 
@@ -33,11 +40,14 @@ custom_minimum_size = Vector2(64, 64)
 offset_right = 40.0
 offset_bottom = 40.0
 mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_mdwt4")
 script = SubResource("GDScript_r0owy")
 
 [node name="ItemTexture" type="TextureRect" parent="." unique_id=1614213488]
 layout_mode = 2
+offset_transform_enabled = true
 mouse_filter = 2
+texture = ExtResource("1_mw3nd")
 expand_mode = 1
 stretch_mode = 5
 

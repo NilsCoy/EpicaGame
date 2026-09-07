@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://b62hsjigxs16x" path="res://Assets/Textures/UI/Head overlay/head_overlay.png" id="9_plo7s"]
 [ext_resource type="PackedScene" uid="uid://c0m4ufvoff2i0" path="res://Assets/Models/Entities/human.gltf" id="10_we3k3"]
 [ext_resource type="PackedScene" uid="uid://bpa5r2i2c8gv0" path="res://Scenes/UI/creative_inventory.tscn" id="11_axtvl"]
+[ext_resource type="Shader" uid="uid://cngvw826l31p8" path="res://Scripts/Shaders/blur.gdshader" id="11_plo7s"]
 [ext_resource type="PackedScene" uid="uid://bddn6irh7p6vb" path="res://Scenes/UI/player_inventory.tscn" id="12_onufr"]
 
 [sub_resource type="GDScript" id="GDScript_s1fef"]
@@ -117,6 +118,10 @@ func get_texture_3d() -> AtlasTexture:
 
 [sub_resource type="World3D" id="World3D_8erm5"]
 environment = SubResource("Environment_3smsa")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_onufr"]
+shader = ExtResource("11_plo7s")
+shader_parameter/blur_amount = 3.0000001425
 
 [sub_resource type="GDScript" id="GDScript_c4arg"]
 script/source = "extends Control
@@ -348,6 +353,7 @@ fov = 60.0
 
 [node name="Background" type="ColorRect" parent="." unique_id=577186064]
 visible = false
+material = SubResource("ShaderMaterial_onufr")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

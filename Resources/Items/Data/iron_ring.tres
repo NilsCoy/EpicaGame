@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://vvl6ia7m3kts"]
+
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_p02tx"]
+[ext_resource type="Texture2D" uid="uid://c721q6uquqse8" path="res://Resources/Items/Assets/Materials/Smith/iron_ring.png" id="2_p02tx"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
+atlas = ExtResource("2_p02tx")
+
+[resource]
+script = ExtResource("1_p02tx")
+type = "iron_ring"
+item_name = "Iron Ring"
+max_stack = 99
+texture = SubResource("AtlasTexture_354lq")
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

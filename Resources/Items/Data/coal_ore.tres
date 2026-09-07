@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://b171ehfbcyj1g"]
+
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_uoppj"]
+[ext_resource type="Texture2D" uid="uid://cmcw8em0fncqm" path="res://Resources/Items/Assets/Materials/Smith/charcoal.png" id="2_uoppj"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
+atlas = ExtResource("2_uoppj")
+
+[resource]
+script = ExtResource("1_uoppj")
+type = "coal_ore"
+item_name = "Coal"
+max_stack = 99
+texture = SubResource("AtlasTexture_354lq")
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

@@ -1,10 +1,21 @@
 extends Resource
 class_name ItemData
 
+## Тип предмета
 @export var type: String = ""
-@export var name: String = ""
+## Название предмета
+@export var item_name: String = ""
+## Описание предмета
 @export_multiline var discription: String = ""
+## Максимум предметов в слоте
 @export_range(1, 99, 1) var max_stack: int = 1
+## Размер предмета в milti-slots
 @export var size: Vector2i = Vector2i(1, 1)
+## Текстура предмета
 @export var texture: AtlasTexture
+## Поворот текстуры предмета
+@export_range(-360, 360, 0.1, "radians_as_degrees") var texture_rotate: float = 0
+## Размер текстуры предмета
+@export var texture_scale: float = 1
+## Дополнительные характеристики предмета
 @export var attributes: Dictionary = {}
