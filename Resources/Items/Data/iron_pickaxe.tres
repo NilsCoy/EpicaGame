@@ -1,15 +1,25 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://2ywt0615yq5k"]
 
 [ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_1a76b"]
+[ext_resource type="Script" uid="uid://bhq6gu0ok303q" path="res://Scripts/Classes/Components/Items/ItemComponent.gd" id="1_wulo5"]
 [ext_resource type="Texture2D" uid="uid://dct0t2fditk2j" path="res://Resources/Items/Assets/iron_pickaxe.png" id="2_1a76b"]
+[ext_resource type="Script" uid="uid://ccgdctcbbsq0u" path="res://Scripts/Classes/Components/Items/WeaponItemComponent.gd" id="2_5odho"]
+
+[sub_resource type="Resource" id="Resource_85s6f"]
+script = ExtResource("2_5odho")
+metadata/_custom_type_script = "uid://ccgdctcbbsq0u"
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
 atlas = ExtResource("2_1a76b")
 
 [resource]
 script = ExtResource("1_1a76b")
-type = "coal_ore"
-item_name = "Coal"
+type = "iron_pickaxe"
+category = "weapon"
+item_name = "Iron Pickaxe"
 size = Vector2i(2, 2)
 texture = SubResource("AtlasTexture_354lq")
+texture_rotate = -0.7853981633974483
+texture_scale = 1.5
+components = Array[ExtResource("1_wulo5")]([SubResource("Resource_85s6f")])
 metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

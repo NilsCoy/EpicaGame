@@ -13,7 +13,7 @@ script/source = "extends PanelContainer
 
 func clear_slot_data() -> void:
 	item_texture.texture = null
-	tooltip_text = \"\"
+	#tooltip_text = \"\"
 	quantity_label.hide()
 
 func set_slot_data(slot_data: SlotData) -> void:
@@ -23,10 +23,10 @@ func set_slot_data(slot_data: SlotData) -> void:
 	item_texture.offset_transform_rotation = item_data.texture_rotate
 	item_texture.offset_transform_scale = Vector2(item_data.texture_scale,item_data.texture_scale)
 
-	tooltip_text = \"%s\\n%s\" % [
-		item_data.item_name,
-		item_data.discription
-	]
+	#tooltip_text = \"%s\\n%s\" % [
+		#item_data.item_name,
+		#item_data.discription
+	#]
 
 	if slot_data.quantity > 1:
 		quantity_label.text = str(slot_data.quantity)

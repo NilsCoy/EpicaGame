@@ -1,0 +1,284 @@
+[gd_scene format=3 uid="uid://bddn6irh7p6vb"]
+
+[ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/Classes/InventorySystem/inventory_data.gd" id="1_lc66f"]
+[ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/Classes/InventorySystem/slot_data.gd" id="2_47rqh"]
+[ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="3_62ws4"]
+[ext_resource type="Resource" uid="uid://b171ehfbcyj1g" path="res://Resources/Items/Data/coal_ore.tres" id="3_biyl3"]
+[ext_resource type="Resource" uid="uid://di0itper56v8k" path="res://Resources/Items/Data/iron_sword.tres" id="4_3ctg3"]
+[ext_resource type="PackedScene" uid="uid://74bnuimkjgne" path="res://Scenes/InventorySystem/item_visual.tscn" id="4_ejrui"]
+[ext_resource type="Texture2D" uid="uid://c7r1ypg4fmyr6" path="res://Assets/Textures/UI/Inventory/Inventory Atlas.png" id="7_ejrui"]
+[ext_resource type="Resource" uid="uid://2ywt0615yq5k" path="res://Resources/Items/Data/iron_pickaxe.tres" id="8_534eo"]
+[ext_resource type="PackedScene" uid="uid://cp71jwraxlmpd" path="res://Scenes/InventorySystem/single_slot_container.tscn" id="8_biyl3"]
+
+[sub_resource type="GDScript" id="GDScript_sbpmq"]
+script/source = "extends InventoryWindow
+
+# Inventory
+@export var inventory_data: InventoryData
+@export var equip_data: InventoryData
+
+func _ready() -> void:
+	init_inventory()
+
+func init_inventory() -> void:
+	super.init_inventory()
+	
+	$InventoryContainer.columns = inventory_data.grid_size.x
+
+	inventory_data.inventory_interact.connect(on_inventory_interact)
+	$InventoryContainer.set_inventory_data(inventory_data)
+	equip_data.inventory_interact.connect(on_inventory_interact)
+	$EquipContainer.set_inventory_data(equip_data)
+
+func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> void:
+	if Input.is_action_pressed(\"shift\"):
+		if inv_data.inv_name == \"PlayerInventory\":
+			inv_data.transfer_slot_data(index, equip_data)
+		elif inv_data.inv_name == \"EquipInventory\":
+			inv_data.transfer_slot_data(index, inventory_data)
+	print(\"test\")
+	super.on_inventory_interact(inv_data, index, button)
+"
+
+[sub_resource type="Resource" id="Resource_62ws4"]
+script = ExtResource("2_47rqh")
+item_data = ExtResource("8_534eo")
+quantity = 1
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_ejrui"]
+script = ExtResource("2_47rqh")
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_biyl3"]
+script = ExtResource("2_47rqh")
+item_data = ExtResource("4_3ctg3")
+quantity = 1
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_1a76b"]
+script = ExtResource("2_47rqh")
+item_data = ExtResource("3_biyl3")
+quantity = 9
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_lc66f"]
+script = ExtResource("1_lc66f")
+grid_size = Vector2i(5, 9)
+slot_datas = Array[ExtResource("2_47rqh")]([SubResource("Resource_62ws4"), SubResource("Resource_ejrui"), SubResource("Resource_biyl3"), SubResource("Resource_1a76b")])
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Resource" id="Resource_celq1"]
+script = ExtResource("2_47rqh")
+item_category = "head"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_w313d"]
+script = ExtResource("2_47rqh")
+item_category = "chest"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_dyluq"]
+script = ExtResource("2_47rqh")
+item_category = "weapon"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_3ctg3"]
+script = ExtResource("2_47rqh")
+item_category = "weapon"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_byfj2"]
+script = ExtResource("2_47rqh")
+item_category = "consumable"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_qioty"]
+script = ExtResource("2_47rqh")
+item_category = "consumable"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_534eo"]
+script = ExtResource("2_47rqh")
+item_category = "consumable"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_47rqh"]
+script = ExtResource("1_lc66f")
+grid_size = Vector2i(7, 1)
+single_slots = true
+slot_datas = Array[ExtResource("2_47rqh")]([SubResource("Resource_celq1"), SubResource("Resource_w313d"), SubResource("Resource_dyluq"), SubResource("Resource_3ctg3"), SubResource("Resource_byfj2"), SubResource("Resource_qioty"), SubResource("Resource_534eo")])
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_s1fef"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(0, 0, 175, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_vdgd3"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(175, 0, 16, 16)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vdgd3"]
+
+[sub_resource type="GDScript" id="GDScript_47rqh"]
+script/source = "extends PanelContainer
+
+const Slot: Resource = preload(\"res://Scenes/InventorySystem/multi_slot_container.tscn\")
+const ItemVisual: Resource = preload(\"res://Scenes/InventorySystem/item_visual.tscn\")
+
+@onready var item_area: Control = $ItemArea
+
+func set_inventory_data(inventory_data: InventoryData) -> void:
+	inventory_data.init_inventory()
+	inventory_data.inventory_update.connect(populate_item_grid)
+	populate_item_grid(inventory_data)
+
+func populate_item_grid(inventory_data: InventoryData) -> void:
+	var index: int = 0
+	for child: Node in item_area.get_children():
+		child.clear_slot_data()
+		
+		if not(child.slot_clicked.is_connected(inventory_data.on_slot_clicked)):
+			child.slot_clicked.connect(inventory_data.on_slot_clicked)
+		
+		var slot_data: SlotData = inventory_data.slot_datas[index]
+		if slot_data.item_data != null:
+			child.set_slot_data(slot_data)
+
+		index += 1
+"
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ejrui"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(204, 144, 26, 26)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3ctg3"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(201, 171, 32, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qioty"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(234, 171, 16, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_byfj2"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(184, 171, 16, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_534eo"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(192, 220, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_celq1"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(209, 220, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_w313d"]
+atlas = ExtResource("7_ejrui")
+region = Rect2(226, 220, 16, 16)
+
+[node name="PlayerInventory" type="Control" unique_id=471010658 node_paths=PackedStringArray("grabbed_slot_container")]
+layout_mode = 3
+anchors_preset = 0
+script = SubResource("GDScript_sbpmq")
+inventory_data = SubResource("Resource_lc66f")
+equip_data = SubResource("Resource_47rqh")
+grabbed_slot_container = NodePath("GrabbedSlotContainer")
+metadata/_custom_type_script = "uid://bndjlykjb0odp"
+
+[node name="Beckground" type="TextureRect" parent="." unique_id=667225199]
+layout_mode = 0
+offset_right = 175.0
+offset_bottom = 160.0
+scale = Vector2(4, 4)
+texture = SubResource("AtlasTexture_s1fef")
+
+[node name="GrabbedSlotContainer" parent="." unique_id=1347128411 instance=ExtResource("4_ejrui")]
+visible = false
+top_level = true
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+
+[node name="InventoryContainer" parent="." unique_id=1445187137 instance=ExtResource("3_62ws4")]
+layout_mode = 0
+offset_left = 348.0
+offset_top = 32.0
+offset_right = 348.0
+offset_bottom = 32.0
+background = Color(0, 0, 0, 0)
+slot_texture = SubResource("AtlasTexture_vdgd3")
+slot_color = Color(0, 0, 0, 0)
+
+[node name="EquipContainer" type="PanelContainer" parent="." unique_id=2012566676]
+layout_mode = 0
+offset_right = 319.0
+offset_bottom = 425.0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_vdgd3")
+script = SubResource("GDScript_47rqh")
+
+[node name="ItemArea" type="Control" parent="EquipContainer" unique_id=1261130932]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HeadSlot" parent="EquipContainer/ItemArea" unique_id=1947869178 instance=ExtResource("8_biyl3")]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 24.0
+offset_right = 212.0
+offset_bottom = 128.0
+color = Color(0, 0, 0, 0)
+texture = SubResource("AtlasTexture_ejrui")
+
+[node name="ChestSlot" parent="EquipContainer/ItemArea" unique_id=1037720851 instance=ExtResource("8_biyl3")]
+layout_mode = 0
+offset_left = 96.0
+offset_top = 136.0
+offset_right = 224.0
+offset_bottom = 328.0
+color = Color(0, 0, 0, 0)
+texture = SubResource("AtlasTexture_3ctg3")
+
+[node name="WeaponSlot1" parent="EquipContainer/ItemArea" unique_id=1092548819 instance=ExtResource("8_biyl3")]
+layout_mode = 0
+offset_left = 232.0
+offset_top = 136.0
+offset_right = 296.0
+offset_bottom = 328.0
+color = Color(0, 0, 0, 0)
+texture = SubResource("AtlasTexture_qioty")
+
+[node name="WeaponSlot2" parent="EquipContainer/ItemArea" unique_id=1572235871 instance=ExtResource("8_biyl3")]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 136.0
+offset_right = 88.0
+offset_bottom = 328.0
+color = Color(0, 0, 0, 0)
+texture = SubResource("AtlasTexture_byfj2")
+
+[node name="UseSlot1" parent="EquipContainer/ItemArea" unique_id=612790874 instance=ExtResource("8_biyl3")]
+layout_mode = 0
+offset_left = 56.0
+offset_top = 336.0
+offset_right = 120.0
+offset_bottom = 400.0
+color = Color(0, 0, 0, 0)
+texture = SubResource("AtlasTexture_534eo")
+
+[node name="UseSlot2" parent="EquipContainer/ItemArea" unique_id=69450193 instance=ExtResource("8_biyl3")]
+layout_mode = 0
+offset_left = 128.0
+offset_top = 336.0
+offset_right = 192.0
+offset_bottom = 400.0
+color = Color(0, 0, 0, 0)
+texture = SubResource("AtlasTexture_celq1")
+
+[node name="UseSlot3" parent="EquipContainer/ItemArea" unique_id=1220516606 instance=ExtResource("8_biyl3")]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 336.0
+offset_right = 264.0
+offset_bottom = 400.0
+color = Color(0, 0, 0, 0)
+texture = SubResource("AtlasTexture_w313d")

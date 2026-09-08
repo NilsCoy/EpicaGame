@@ -5,11 +5,13 @@
 [ext_resource type="Texture2D" uid="uid://c72dsdar61le3" path="res://Assets/Models/Entities/iron_armor_0.png" id="3_y18yp"]
 [ext_resource type="Material" uid="uid://bf7ho107qm1es" path="res://Assets/Textures/Player/skin_test.tres" id="4_85s6f"]
 [ext_resource type="AnimationNodeBlendTree" uid="uid://bfsc40fkwmylr" path="res://Assets/Animations/move_blend_tree.tres" id="6_3smsa"]
-[ext_resource type="Script" uid="uid://cq8ts751yfvxb" path="res://Scripts/Classes/Components/ComponentContainer.gd" id="6_y18yp"]
-[ext_resource type="Script" uid="uid://c7py3iy3m32c" path="res://Scripts/Classes/Components/DataComponent.gd" id="8_2hnfo"]
+[ext_resource type="Script" uid="uid://cq8ts751yfvxb" path="res://Scripts/Classes/Components/Entity/EntityComponentContainer.gd" id="6_y18yp"]
+[ext_resource type="Script" uid="uid://c7py3iy3m32c" path="res://Scripts/Classes/Components/Entity/DataEntityComponent.gd" id="8_2hnfo"]
 [ext_resource type="PackedScene" uid="uid://cm4jgqdf45be" path="res://Scenes/Utilites/texture_model.tscn" id="8_f1ek2"]
 [ext_resource type="Texture2D" uid="uid://d2dxovuwxytdr" path="res://Resources/Items/Assets/iron_sword.png" id="9_tx1dd"]
-[ext_resource type="Script" uid="uid://c10sqibitu4de" path="res://Scripts/Classes/Components/RagDollComponent.gd" id="10_85s6f"]
+[ext_resource type="Script" uid="uid://c10sqibitu4de" path="res://Scripts/Classes/Components/Entity/RagDollEntityComponent.gd" id="10_85s6f"]
+[ext_resource type="Script" uid="uid://c6jj8go1iefku" path="res://Scripts/Classes/Components/Entity/InventoryEntityComponent.gd" id="11_14y0q"]
+[ext_resource type="Script" uid="uid://bt82p7rrh15m3" path="res://Scripts/Classes/Components/Entity/DamagedEntityComponent.gd" id="12_f5ba2"]
 
 [sub_resource type="GDScript" id="GDScript_f60y1"]
 script/source = "extends CharacterBody3D
@@ -1046,28 +1048,25 @@ properties/12/spawn = true
 properties/12/replication_mode = 1
 
 [sub_resource type="GDScript" id="GDScript_66hud"]
-script/source = "extends HealthComponent
+script/source = "extends HealthEntityComponent
 
 @onready var player: CharacterBody3D = $\"../..\"
-@onready var component_container: ComponentContainer = $\"..\"
+@onready var component_container: EntityComponentContainer = $\"..\"
 
 
 func _on_damaged(dmg: float, to_target: Dictionary, from_target: Dictionary) -> void:
-	if player.animation.is_block():
-		rpc('set_value', value+dmg, \"block\")
-	else:
-		player.ui_health_update(value, max_value)
-		player.animation.rpc('damaged', from_target, to_target)
+	player.ui_health_update(value, max_value)
+	player.animation.rpc('damaged', from_target, to_target)
 
 
 func _on_died(reason: String) -> void:
 	player.is_life = false
-	component_container.components['RagDollComponent'].rpc('spawn_ragdoll')
+	component_container.get_component(RagDollEntityComponent).rpc('spawn_ragdoll')
 	player.spawn()
 "
 
 [sub_resource type="GDScript" id="GDScript_2hnfo"]
-script/source = "extends EnergyComponent
+script/source = "extends EnergyEntityComponent
 
 @onready var player: CharacterBody3D = $\"../..\"
 
@@ -1211,16 +1210,16 @@ metadata/_edit_lock_ = true
 [node name="blockbench_export" parent="Character/Model/Import" unique_id=562773184 instance=ExtResource("3_ofjh0")]
 
 [node name="Skeleton3D" parent="Character/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(562773184, 2113020208) index="0" unique_id=1981775415]
-bones/0/position = Vector3(0, -0.04062784, 0)
-bones/1/rotation = Quaternion(0, 7.275958e-12, 0.005960192, 0.9999823)
-bones/11/rotation = Quaternion(-0.018422313, 0.008549013, 0.00014245306, 0.9997938)
-bones/12/rotation = Quaternion(0.08715371, -0.0005961525, -0.006814054, 0.9961714)
-bones/14/rotation = Quaternion(0.127083, -0.034789085, 0.0044752313, 0.99127173)
-bones/15/rotation = Quaternion(0.08712142, 0.0024458312, 0.027955977, 0.99580234)
-bones/17/rotation = Quaternion(0.139212, 0, 0, 0.9902626)
-bones/18/rotation = Quaternion(-0.10455777, 0, 0, 0.9945189)
-bones/19/rotation = Quaternion(0.0450517, 0, 0, 0.99898475)
-bones/20/rotation = Quaternion(-0.32552487, 0, 0, 0.9455335)
+bones/0/position = Vector3(0, -0.026162261, 0)
+bones/1/rotation = Quaternion(9.313227e-10, 7.2759585e-12, 0.008968122, 0.9999599)
+bones/11/rotation = Quaternion(0.16877933, 0.042135127, -0.0072257267, 0.98472637)
+bones/12/rotation = Quaternion(0.08710475, -0.0029810674, -0.03407376, 0.9956118)
+bones/14/rotation = Quaternion(-0.06062764, -0.00086862827, -4.8927042e-05, 0.9981601)
+bones/15/rotation = Quaternion(0.087155715, 6.066014e-05, 0.0006933485, 0.9961945)
+bones/17/rotation = Quaternion(-0.048492517, 0, 0, 0.9988236)
+bones/18/rotation = Quaternion(-0.05940442, 0, 0, 0.9982341)
+bones/19/rotation = Quaternion(0.29746473, 0, 0, 0.9547329)
+bones/20/rotation = Quaternion(-0.28027126, 0, 0, 0.9599208)
 
 [node name="iron_chest" type="MeshInstance3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="0" unique_id=383000028]
 mesh = SubResource("ArrayMesh_5b5a0")
@@ -1237,12 +1236,12 @@ surface_material_override/6 = ExtResource("4_85s6f")
 surface_material_override/7 = ExtResource("4_85s6f")
 
 [node name="head" type="BoneAttachment3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="2" unique_id=1469560934]
-transform = Transform3D(0.99992895, -0.011920171, 1.4551656e-11, 0.011920171, 0.99992895, 8.6732196e-14, -1.4551656e-11, 8.6732196e-14, 1, -0.008940129, 1.4593189, 6.504915e-14)
+transform = Transform3D(0.9998391, -0.017935522, 3.125576e-11, 0.017935522, 0.9998391, -1.8624398e-09, 2.153098e-12, 1.8627007e-09, 1, -0.013451641, 1.4737171, 1.3970255e-09)
 bone_name = "head"
 bone_idx = 2
 
 [node name="right_equip" type="BoneAttachment3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="3" unique_id=455013527]
-transform = Transform3D(0.9998607, 0.004039515, 0.01619346, -0.001782312, 0.9905624, -0.13705094, -0.016594253, 0.13700299, 0.9904316, 0.33779725, 0.83734185, -0.060831994)
+transform = Transform3D(0.993065, 0.093429044, 0.07136421, -0.046669543, 0.870413, -0.49010506, -0.107906386, 0.48337567, 0.86873716, 0.3029359, 0.9154612, -0.24310398)
 bone_name = "right_equip"
 bone_idx = 13
 
@@ -1250,14 +1249,10 @@ bone_idx = 13
 transform = Transform3D(-3.090862e-08, -3.0908623e-08, 1.0000001, -0.70710677, 0.7071068, 0, -0.70710677, -0.7071068, -4.3711392e-08, 0, 0, 0)
 parent = NodePath("../../../../../../../..")
 texture = ExtResource("9_tx1dd")
-pixel_size = 0.05
-depth = 0.05
-pivot = Vector2(8, 20)
 collision_size = Vector3(0.3, 0.8, 0.3)
-collision_offset = Vector3(0, 0.6, 0)
 
 [node name="left_equip" type="BoneAttachment3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="4" unique_id=636606705]
-transform = Transform3D(0.9942562, -0.0951256, -0.049048394, 0.06617552, 0.9065824, -0.41680828, 0.08411555, 0.4111684, 0.9076702, -0.31761894, 0.8719903, -0.20497319)
+transform = Transform3D(0.99981207, -0.019380907, -0.000541392, 0.019324671, 0.99839705, -0.053196207, 0.0015715151, 0.053175755, 0.99858385, -0.34545833, 0.837213, -0.01682444)
 bone_name = "left_equip"
 bone_idx = 16
 
@@ -1265,17 +1260,13 @@ bone_idx = 16
 transform = Transform3D(-0.11748761, 0.00866969, 0.9930366, -0.77008545, 0.63058233, -0.096615225, -0.6270289, -0.77607405, -0.0674092, 0, 0, 0)
 parent = NodePath("../../../../../../../..")
 texture = ExtResource("9_tx1dd")
-pixel_size = 0.05
-depth = 0.05
-pivot = Vector2(8, 20)
 collision_size = Vector3(0.3, 0.8, 0.3)
-collision_offset = Vector3(0, 0.6, 0)
 
 [node name="PhysicalBoneSimulator3D" type="PhysicalBoneSimulator3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="5" unique_id=459090407]
 active = false
 
 [node name="Physical Bone base_2" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=949626912]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.34723467, 0)
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.33729488, 0)
 collision_layer = 4
 joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.375)
 body_offset = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.375, 0)
@@ -1287,11 +1278,11 @@ shape = SubResource("CapsuleShape3D_ofjh0")
 disabled = true
 
 [node name="Physical Bone body" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=738726981]
-transform = Transform3D(0.9998027, 4.2565225e-17, -0.019862935, -0.019862935, 2.2116145e-16, -0.9998027, -3.8163913e-17, 1, 2.2196329e-16, 0.007448867, 1.0971727, -7.1054545e-15)
+transform = Transform3D(0.9998765, 5.0320954e-17, -0.015716866, -0.015716866, 2.212404e-16, -0.9998765, -4.6837534e-17, 1, 2.2200397e-16, 0.005894048, 1.0872612, -7.438515e-15)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7008355e-08, 7.0222157e-15, 0.37501204)
-body_offset = Transform3D(1, 3.8163913e-17, 0, 0, 2.2196329e-16, -1, -3.8163913e-17, 1, 2.2196329e-16, 2.7008355e-08, 0.37501204, -7.1054545e-15)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6077032e-08, 7.3552606e-15, 0.37501258)
+body_offset = Transform3D(1, 4.6837534e-17, 0, 0, 2.2200396e-16, -1, -4.6837534e-17, 1, 2.2200396e-16, 2.6077032e-08, 0.37501258, -7.438515e-15)
 bone_name = "body"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1303,11 +1294,11 @@ shape = SubResource("CapsuleShape3D_2hnfo")
 disabled = true
 
 [node name="Physical Bone head" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=500774549]
-transform = Transform3D(0.8992022, -0.27274615, -0.34211832, -0.017864326, 0.7583866, -0.6515601, 0.43716845, 0.5919961, 0.6770705, 0.07174967, 1.5803612, -0.11249999)
+transform = Transform3D(0.8992687, -0.27588844, -0.3394134, -0.014135434, 0.7572492, -0.6529731, 0.4371683, 0.591996, 0.6770706, 0.068190716, 1.5707113, -0.11249999)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.172806e-06, -8.165836e-06, 0.16616811)
-body_offset = Transform3D(0.8993797, -0.28775612, -0.32910892, -5.5879354e-09, 0.7528195, -0.6582271, 0.43716845, 0.5919961, 0.6770705, 0.054690607, 0.10938251, -0.11249999)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.2659383e-06, -7.815659e-06, 0.16616786)
+body_offset = Transform3D(0.8993798, -0.287756, -0.32910877, -2.7939677e-09, 0.75281954, -0.65822697, 0.4371683, 0.591996, 0.6770706, 0.054690678, 0.10938203, -0.11249999)
 bone_name = "head"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1319,11 +1310,11 @@ shape = SubResource("CapsuleShape3D_y18yp")
 disabled = true
 
 [node name="Physical Bone right_face" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=645161549]
-transform = Transform3D(0, -0.6929219, 0.7210127, 0, 0.7210127, 0.6929219, -1, 0, 0, 0.11425583, 1.6748378, -0.225)
+transform = Transform3D(3.4694445e-18, -0.69590575, 0.71813315, -2.7427125e-20, 0.71813315, 0.69590575, -1, -2.4341028e-18, 2.4724362e-18, 0.11030472, 1.6653636, -0.225)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5487894e-06, 0.019889913)
-body_offset = Transform3D(0, -0.7071066, 0.70710695, 0, 0.70710695, 0.7071066, -1, 0, 0, -0.014063202, -0.014065385, 0)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.917262e-20, 1.6642734e-06, 0.019889966)
+body_offset = Transform3D(3.469447e-18, -0.70710665, 0.707107, 2.7105054e-20, 0.707107, 0.70710665, -1, -2.434103e-18, 2.4724362e-18, -0.014063157, -0.014065504, 0)
 bone_name = "right_face"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1335,11 +1326,11 @@ shape = SubResource("CapsuleShape3D_85s6f")
 disabled = true
 
 [node name="Physical Bone left_face" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=2145644283]
-transform = Transform3D(0.09054376, 0.9738326, -0.20845126, -0.0017988146, 0.20947057, 0.97781336, 0.9958909, -0.088159926, 0.020717999, -0.06779224, 1.6888812, -0.22447906)
+transform = Transform3D(0.090550534, 0.97295564, -0.21250424, -0.0014233409, 0.21350709, 0.97694045, 0.9958909, -0.088160016, 0.020718023, -0.07180006, 1.6786522, -0.22447906)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.741619e-09, -9.528703e-07, 0.02514086)
-body_offset = Transform3D(0.09056163, 0.9694798, -0.22783238, 5.122274e-09, 0.22877242, 0.97348, 0.9958909, -0.088159926, 0.020717997, 0.005728826, -0.024473906, -0.0005209446)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.789357e-09, -9.845753e-07, 0.025140742)
+body_offset = Transform3D(0.09056172, 0.9694798, -0.22783247, 5.47152e-09, 0.22877252, 0.97348, 0.9958909, -0.08816001, 0.020718023, 0.0057288334, -0.024473786, -0.0005209446)
 bone_name = "left_face"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1351,11 +1342,11 @@ shape = SubResource("CapsuleShape3D_14y0q")
 disabled = true
 
 [node name="Physical Bone right_arm" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=2125568640]
-transform = Transform3D(-0.5255177, 0.64666957, -0.55285597, -0.0450904, 0.6277374, 0.77711815, 0.849587, 0.43331787, -0.3007285, 0.3554075, 1.2113546, 0.05061212)
+transform = Transform3D(-0.5526646, 0.62933093, -0.54635566, 0.115666784, 0.7071481, 0.6975406, 0.82533824, 0.32231075, -0.46360832, 0.3517407, 1.2158904, 0.07802516)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3560057e-06, 3.5595149e-06, 0.1682997)
-body_offset = Transform3D(-0.5547108, 0.6180229, -0.5570849, -5.915761e-06, 0.6695356, 0.74278, 0.83204323, 0.4120314, -0.37139493, 0.09375428, -0.12501204, 0.06250531)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4156103e-06, 3.3825636e-06, 0.16829959)
+body_offset = Transform3D(-0.554711, 0.6180228, -0.5570849, -5.8338046e-06, 0.6695357, 0.7427799, 0.8320432, 0.41203147, -0.3713951, 0.09375428, -0.1250118, 0.062505424)
 bone_name = "right_arm"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1367,11 +1358,11 @@ shape = SubResource("CapsuleShape3D_f5ba2")
 disabled = true
 
 [node name="Physical Bone right_elbow" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=1787362471]
-transform = Transform3D(0.8429204, -0.41848558, 0.33816424, 0.08153473, 0.7206081, 0.6885318, -0.5318245, -0.55280536, 0.64153636, 0.39177656, 0.9652115, -0.0062895715)
+transform = Transform3D(0.85759723, -0.42262444, 0.29311362, 0.009564479, 0.58290935, 0.8124809, -0.51423293, -0.693978, 0.50394356, 0.3945652, 0.9623665, 0.07158777)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4959445e-06, -1.3560057e-06, 0.16757125)
-body_offset = Transform3D(0.85748255, -0.43180528, 0.27976382, -3.5762787e-06, 0.54374, 0.8392538, -0.514513, -0.7196465, 0.46624607, -0.046878815, -0.14063406, -0.07813169)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5518239e-06, -1.15484e-06, 0.16757159)
+body_offset = Transform3D(0.8574826, -0.4318054, 0.27976403, -3.6675483e-06, 0.5437401, 0.8392539, -0.5145132, -0.7196466, 0.4662461, -0.046878815, -0.14063448, -0.07813174)
 bone_name = "right_elbow"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1383,11 +1374,11 @@ shape = SubResource("CapsuleShape3D_kvkok")
 disabled = true
 
 [node name="Physical Bone left_arm" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=81657380]
-transform = Transform3D(-0.50921744, -0.63129896, 0.58494383, 0.13551855, 0.61236817, 0.77887106, -0.8499014, 0.47588545, -0.22627582, -0.3359823, 1.2209811, 0.03807953)
+transform = Transform3D(-0.48020226, -0.6613117, 0.5762576, 0.29061365, 0.49990806, 0.81586504, -0.8276168, 0.5592485, -0.047870778, -0.3371299, 1.2038251, 0.008051638)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.221235e-07, 8.638948e-06, 0.16830863)
-body_offset = Transform3D(-0.554716, -0.61802, 0.5570831, 3.2782555e-06, 0.66953725, 0.7427785, -0.8320397, 0.41203296, -0.371401, -0.093756884, -0.12502182, 0.062505916)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.662441e-07, 8.897856e-06, 0.16830914)
+body_offset = Transform3D(-0.5547161, -0.6180203, 0.55708283, 3.3080578e-06, 0.66953695, 0.7427788, -0.8320398, 0.41203308, -0.3714009, -0.093756944, -0.12502241, 0.06250602)
 bone_name = "left_arm"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1399,11 +1390,11 @@ shape = SubResource("CapsuleShape3D_at1v1")
 disabled = true
 
 [node name="Physical Bone left_elbow" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=1192183714]
-transform = Transform3D(0.8312927, 0.44468912, -0.3334728, -0.14628707, 0.7538333, 0.64057434, 0.5362393, -0.48372194, 0.6917084, -0.3785348, 0.982587, -0.03975948)
+transform = Transform3D(0.8146324, 0.42677724, -0.39272797, -0.21314001, 0.8500554, 0.4816401, 0.53939354, -0.30865362, 0.783446, -0.3682912, 0.9858401, -0.115178235)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.40119e-06, -1.7508864e-07, 0.16757384)
-body_offset = Transform3D(0.857484, 0.43180218, -0.2797645, 4.351139e-06, 0.5437425, 0.83925194, 0.5145107, -0.71964645, 0.46624866, 0.046878368, -0.14063656, -0.07813296)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.207475e-06, -2.6077032e-07, 0.16757354)
+body_offset = Transform3D(0.857484, 0.43180203, -0.2797645, 4.3809414e-06, 0.5437426, 0.8392519, 0.51451063, -0.71964645, 0.4662487, 0.046878487, -0.14063627, -0.07813278)
 bone_name = "left_elbow"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1415,11 +1406,11 @@ shape = SubResource("CapsuleShape3D_pm2yg")
 disabled = true
 
 [node name="Physical Bone right_leg" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=1802266110]
-transform = Transform3D(1, 0, 0, 0, 0.58427334, 0.81155694, 0, -0.81155694, 0.58427334, 0.125, 0.5618255, -0.11548583)
+transform = Transform3D(1, 0, 0, 0, 0.83262837, 0.5538322, 0, -0.5538322, 0.83262837, 0.125, 0.6028268, -0.16457467)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.438924e-07, 0.19765642)
-body_offset = Transform3D(1, 0, 0, 0, 0.31623262, 0.9486817, 0, -0.9486817, 0.31623262, 0, -0.18751287, -0.06250593)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.917383e-07, 0.19765647)
+body_offset = Transform3D(1, 0, 0, 0, 0.31623265, 0.9486817, 0, -0.9486817, 0.31623265, 0, -0.18751293, -0.0625059)
 bone_name = "right_leg"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1431,11 +1422,11 @@ shape = SubResource("CapsuleShape3D_43gew")
 disabled = true
 
 [node name="Physical Bone left_leg" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=695872101]
-transform = Transform3D(1, 0, 0, 0, 0.39313042, 0.9194827, 0, -0.9194827, 0.3931304, -0.125, 0.54048836, -0.0777048)
+transform = Transform3D(1, 0, 0, 0, 0.20834436, 0.9780556, 0, -0.9780556, 0.20834436, -0.125, 0.5189716, -0.041179795)
 collision_layer = 4
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7881393e-06, 0.1976607)
-body_offset = Transform3D(1, 0, 0, 0, 0.31623188, 0.948682, 0, -0.948682, 0.31623188, 0, -0.1875177, -0.06250492)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6838312e-06, 0.19766048)
+body_offset = Transform3D(1, 0, 0, 0, 0.3162317, 0.948682, 0, -0.948682, 0.3162317, 0, -0.18751746, -0.06250491)
 bone_name = "left_leg"
 joint_constraints/bias = 0.3
 joint_constraints/damping = 1.0
@@ -1466,11 +1457,11 @@ outline_size = 8
 script = ExtResource("6_y18yp")
 metadata/_custom_type_script = "uid://cq8ts751yfvxb"
 
-[node name="HealthComponent" type="Node" parent="ComponentContainer" unique_id=645472476]
+[node name="HealthEntityComponent" type="Node" parent="ComponentContainer" unique_id=645472476]
 script = SubResource("GDScript_66hud")
 metadata/_custom_type_script = "uid://ba3p1tiqgc6vs"
 
-[node name="EnergyComponent" type="Node" parent="ComponentContainer" unique_id=816768748]
+[node name="EnergyEntityComponent" type="Node" parent="ComponentContainer" unique_id=816768748]
 script = SubResource("GDScript_2hnfo")
 metadata/_custom_type_script = "uid://ph2f3bnjjafc"
 
@@ -1479,15 +1470,26 @@ script = ExtResource("10_85s6f")
 model = NodePath("../../Character/Model/Import/blockbench_export/base")
 metadata/_custom_type_script = "uid://c10sqibitu4de"
 
-[node name="DataComponent" type="Node" parent="ComponentContainer" unique_id=1898363696 node_paths=PackedStringArray("health_component", "energy_component")]
+[node name="DataEntityComponent" type="Node" parent="ComponentContainer" unique_id=1898363696 node_paths=PackedStringArray("enity", "health_component", "energy_component", "inventory_component")]
 script = ExtResource("8_2hnfo")
-health_component = NodePath("../HealthComponent")
-energy_component = NodePath("../EnergyComponent")
+enity = NodePath("../..")
+health_component = NodePath("../HealthEntityComponent")
+energy_component = NodePath("../EnergyEntityComponent")
+inventory_component = NodePath("../InventoryEntityComponent")
 metadata/_custom_type_script = "uid://c7py3iy3m32c"
 
+[node name="InventoryEntityComponent" type="Node" parent="ComponentContainer" unique_id=763317833 node_paths=PackedStringArray("node_inventory")]
+script = ExtResource("11_14y0q")
+node_inventory = NodePath("../../UI")
+metadata/_custom_type_script = "uid://c6jj8go1iefku"
+
+[node name="DamagedEntityComponent" type="Node" parent="ComponentContainer" unique_id=1973423355]
+script = ExtResource("12_f5ba2")
+metadata/_custom_type_script = "uid://bt82p7rrh15m3"
+
 [connection signal="animation_finished" from="AnimationTree" to="AnimationTree" method="_on_animation_finished"]
-[connection signal="damaged" from="ComponentContainer/HealthComponent" to="ComponentContainer/HealthComponent" method="_on_damaged"]
-[connection signal="died" from="ComponentContainer/HealthComponent" to="ComponentContainer/HealthComponent" method="_on_died"]
-[connection signal="changed_value" from="ComponentContainer/EnergyComponent" to="ComponentContainer/EnergyComponent" method="_on_changed_value"]
+[connection signal="damaged" from="ComponentContainer/HealthEntityComponent" to="ComponentContainer/HealthEntityComponent" method="_on_damaged"]
+[connection signal="died" from="ComponentContainer/HealthEntityComponent" to="ComponentContainer/HealthEntityComponent" method="_on_died"]
+[connection signal="changed_value" from="ComponentContainer/EnergyEntityComponent" to="ComponentContainer/EnergyEntityComponent" method="_on_changed_value"]
 
 [editable path="Character/Model/Import/blockbench_export"]

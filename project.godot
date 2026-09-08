@@ -62,6 +62,7 @@ Players=""
 
 [gui]
 
+timers/tooltip_delay_sec=0.1
 theme/custom_font="uid://dn5jgsvkxh1p"
 
 [importer_defaults]

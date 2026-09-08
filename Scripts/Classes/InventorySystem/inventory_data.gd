@@ -29,6 +29,13 @@ func init_inventory() -> void:
 func size() -> int:
 	return grid_size.x * grid_size.y
 
+func get_start_index(index: int) -> int:
+	var slot_data: SlotData = get_item_at_index(index)
+	for i: int in range(slot_datas.size()):
+		if slot_datas[i].item_data != null and slot_data.item_data != null:
+			if slot_data.item_data.type == slot_datas[i].item_data.type and slot_data.quantity == slot_datas[i].quantity:
+				return i
+	return -1
 
 ## Получение позиции по индексу
 func index_to_pos(index: int) -> Vector2i:

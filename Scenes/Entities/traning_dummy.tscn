@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://v7tblekak3iq"]
 
-[ext_resource type="Script" uid="uid://cq8ts751yfvxb" path="res://Scripts/Classes/Components/ComponentContainer.gd" id="2_i7d65"]
-[ext_resource type="Script" uid="uid://ba3p1tiqgc6vs" path="res://Scripts/Classes/Components/HealthComponent.gd" id="2_ymciu"]
+[ext_resource type="Script" uid="uid://cq8ts751yfvxb" path="res://Scripts/Classes/Components/Entity/EntityComponentContainer.gd" id="2_i7d65"]
+[ext_resource type="Script" uid="uid://ba3p1tiqgc6vs" path="res://Scripts/Classes/Components/Entity/HealthEntityComponent.gd" id="2_ymciu"]
 [ext_resource type="PackedScene" uid="uid://bo8h0lspkd545" path="res://Assets/Models/Entities/traning_dummy.gltf" id="3_uhc0p"]
 
 [sub_resource type="GDScript" id="GDScript_uhc0p"]

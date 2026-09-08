@@ -6,29 +6,24 @@
 [ext_resource type="Resource" uid="uid://b171ehfbcyj1g" path="res://Resources/Items/Data/coal_ore.tres" id="3_biyl3"]
 [ext_resource type="Resource" uid="uid://di0itper56v8k" path="res://Resources/Items/Data/iron_sword.tres" id="4_3ctg3"]
 [ext_resource type="PackedScene" uid="uid://74bnuimkjgne" path="res://Scenes/InventorySystem/item_visual.tscn" id="4_ejrui"]
-[ext_resource type="Resource" uid="uid://mghdad62qjd1" path="res://Resources/Items/Data/iron_plate.tres" id="5_qioty"]
-[ext_resource type="Resource" uid="uid://vvl6ia7m3kts" path="res://Resources/Items/Data/iron_ring.tres" id="6_534eo"]
-[ext_resource type="Resource" uid="uid://r8qm0u4rmw1j" path="res://Resources/Items/Data/gold_chest.tres" id="7_celq1"]
+[ext_resource type="Resource" uid="uid://duuqiucks6su7" path="res://Resources/Items/Data/iron_armor.tres" id="6_byfj2"]
 [ext_resource type="Texture2D" uid="uid://c7r1ypg4fmyr6" path="res://Assets/Textures/UI/Inventory/Inventory Atlas.png" id="7_ejrui"]
 [ext_resource type="Resource" uid="uid://2ywt0615yq5k" path="res://Resources/Items/Data/iron_pickaxe.tres" id="8_534eo"]
 [ext_resource type="PackedScene" uid="uid://cp71jwraxlmpd" path="res://Scenes/InventorySystem/single_slot_container.tscn" id="8_biyl3"]
-[ext_resource type="Resource" uid="uid://ca31uar4uva6" path="res://Resources/Items/Data/berry_tincture.tres" id="9_celq1"]
 
-[sub_resource type="GDScript" id="GDScript_vgqql"]
-script/source = "extends Control
+[sub_resource type="GDScript" id="GDScript_sbpmq"]
+script/source = "extends InventoryWindow
 
 # Inventory
 @export var inventory_data: InventoryData
 @export var equip_data: InventoryData
-var grabbed_slot_data: SlotData = SlotData.new()
-@onready var grabbed_slot_container: Control = $GrabbedSlotContainer
-var grabbed_slot_offset: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	init_inventory()
 
 func init_inventory() -> void:
-	$GrabbedSlotContainer.hide()
+	super.init_inventory()
+	
 	$InventoryContainer.columns = inventory_data.grid_size.x
 
 	inventory_data.inventory_interact.connect(on_inventory_interact)
@@ -36,108 +31,42 @@ func init_inventory() -> void:
 	equip_data.inventory_interact.connect(on_inventory_interact)
 	$EquipContainer.set_inventory_data(equip_data)
 
-func _physics_process(delta: float) -> void:
-	if grabbed_slot_container.visible:
-		grabbed_slot_container.global_position = get_global_mouse_position() + Vector2(5, 5)
-		
-	#if grabbed_slot_container.visible:
-		#grabbed_slot_container.global_position = \\
-			#get_global_mouse_position() \\
-			#- grabbed_slot_offset \\
-			#+ Vector2(5, 5)
-
 func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> void:
 	if Input.is_action_pressed(\"shift\"):
 		if inv_data.inv_name == \"PlayerInventory\":
 			inv_data.transfer_slot_data(index, equip_data)
 		elif inv_data.inv_name == \"EquipInventory\":
 			inv_data.transfer_slot_data(index, inventory_data)
-	else:
-		match [grabbed_slot_data.item_data, button]:
-			[null, MOUSE_BUTTON_LEFT]:
-				get_grab_offset(inv_data, index)
-				grabbed_slot_data = inv_data.grab_slot_data(index)
-			[_, MOUSE_BUTTON_LEFT]:
-				grabbed_slot_data = inv_data.drop_slot_data(grabbed_slot_data, index)
-				#print(grabbed_slot_data, index)
-			[null, MOUSE_BUTTON_RIGHT]:
-				get_grab_offset(inv_data, index)
-				grabbed_slot_data = inv_data.grab_hafl_slot_data(index)
-			[_, MOUSE_BUTTON_RIGHT]:
-				grabbed_slot_data = inv_data.drop_single_slot_data(grabbed_slot_data, index)
-	update_grabbed_slot()
-
-func update_grabbed_slot() -> void:
-	#print(grabbed_slot_data, \" \", grabbed_slot_data.item_data)
-	if grabbed_slot_data.item_data:
-		grabbed_slot_container.set_slot_data(grabbed_slot_data)
-
-		var item_size: Vector2i = grabbed_slot_data.item_data.size
-		grabbed_slot_container.size = item_size * 64
-
-		grabbed_slot_container.show()
-	else:
-		grabbed_slot_container.hide()
-
-func get_grab_offset(inventory_data: InventoryData, index: int) -> void:
-	var slot_data: SlotData = inventory_data.get_item_at_index(index)
-
-	if slot_data.item_data == null:
-		return
-
-	var item_index: int = inventory_data.slot_datas.find(slot_data)
-
-	var item_pos: Vector2i = inventory_data.index_to_pos(item_index)
-	var click_pos: Vector2i= inventory_data.index_to_pos(index)
-
-	var cell_offset: Vector2 = click_pos - item_pos
-
-	grabbed_slot_offset = Vector2(cell_offset) * 64.0
+	super.on_inventory_interact(inv_data, index, button)
 "
 
-[sub_resource type="Resource" id="Resource_37tmm"]
+[sub_resource type="Resource" id="Resource_62ws4"]
 script = ExtResource("2_47rqh")
-item_data = ExtResource("3_biyl3")
-quantity = 6
+item_data = ExtResource("8_534eo")
+quantity = 1
 metadata/_custom_type_script = "uid://b4prui3gxwl8q"
 
-[sub_resource type="Resource" id="Resource_27ivj"]
+[sub_resource type="Resource" id="Resource_ejrui"]
 script = ExtResource("2_47rqh")
-item_data = ExtResource("4_3ctg3")
 metadata/_custom_type_script = "uid://b4prui3gxwl8q"
 
 [sub_resource type="Resource" id="Resource_biyl3"]
 script = ExtResource("2_47rqh")
-item_data = ExtResource("5_qioty")
-quantity = 10
+item_data = ExtResource("4_3ctg3")
+quantity = 1
 metadata/_custom_type_script = "uid://b4prui3gxwl8q"
 
-[sub_resource type="Resource" id="Resource_3ctg3"]
+[sub_resource type="Resource" id="Resource_1a76b"]
 script = ExtResource("2_47rqh")
-item_data = ExtResource("6_534eo")
-quantity = 99
+item_data = ExtResource("3_biyl3")
+quantity = 9
 metadata/_custom_type_script = "uid://b4prui3gxwl8q"
 
-[sub_resource type="Resource" id="Resource_w313d"]
-script = ExtResource("2_47rqh")
-item_data = ExtResource("7_celq1")
-metadata/_custom_type_script = "uid://b4prui3gxwl8q"
-
-[sub_resource type="Resource" id="Resource_dyluq"]
-script = ExtResource("2_47rqh")
-item_data = ExtResource("8_534eo")
-metadata/_custom_type_script = "uid://b4prui3gxwl8q"
-
-[sub_resource type="Resource" id="Resource_534eo"]
-script = ExtResource("2_47rqh")
-item_data = ExtResource("9_celq1")
-metadata/_custom_type_script = "uid://b4prui3gxwl8q"
-
-[sub_resource type="Resource" id="Resource_4utg2"]
+[sub_resource type="Resource" id="Resource_lc66f"]
 script = ExtResource("1_lc66f")
 inv_name = "PlayerInventory"
 grid_size = Vector2i(5, 9)
-slot_datas = Array[ExtResource("2_47rqh")]([SubResource("Resource_37tmm"), SubResource("Resource_27ivj"), SubResource("Resource_biyl3"), SubResource("Resource_3ctg3"), SubResource("Resource_w313d"), SubResource("Resource_dyluq"), SubResource("Resource_534eo")])
+slot_datas = Array[ExtResource("2_47rqh")]([SubResource("Resource_62ws4"), SubResource("Resource_ejrui"), SubResource("Resource_biyl3"), SubResource("Resource_1a76b")])
 metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 
 [sub_resource type="Resource" id="Resource_celq1"]
@@ -145,42 +74,44 @@ script = ExtResource("2_47rqh")
 item_category = "head"
 metadata/_custom_type_script = "uid://b4prui3gxwl8q"
 
-[sub_resource type="Resource" id="Resource_7eqxh"]
+[sub_resource type="Resource" id="Resource_w313d"]
 script = ExtResource("2_47rqh")
+item_data = ExtResource("6_byfj2")
 item_category = "chest"
 metadata/_custom_type_script = "uid://b4prui3gxwl8q"
 
-[sub_resource type="Resource" id="Resource_wndiu"]
+[sub_resource type="Resource" id="Resource_dyluq"]
 script = ExtResource("2_47rqh")
+item_data = ExtResource("4_3ctg3")
 item_category = "weapon"
 metadata/_custom_type_script = "uid://b4prui3gxwl8q"
 
-[sub_resource type="Resource" id="Resource_jf3nj"]
+[sub_resource type="Resource" id="Resource_3ctg3"]
 script = ExtResource("2_47rqh")
 item_category = "weapon"
-metadata/_custom_type_script = "uid://b4prui3gxwl8q"
-
-[sub_resource type="Resource" id="Resource_h5dhs"]
-script = ExtResource("2_47rqh")
-item_category = "consumable"
-metadata/_custom_type_script = "uid://b4prui3gxwl8q"
-
-[sub_resource type="Resource" id="Resource_0abkp"]
-script = ExtResource("2_47rqh")
-item_category = "consumable"
-metadata/_custom_type_script = "uid://b4prui3gxwl8q"
-
-[sub_resource type="Resource" id="Resource_bqk28"]
-script = ExtResource("2_47rqh")
-item_category = "consumable"
 metadata/_custom_type_script = "uid://b4prui3gxwl8q"
 
 [sub_resource type="Resource" id="Resource_byfj2"]
+script = ExtResource("2_47rqh")
+item_category = "consumable"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_qioty"]
+script = ExtResource("2_47rqh")
+item_category = "consumable"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_534eo"]
+script = ExtResource("2_47rqh")
+item_category = "consumable"
+metadata/_custom_type_script = "uid://b4prui3gxwl8q"
+
+[sub_resource type="Resource" id="Resource_47rqh"]
 script = ExtResource("1_lc66f")
 inv_name = "EquipInventory"
 grid_size = Vector2i(7, 1)
 single_slots = true
-slot_datas = Array[ExtResource("2_47rqh")]([SubResource("Resource_celq1"), SubResource("Resource_7eqxh"), SubResource("Resource_wndiu"), SubResource("Resource_jf3nj"), SubResource("Resource_h5dhs"), SubResource("Resource_0abkp"), SubResource("Resource_bqk28")])
+slot_datas = Array[ExtResource("2_47rqh")]([SubResource("Resource_celq1"), SubResource("Resource_w313d"), SubResource("Resource_dyluq"), SubResource("Resource_3ctg3"), SubResource("Resource_byfj2"), SubResource("Resource_qioty"), SubResource("Resource_534eo")])
 metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_s1fef"]
@@ -209,14 +140,12 @@ func set_inventory_data(inventory_data: InventoryData) -> void:
 func populate_item_grid(inventory_data: InventoryData) -> void:
 	var index: int = 0
 	for child: Node in item_area.get_children():
-		child.clear_slot_data()
 		
 		if not(child.slot_clicked.is_connected(inventory_data.on_slot_clicked)):
 			child.slot_clicked.connect(inventory_data.on_slot_clicked)
 		
 		var slot_data: SlotData = inventory_data.slot_datas[index]
-		if slot_data.item_data != null:
-			child.set_slot_data(slot_data)
+		child.set_slot_data(slot_data)
 
 		index += 1
 "
@@ -249,18 +178,14 @@ region = Rect2(209, 220, 16, 16)
 atlas = ExtResource("7_ejrui")
 region = Rect2(226, 220, 16, 16)
 
-[node name="PlayerInventory" type="Control" unique_id=1745702651]
+[node name="PlayerInventory" type="Control" unique_id=471010658 node_paths=PackedStringArray("grabbed_slot_container")]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = -452.0
-offset_bottom = -8.0
-grow_horizontal = 2
-grow_vertical = 2
-script = SubResource("GDScript_vgqql")
-inventory_data = SubResource("Resource_4utg2")
-equip_data = SubResource("Resource_byfj2")
+anchors_preset = 0
+script = SubResource("GDScript_sbpmq")
+inventory_data = SubResource("Resource_lc66f")
+equip_data = SubResource("Resource_47rqh")
+grabbed_slot_container = NodePath("GrabbedSlotContainer")
+metadata/_custom_type_script = "uid://bndjlykjb0odp"
 
 [node name="Beckground" type="TextureRect" parent="." unique_id=667225199]
 layout_mode = 0

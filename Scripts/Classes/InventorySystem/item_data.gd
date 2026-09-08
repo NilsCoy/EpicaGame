@@ -19,5 +19,23 @@ class_name ItemData
 @export_range(-360, 360, 0.1, "radians_as_degrees") var texture_rotate: float = 0
 ## Размер текстуры предмета
 @export var texture_scale: float = 1
-## Дополнительные характеристики предмета
-@export var attributes: Dictionary = {}
+## Список компонентов предмета
+@export var components: Array[ItemComponent] = []
+
+func get_component(component_class: Script) -> ItemComponent:
+	for component: ItemComponent in components:
+		if component.get_script() == component_class:
+			return component
+	return null
+
+func has_component(component_class: Script) -> bool:
+	return get_component(component_class) != null
+
+func get_all_components() -> Array[ItemComponent]:
+	return components.duplicate()
+
+func get_properties() -> Dictionary:
+	var properties: Dictionary
+	for component: ItemComponent in components:
+		properties.merge(component.get_properties())
+	return properties

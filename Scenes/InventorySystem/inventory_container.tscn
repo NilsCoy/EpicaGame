@@ -38,6 +38,9 @@ func populate_item_grid(inventory_data: InventoryData) -> void:
 		slot.texture = slot_texture
 		slot.color = slot_color
 
+		if inventory_data.get_item_at_index(index).item_data != null:
+			slot.set_slot_data(inventory_data.get_item_at_index(index))
+			
 		item_grid.add_child(slot)
 
 		slot.slot_clicked.connect(

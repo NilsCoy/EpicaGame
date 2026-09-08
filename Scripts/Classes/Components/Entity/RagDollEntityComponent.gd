@@ -1,5 +1,5 @@
-extends Component
-class_name RagDollComponent
+extends EntityComponent
+class_name RagDollEntityComponent
 
 @export var model: Node3D
 
@@ -32,3 +32,6 @@ func spawn_ragdoll() -> void:
 		if child.is_class("PhysicalBoneSimulator3D"):
 			child.physical_bones_start_simulation()
 			break
+
+func get_component_type() -> String:
+	return "RagDollEntityComponent"

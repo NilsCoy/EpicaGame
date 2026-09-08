@@ -1,5 +1,5 @@
-extends RangeComponent
-class_name EnergyComponent
+extends RangeEntityComponent
+class_name EnergyEntityComponent
 
 signal empty(reason: String)
 
@@ -12,4 +12,6 @@ func set_value(new_value: float, reason: String) -> void:
 @rpc("any_peer", "reliable", "call_local")
 func empty_value(reason: String) -> void:
 	emit_signal("empty", reason)
-	
+
+func get_component_type() -> String:
+	return "EnergyEntityComponent"

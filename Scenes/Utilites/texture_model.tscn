@@ -5,15 +5,23 @@ script/source = "extends Node3D
 
 @export var parent: Node
 
+## Текстура предмета
 @export var texture: Texture2D
-@export var pixel_size: float = 0.1
-@export var depth: float = 0.1
-@export var pivot: Vector2 = Vector2.ZERO
+## Размер пикселей в 3д
+@export var pixel_size: float = 0.05
+## Глубина пикселей в 3д
+@export var depth: float = 0.05
+## Смещение объекта
+@export var pivot: Vector2 = Vector2(8.0, 20.0)
 
-@export var collision_size: Vector3 = Vector3(0.5, 1.0, 0.2)
-@export var collision_offset: Vector3 = Vector3.ZERO
+## Размер бокса колизии
+@export var collision_size: Vector3 = Vector3(0.3, 0.8, 0.3)
+## Смещение бокса колизии
+@export var collision_offset: Vector3 = Vector3(0, 0.6, 0)
 
+## Время начала атаки (начало хитскана)
 @export var start_attack: float = 0.5
+## Время конца атаки (длина хитскана)
 @export var end_attack: float = 0.5
 
 @onready var area: Area3D = $Area3D

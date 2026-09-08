@@ -40,6 +40,10 @@ func set_slot_data(slot_data: SlotData) -> void:
 	item_background_color.show()
 	item_texture.show()
 	var item_data: ItemData = slot_data.item_data
+	
+	if item_data == null:
+		clear_slot_data()
+		return
 
 	item_texture.texture = item_data.texture
 	item_texture.offset_transform_rotation = item_data.texture_rotate

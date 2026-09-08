@@ -6,43 +6,18 @@
 [ext_resource type="PackedScene" uid="uid://74bnuimkjgne" path="res://Scenes/InventorySystem/item_visual.tscn" id="4_o1kjb"]
 
 [sub_resource type="GDScript" id="GDScript_vgqql"]
-script/source = "extends Control
+script/source = "extends InventoryWindow
 
 # Inventory
 @export var blocks_data: InventoryData
 @export var hot_bar_data: InventoryData
-var grabbed_slot_data: SlotData
-@onready var grabbed_slot_container: Control = $GrabbedSlotContainer
-
-#func _ready() -> void:
-	#var files: Array = FileManager.get_files_in_directory(FileManager.get_file_path('Resources/Blocks/Data', true))
-	#for file: String in files:
-		#var slot: SlotData = SlotData.new()
-		#var item: ItemData = ItemData.new()
-		#item.name = file.split(\".\")[0]
-		#var block: Dictionary = FileManager.read_json(FileManager.get_file_path('Resources/Blocks/Data/'+file, true))
-		#if block[\"type\"] == \"block\":
-			#var atlas_texture: Texture2D = load(block[\"textures\"][\"side\"])
-			#var texture: AtlasTexture = AtlasTexture.new()
-			#texture.atlas = atlas_texture
-			#item.texture = texture
-		#elif block[\"type\"] == \"model\":
-			#item.texture = get_texture_3d(block[\"asset\"])
-		#item.attributes[\"action\"] = \"block\"
-		#item.max_stack = 99
-		#slot.item_data = item
-		#slot.quantity = item.max_stack
-		#blocks_data.slot_datas.append(slot)
-	#blocks_data.inventory_interact.connect(on_inventory_interact)
-	#$ScrollContainer/BlocksContainer.set_inventory_data(blocks_data)
-	#hot_bar_data.inventory_interact.connect(on_inventory_interact)
-	#$HotBarContainer.set_inventory_data(hot_bar_data)
 
 func _ready() -> void:
 	init_inventory()
 
 func init_inventory() -> void:
-	$GrabbedSlotContainer.hide()
+	super.init_inventory()
+	
 	$ScrollContainer/BlocksContainer.columns = blocks_data.grid_size.x
 	$HotBarContainer.columns = hot_bar_data.grid_size.x
 	
@@ -54,6 +29,7 @@ func init_inventory() -> void:
 		var slot: SlotData = SlotData.new()
 		var item: ItemData = ItemData.new()
 
+		item.type = file.split(\".\")[0]
 		item.item_name = file.split(\".\")[0]
 		item.size = Vector2i(1, 1)
 
@@ -77,7 +53,7 @@ func init_inventory() -> void:
 		elif block[\"type\"] == \"model\":
 			item.texture = get_texture_3d(block[\"asset\"])
 
-		item.attributes[\"action\"] = \"block\"
+		#item.attributes[\"action\"] = \"block\"
 		item.max_stack = 99
 
 		slot.item_data = item
@@ -94,10 +70,6 @@ func init_inventory() -> void:
 	hot_bar_data.inventory_interact.connect(on_inventory_interact)
 	$HotBarContainer.set_inventory_data(hot_bar_data)
 
-func _physics_process(delta: float) -> void:
-	if grabbed_slot_container.visible:
-		grabbed_slot_container.global_position = get_global_mouse_position() + Vector2(5, 5)
-
 func get_texture_3d(path: String) -> AtlasTexture:
 	for i: Node in $BlockScreen/Scene.get_children():
 		i.free()
@@ -113,33 +85,7 @@ func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> 
 			inv_data.transportation_slot_data(index, hot_bar_data)
 		elif inv_data.inv_name == \"HotBar\":
 			inv_data.transportation_slot_data(index, blocks_data)
-	else:
-		match [grabbed_slot_data, button]:
-			[null, MOUSE_BUTTON_LEFT]:
-				grabbed_slot_data = inv_data.grab_slot_data(index)
-			[_, MOUSE_BUTTON_LEFT]:
-				grabbed_slot_data = inv_data.drop_slot_data(grabbed_slot_data, index)
-			[null, MOUSE_BUTTON_RIGHT]:
-				grabbed_slot_data = inv_data.grab_hafl_slot_data(index)
-			[_, MOUSE_BUTTON_RIGHT]:
-				grabbed_slot_data = inv_data.drop_single_slot_data(grabbed_slot_data, index)
-	update_grabbed_slot()
-
-#func update_grabbed_slot() -> void:
-	#if grabbed_slot_data:
-		#grabbed_slot_container.set_slot_data(grabbed_slot_data)
-		#grabbed_slot_container.show()
-	#else: grabbed_slot_container.hide()
-func update_grabbed_slot() -> void:
-	if grabbed_slot_data:
-		grabbed_slot_container.set_slot_data(grabbed_slot_data)
-
-		#var item_size: Vector2i = grabbed_slot_data.item_data.size
-		#grabbed_slot_container.size = item_size * 64
-
-		grabbed_slot_container.show()
-	else:
-		grabbed_slot_container.hide()
+	super.on_inventory_interact(inv_data, index, button)
 "
 
 [sub_resource type="Resource" id="Resource_fkybt"]
@@ -196,7 +142,7 @@ metadata/_custom_type_script = "uid://bnojduwe7dw4n"
 [sub_resource type="World3D" id="World3D_8erm5"]
 environment = SubResource("Environment_3smsa")
 
-[node name="CreativeInventory" type="Control" unique_id=1745702651]
+[node name="CreativeInventory" type="Control" unique_id=122083568 node_paths=PackedStringArray("grabbed_slot_container")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -206,6 +152,8 @@ grow_vertical = 2
 script = SubResource("GDScript_vgqql")
 blocks_data = SubResource("Resource_fkybt")
 hot_bar_data = SubResource("Resource_3smsa")
+grabbed_slot_container = NodePath("GrabbedSlotContainer")
+metadata/_custom_type_script = "uid://bndjlykjb0odp"
 metadata/_edit_lock_ = true
 
 [node name="HotBarContainer" parent="." unique_id=2012566676 instance=ExtResource("3_3k7iu")]
@@ -259,6 +207,7 @@ metadata/_edit_lock_ = true
 
 [node name="Camera3D" type="Camera3D" parent="BlockScreen" unique_id=706241097]
 transform = Transform3D(0.7071067, -0.4055798, 0.579228, 0, 0.81915206, 0.57357645, -0.7071067, -0.4055798, 0.579228, 1.25, 1.25, 1.25)
+current = true
 fov = 60.0
 metadata/_edit_lock_ = true
 

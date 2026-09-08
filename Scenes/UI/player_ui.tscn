@@ -17,6 +17,8 @@
 [sub_resource type="GDScript" id="GDScript_s1fef"]
 script/source = "extends CanvasLayer
 
+@onready var player_inventory: InventoryWindow = $PlayerInventory
+
 func _ready() -> void:
 	close_all_windows()
 
@@ -440,6 +442,8 @@ offset_left = -336.0
 offset_top = -324.0
 offset_right = -336.0
 offset_bottom = -324.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 

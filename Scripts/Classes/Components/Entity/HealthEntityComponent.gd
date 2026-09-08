@@ -1,5 +1,5 @@
-extends RangeComponent
-class_name HealthComponent
+extends RangeEntityComponent
+class_name HealthEntityComponent
 
 signal damaged(dmg: float, to_target: Dictionary, from_target: Dictionary)
 signal died(reason: String)
@@ -29,4 +29,7 @@ func die(reason: String) -> void:
 	#if get_multiplayer_authority() != multiplayer.get_unique_id():
 		#rpc_id(get_multiplayer_authority(), 'die', reason)
 	emit_signal("died", reason)
+
+func get_component_type() -> String:
+	return "HealthEntityComponent"
 	
