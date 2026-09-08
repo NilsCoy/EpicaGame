@@ -22,7 +22,7 @@ func send(from: Node, message: String) -> void:
 func _message(message: String) -> void:
 	for player: CharacterBody3D in get_tree().get_nodes_in_group("Players"):
 		if player.player_id == multiplayer.get_unique_id():
-			player.chat.text += message + "\n"
+			player.user_interface.chat.add_text(message + "\n")
 
 func send_broadcast(message: String) -> void:
 	rpc_id(1, "_send_broadcast_to_server", message)
@@ -35,7 +35,7 @@ func _send_broadcast_to_server(message: String) -> void:
 @rpc("authority", "reliable")
 func _broadcast(message: String) -> void:
 	for player: CharacterBody3D in get_tree().get_nodes_in_group("Players"):
-		player.chat.text += message + "\n"
+		player.user_interface.chat.add_text(message + "\n")
 
 func send_command(from: int, command: Array) -> void:
 	rpc_id(1, "_send_command_to_server", from, command)

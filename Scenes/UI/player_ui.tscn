@@ -18,6 +18,8 @@
 script/source = "extends CanvasLayer
 
 @onready var player_inventory: InventoryWindow = $PlayerInventory
+@onready var chat: Control = $Chat
+
 
 func _ready() -> void:
 	close_all_windows()
@@ -126,11 +128,16 @@ environment = SubResource("Environment_3smsa")
 [sub_resource type="GDScript" id="GDScript_c4arg"]
 script/source = "extends Control
 
+@onready var chat_history: RichTextLabel = $ChatHistory
+
 func _on_send_chat_text_submitted(new_text: String) -> void:
 	var from: Node = get_parent().get_parent()
 	if new_text != '':
 		ChatManager.send(from, new_text)
 		$SendChat.text = ''
+
+func add_text(text: String) -> void:
+	chat_history.text += text + \"\\n\"
 "
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_plo7s"]
@@ -366,6 +373,7 @@ offset_right = 550.0
 offset_bottom = -50.0
 grow_vertical = 0
 script = SubResource("GDScript_c4arg")
+metadata/_edit_use_anchors_ = true
 
 [node name="BackgroundRect" type="ColorRect" parent="Chat" unique_id=290110707]
 visible = false

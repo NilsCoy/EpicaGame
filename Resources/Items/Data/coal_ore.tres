@@ -1,5 +1,6 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://b171ehfbcyj1g"]
 
+[ext_resource type="Script" uid="uid://bhq6gu0ok303q" path="res://Scripts/Classes/Components/Items/ItemComponent.gd" id="1_80na6"]
 [ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_uoppj"]
 [ext_resource type="Texture2D" uid="uid://cmcw8em0fncqm" path="res://Resources/Items/Assets/Materials/Smith/charcoal.png" id="2_uoppj"]
 
