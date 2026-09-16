@@ -42,7 +42,7 @@ func fully_merge_with_return(other_slot_data: SlotData) -> SlotData:
 	if other_slot_data.quantity != 0:
 		other_slot_data.quantity *= -1
 	else:
-			other_slot_data = SlotData.new()
+		other_slot_data = SlotData.new()
 	return other_slot_data
 
 ## Cоздает новый слот с одним предметом и уменьшает количество в текущем слоте на 1

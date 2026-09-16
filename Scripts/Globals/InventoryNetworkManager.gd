@@ -35,7 +35,7 @@ func deserialize_slot_data(data: Dictionary, inventory_data: InventoryData) -> S
 ## Сериализация InventoryData в Dictionary
 func serialize_inventory_data(inventory_data: InventoryData) -> Dictionary:
 	var slots_data: Array = []
-	for slot_data in inventory_data.slot_datas:
+	for slot_data: SlotData in inventory_data.slot_datas:
 		slots_data.append(serialize_slot_data(slot_data))
 	
 	return {
@@ -58,7 +58,7 @@ func deserialize_inventory_data(data: Dictionary, inventory_data: InventoryData)
 	var slots_data: Array = data.get("slots", [])
 	inventory_data.slot_datas.clear()
 	
-	for slot_dict in slots_data:
+	for slot_dict: Dictionary in slots_data:
 		inventory_data.slot_datas.append(deserialize_slot_data(slot_dict, inventory_data))
 	
 	inventory_data.init_inventory()
@@ -71,7 +71,8 @@ func send_inventory_action_to_server(
 	index: int,
 	target_index: int = -1,
 	item_type: String = "",
-	quantity: int = 0
+	quantity: int = 0,
+	grabbed_data: Dictionary = {}
 ) -> void:
 	if not multiplayer.is_server():
 		_rpc_send_inventory_action_to_server.rpc_id(
@@ -81,7 +82,8 @@ func send_inventory_action_to_server(
 			index,
 			target_index,
 			item_type,
-			quantity
+			quantity,
+			grabbed_data
 		)
 
 ## [Сервер] Получает действие от клиента и обрабатывает его
@@ -93,7 +95,8 @@ func _rpc_send_inventory_action_to_server(
 	index: int,
 	target_index: int,
 	item_type: String,
-	quantity: int
+	quantity: int,
+	grabbed_data: Dictionary
 ) -> void:
 	if not multiplayer.is_server():
 		return
@@ -113,10 +116,14 @@ func _rpc_send_inventory_action_to_server(
 		return
 	
 	# Обрабатываем действие на сервере
-	_process_inventory_action_on_server(inventory_data, action, index, target_index, item_type, quantity)
+	_process_inventory_action_on_server(inventory_data, action, index, target_index, item_type, quantity, grabbed_data)
 	
 	# Отправляем snapshot всем клиентам
 	_broadcast_inventory_snapshot(inventory_name, serialize_inventory_data(inventory_data))
+	
+	# Сохраняем инвентарь если это инвентарь игрока
+	if inventory_name == "PlayerInventory" or inventory_name == "EquipInventory":
+		save_player_inventories(player.nickname, inventory_component.player_inventory, inventory_component.equip_inventory)
 
 ## Обработка действия на сервере
 func _process_inventory_action_on_server(
@@ -125,7 +132,8 @@ func _process_inventory_action_on_server(
 	index: int,
 	target_index: int,
 	item_type: String,
-	quantity: int
+	quantity: int,
+	grabbed_data: Dictionary
 ) -> void:
 	match action:
 		"grab":
@@ -134,7 +142,9 @@ func _process_inventory_action_on_server(
 			inventory_data.grab_hafl_slot_data(index)
 		"drop":
 			# Для drop нужен grabbed_slot_data, который должен быть передан
-			pass # Обработка требует дополнительного контекста
+			if not grabbed_data.is_empty():
+				var slot_data: SlotData = deserialize_slot_data(grabbed_data, inventory_data)
+				inventory_data.drop_slot_data(slot_data, index)
 		"transfer":
 			if target_index >= 0:
 				inventory_data.transfer_slot_data(index, inventory_data)
@@ -153,8 +163,8 @@ func _get_player_by_id(player_id: int) -> Node:
 	if players_node == null:
 		return null
 	
-	for player in players_node.get_children():
-		if player.player_id == player_id:
+	for player: Node in players_node.get_children():
+		if player.has_meta("player_id") and player.get_meta("player_id") == player_id:
 			return player
 	return null
 
@@ -190,7 +200,7 @@ func _rpc_request_inventory_from_server(requester_id: int, nickname: String) -> 
 	var inventories: Dictionary = load_player_inventories(nickname)
 	
 	# Отправляем каждый инвентарь
-	for inv_name in inventories:
+	for inv_name: String in inventories:
 		_rpc_receive_inventory_snapshot.rpc_id(sender_id, inv_name, inventories[inv_name])
 
 ## Сохранение инвентаря игрока на сервере
