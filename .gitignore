@@ -1,4 +1,1 @@
-# Godot 4+ specific ignores
-.godot/
-/android/
-Exports/
+Nothing should be ignored based on the provided file changes. The added file 'Scripts/Globals/InventoryNetworkManager.gd' is a source code file that should be tracked in version control.
