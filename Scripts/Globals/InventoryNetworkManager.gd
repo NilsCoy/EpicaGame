@@ -22,7 +22,7 @@ func serialize_slot_data(slot_data: SlotData) -> Dictionary:
 
 ## Десериализация Dictionary в SlotData
 func deserialize_slot_data(data: Dictionary, inventory_data: InventoryData) -> SlotData:
-	var slot := SlotData.new()
+	var slot: SlotData = SlotData.new()
 	slot.item_category = data.get("item_category", "all")
 	
 	if data.get("has_item", false):
@@ -98,13 +98,13 @@ func _rpc_send_inventory_action_to_server(
 	if not multiplayer.is_server():
 		return
 	
-	var sender_id := multiplayer.get_remote_sender_id()
-	var player := _get_player_by_id(sender_id)
+	var sender_id: int = multiplayer.get_remote_sender_id()
+	var player: Node = _get_player_by_id(sender_id)
 	
 	if player == null or not player.has_node("Inventory"):
 		return
 	
-	var inventory_component := player.get_node("Inventory") as InventoryEntityComponent
+	var inventory_component: InventoryEntityComponent = player.get_node("Inventory") as InventoryEntityComponent
 	if inventory_component == null:
 		return
 	
@@ -149,7 +149,7 @@ func _get_inventory_by_name(inventory_component: InventoryEntityComponent, inv_n
 
 ## Получение игрока по ID
 func _get_player_by_id(player_id: int) -> Node:
-	var players_node := get_tree().root.get_node("Main/Map/Players")
+	var players_node: Node = get_tree().root.get_node("Main/Map/Players")
 	if players_node == null:
 		return null
 	
@@ -180,14 +180,14 @@ func _rpc_request_inventory_from_server(requester_id: int, nickname: String) -> 
 	if not multiplayer.is_server():
 		return
 	
-	var sender_id := multiplayer.get_remote_sender_id()
-	var player := _get_player_by_id(sender_id)
+	var sender_id: int = multiplayer.get_remote_sender_id()
+	var player: Node = _get_player_by_id(sender_id)
 	
 	if player == null:
 		return
 	
 	# Загружаем инвентарь из сохранения
-	var inventories := load_player_inventories(nickname)
+	var inventories: Dictionary = load_player_inventories(nickname)
 	
 	# Отправляем каждый инвентарь
 	for inv_name in inventories:
@@ -198,24 +198,24 @@ func save_player_inventories(nickname: String, player_inventory: InventoryData, 
 	if not multiplayer.is_server():
 		return
 	
-	var save_data := {
+	var save_data: Dictionary = {
 		"nickname": nickname,
 		"PlayerInventory": serialize_inventory_data(player_inventory),
 		"EquipInventory": serialize_inventory_data(equip_inventory)
 	}
 	
-	var dir_path := FileManager.get_file_path("user://saves/inventories/", false)
+	var dir_path: String = FileManager.get_file_path("user://saves/inventories/", false)
 	DirAccess.make_dir_recursive_absolute(dir_path)
 	
-	var file_path := dir_path + nickname + ".json"
+	var file_path: String = dir_path + nickname + ".json"
 	FileManager.save_json(file_path, save_data)
 
 ## Загрузка инвентаря игрока с сервера
 func load_player_inventories(nickname: String) -> Dictionary:
-	var dir_path := FileManager.get_file_path("user://saves/inventories/", false)
-	var file_path := dir_path + nickname + ".json"
+	var dir_path: String = FileManager.get_file_path("user://saves/inventories/", false)
+	var file_path: String = dir_path + nickname + ".json"
 	
-	var data := FileManager.read_json(file_path)
+	var data: Dictionary = FileManager.read_json(file_path)
 	if data.is_empty():
 		# Возвращаем пустые инвентари если файл не найден
 		return {}
@@ -230,11 +230,11 @@ func on_player_disconnect(player_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	
-	var player := _get_player_by_id(player_id)
+	var player: Node = _get_player_by_id(player_id)
 	if player == null or not player.has_node("Inventory"):
 		return
 	
-	var inventory_component := player.get_node("Inventory") as InventoryEntityComponent
+	var inventory_component: InventoryEntityComponent = player.get_node("Inventory") as InventoryEntityComponent
 	save_player_inventories(
 		player.nickname,
 		inventory_component.player_inventory,
