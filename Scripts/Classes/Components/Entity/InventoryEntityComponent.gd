@@ -22,11 +22,11 @@ var equip_inventory: InventoryData:
 	get:
 		return node_inventory.player_inventory.equip_data
 
-var equiped: Array[ItemData] = [
-	null, null,
-	null, null,
-	null, null,
-	null,
+@export var equiped: Array[String] = [
+	'', '',
+	'', '',
+	'', '',
+	'',
 ]
 
 func get_component_type() -> String:
@@ -34,6 +34,7 @@ func get_component_type() -> String:
 
 func _ready() -> void:
 	equip_inventory.inventory_update.connect(_on_equip_inventory_update)
+	_on_equip_inventory_update(equip_inventory)
 
 ## Собираем все характеристики экипировки в один массив
 func get_equip_properties() -> Dictionary:
@@ -48,14 +49,16 @@ func get_equip_properties() -> Dictionary:
 func _on_equip_inventory_update(inventory_data: InventoryData) -> void:
 	for i: int in range(inventory_data.slot_datas.size()):
 		var item: ItemData = equip_inventory.slot_datas[i].item_data
-		if item != null and equiped[i] != item:
-			equiped[i] = item
-		if item == null:
-			equiped[i] = null
-		_equip_item(i)
+		if item != null:
+			if equiped[i] != item.type:
+				equiped[i] = item.type
+		else: equiped[i] = ''
+		rpc("_equip_item", i)
 
+@rpc("any_peer", "call_local", "unreliable")
 func _equip_item(index: int) -> void:
-	var item: ItemData = equiped[index]
+	var item: ItemData = ItemData.new()
+	item = item.find_item(equiped[index])
 	match index:
 		0:
 			if item != null:

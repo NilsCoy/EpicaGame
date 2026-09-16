@@ -38,7 +38,7 @@ func add_player(pocket: Array) -> void:
 @rpc(\"authority\", \"reliable\")
 func load_completed() -> void:
 	emit_signal(\"load_completed_signal\")
-	$AmbientSystem.init_sound()
+	#$AmbientSystem.init_sound()
 
 @rpc(\"any_peer\", \"reliable\")
 func load_scene() -> void:

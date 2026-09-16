@@ -44,7 +44,7 @@ window/vsync/vsync_mode=0
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/fgi/plugin.cfg")
+enabled=PackedStringArray("res://addons/sky_3d/plugin.cfg")
 
 [file_customization]
 
@@ -53,6 +53,7 @@ folder_colors={
 "res://Resources/": "teal",
 "res://Scenes/": "red",
 "res://Scripts/": "purple",
+"res://addons/": "gray",
 "res://defaults/": "gray"
 }
 
