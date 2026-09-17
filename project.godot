@@ -31,6 +31,7 @@ Global="*uid://37ngxtvnw0do"
 ChatManager="*uid://48u6r55dqft0"
 ConsoleManager="*uid://betlpu28upd4t"
 MultiplayerManager="*uid://bvr1gyml37fhx"
+InventoryNetworkManager="*uid://cf6mhjfnf80wn"
 
 [debug]
 
