@@ -8,6 +8,33 @@ class_name SlotData
 ## Тип предмета доступный во вложение
 @export_enum('all', 'head', 'chest', 'weapon', 'consumable') var item_category: String = 'all'
 
+## Сериализация SlotData в Dictionary (для сети и сохранений)
+func to_dict() -> Dictionary:
+	if item_data == null:
+		return {
+			"has_item": false,
+			"item_category": item_category
+		}
+	
+	return {
+		"has_item": true,
+		"item_type": item_data.type,
+		"quantity": quantity,
+		"item_category": item_category
+	}
+
+## Десериализация SlotData из Dictionary
+static func from_dict(data: Dictionary) -> SlotData:
+	var slot: SlotData = SlotData.new()
+	slot.item_category = data.get("item_category", "all")
+	
+	if data.get("has_item", false):
+		var item_type: String = data.get("item_type", "")
+		slot.item_data = ItemData.new().find_item(item_type)
+		slot.quantity = data.get("quantity", 1)
+	
+	return slot
+
 ## Проверяет, может ли текущий слот объединиться с другим слотом
 func can_merge_with(other_slot_data: SlotData) -> bool:
 	return item_data == other_slot_data.item_data \
@@ -42,7 +69,7 @@ func fully_merge_with_return(other_slot_data: SlotData) -> SlotData:
 	if other_slot_data.quantity != 0:
 		other_slot_data.quantity *= -1
 	else:
-			other_slot_data = SlotData.new()
+		other_slot_data = SlotData.new()
 	return other_slot_data
 
 ## Cоздает новый слот с одним предметом и уменьшает количество в текущем слоте на 1

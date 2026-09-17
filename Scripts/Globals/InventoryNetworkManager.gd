@@ -7,35 +7,22 @@ signal inventory_snapshot_received(inventory_name: String, data: Dictionary)
 
 ## Сериализация SlotData в Dictionary
 func serialize_slot_data(slot_data: SlotData) -> Dictionary:
-	if slot_data == null or slot_data.item_data == null:
+	if slot_data == null:
 		return {
 			"has_item": false,
-			"item_category": slot_data.item_category if slot_data else "all"
+			"item_category": "all"
 		}
 	
-	return {
-		"has_item": true,
-		"item_type": slot_data.item_data.type,
-		"quantity": slot_data.quantity,
-		"item_category": slot_data.item_category
-	}
+	return slot_data.to_dict()
 
 ## Десериализация Dictionary в SlotData
-func deserialize_slot_data(data: Dictionary, inventory_data: InventoryData) -> SlotData:
-	var slot: SlotData = SlotData.new()
-	slot.item_category = data.get("item_category", "all")
-	
-	if data.get("has_item", false):
-		var item_type: String = data.get("item_type", "")
-		slot.item_data = ItemData.new().find_item(item_type)
-		slot.quantity = data.get("quantity", 1)
-	
-	return slot
+func deserialize_slot_data(data: Dictionary) -> SlotData:
+	return SlotData.from_dict(data)
 
 ## Сериализация InventoryData в Dictionary
 func serialize_inventory_data(inventory_data: InventoryData) -> Dictionary:
 	var slots_data: Array = []
-	for slot_data in inventory_data.slot_datas:
+	for slot_data: SlotData in inventory_data.slot_datas:
 		slots_data.append(serialize_slot_data(slot_data))
 	
 	return {
@@ -58,8 +45,8 @@ func deserialize_inventory_data(data: Dictionary, inventory_data: InventoryData)
 	var slots_data: Array = data.get("slots", [])
 	inventory_data.slot_datas.clear()
 	
-	for slot_dict in slots_data:
-		inventory_data.slot_datas.append(deserialize_slot_data(slot_dict, inventory_data))
+	for slot_dict: Dictionary in slots_data:
+		inventory_data.slot_datas.append(deserialize_slot_data(slot_dict))
 	
 	inventory_data.init_inventory()
 	inventory_data.inventory_update.emit(inventory_data)
@@ -71,7 +58,8 @@ func send_inventory_action_to_server(
 	index: int,
 	target_index: int = -1,
 	item_type: String = "",
-	quantity: int = 0
+	quantity: int = 0,
+	grabbed_data: Dictionary = {}
 ) -> void:
 	if not multiplayer.is_server():
 		_rpc_send_inventory_action_to_server.rpc_id(
@@ -81,7 +69,8 @@ func send_inventory_action_to_server(
 			index,
 			target_index,
 			item_type,
-			quantity
+			quantity,
+			grabbed_data
 		)
 
 ## [Сервер] Получает действие от клиента и обрабатывает его
@@ -93,7 +82,8 @@ func _rpc_send_inventory_action_to_server(
 	index: int,
 	target_index: int,
 	item_type: String,
-	quantity: int
+	quantity: int,
+	grabbed_data: Dictionary
 ) -> void:
 	if not multiplayer.is_server():
 		return
@@ -113,10 +103,14 @@ func _rpc_send_inventory_action_to_server(
 		return
 	
 	# Обрабатываем действие на сервере
-	_process_inventory_action_on_server(inventory_data, action, index, target_index, item_type, quantity)
+	_process_inventory_action_on_server(inventory_data, action, index, target_index, item_type, quantity, grabbed_data)
 	
 	# Отправляем snapshot всем клиентам
 	_broadcast_inventory_snapshot(inventory_name, serialize_inventory_data(inventory_data))
+	
+	# Сохраняем инвентарь если это инвентарь игрока
+	if inventory_name == "PlayerInventory" or inventory_name == "EquipInventory":
+		save_player_inventories(player.nickname, inventory_component.player_inventory, inventory_component.equip_inventory)
 
 ## Обработка действия на сервере
 func _process_inventory_action_on_server(
@@ -125,7 +119,8 @@ func _process_inventory_action_on_server(
 	index: int,
 	target_index: int,
 	item_type: String,
-	quantity: int
+	quantity: int,
+	grabbed_data: Dictionary
 ) -> void:
 	match action:
 		"grab":
@@ -134,7 +129,9 @@ func _process_inventory_action_on_server(
 			inventory_data.grab_hafl_slot_data(index)
 		"drop":
 			# Для drop нужен grabbed_slot_data, который должен быть передан
-			pass # Обработка требует дополнительного контекста
+			if not grabbed_data.is_empty():
+				var slot_data: SlotData = deserialize_slot_data(grabbed_data)
+				inventory_data.drop_slot_data(slot_data, index)
 		"transfer":
 			if target_index >= 0:
 				inventory_data.transfer_slot_data(index, inventory_data)
@@ -153,8 +150,8 @@ func _get_player_by_id(player_id: int) -> Node:
 	if players_node == null:
 		return null
 	
-	for player in players_node.get_children():
-		if player.player_id == player_id:
+	for player: Node in players_node.get_children():
+		if player.has_meta("player_id") and player.get_meta("player_id") == player_id:
 			return player
 	return null
 
@@ -190,7 +187,7 @@ func _rpc_request_inventory_from_server(requester_id: int, nickname: String) -> 
 	var inventories: Dictionary = load_player_inventories(nickname)
 	
 	# Отправляем каждый инвентарь
-	for inv_name in inventories:
+	for inv_name: String in inventories:
 		_rpc_receive_inventory_snapshot.rpc_id(sender_id, inv_name, inventories[inv_name])
 
 ## Сохранение инвентаря игрока на сервере
@@ -240,3 +237,57 @@ func on_player_disconnect(player_id: int) -> void:
 		inventory_component.player_inventory,
 		inventory_component.equip_inventory
 	)
+
+## Поиск игрока по nickname (возвращает player_id или -1 если не найден)
+func find_player_by_nickname(nickname: String) -> int:
+	var dir_path: String = FileManager.get_file_path("user://saves/inventories/", false)
+	var dir: DirAccess = DirAccess.open(dir_path)
+	if dir == null:
+		return -1
+	
+	dir.list_dir_begin()
+	var file_name: String = dir.get_next()
+	while file_name != "":
+		if file_name.ends_with(".json"):
+			var file_path: String = dir_path + file_name
+			var data: Dictionary = FileManager.read_json(file_path)
+			if data.get("nickname", "") == nickname:
+				dir.list_dir_end()
+				# Извлекаем player_id из имени файла (если используется player_id.json)
+				# Или возвращаем nickname как идентификатор
+				return file_name.replace(".json", "")
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return -1
+
+## Загрузка инвентаря по player_id
+func load_player_inventories_by_id(player_id: String) -> Dictionary:
+	var dir_path: String = FileManager.get_file_path("user://saves/inventories/", false)
+	var file_path: String = dir_path + player_id + ".json"
+	
+	var data: Dictionary = FileManager.read_json(file_path)
+	if data.is_empty():
+		return {}
+	
+	return {
+		"PlayerInventory": data.get("PlayerInventory", {}),
+		"EquipInventory": data.get("EquipInventory", {})
+	}
+
+## Сохранение инвентаря по player_id (используется вместо nickname)
+func save_player_inventories_by_id(player_id: String, nickname: String, player_inventory: InventoryData, equip_inventory: InventoryData) -> void:
+	if not multiplayer.is_server():
+		return
+	
+	var save_data: Dictionary = {
+		"player_id": player_id,
+		"nickname": nickname,
+		"PlayerInventory": serialize_inventory_data(player_inventory),
+		"EquipInventory": serialize_inventory_data(equip_inventory)
+	}
+	
+	var dir_path: String = FileManager.get_file_path("user://saves/inventories/", false)
+	DirAccess.make_dir_recursive_absolute(dir_path)
+	
+	var file_path: String = dir_path + player_id + ".json"
+	FileManager.save_json(file_path, save_data)

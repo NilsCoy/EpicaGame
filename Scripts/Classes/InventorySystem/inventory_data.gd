@@ -5,6 +5,8 @@ class_name InventoryData
 signal inventory_update(inventory_data: InventoryData)
 ## Сигнал взаимодействия с инвентарем
 signal inventory_interact(inventory_data: InventoryData, index: int, button: int)
+## Сигнал для отправки действия на сервер (используется в сетевой игре)
+signal send_action_to_server(inventory_name: String, action: String, index: int, target_index: int, item_type: String, quantity: int, grabbed_data: Dictionary)
 
 @export var inv_name: String
 @export var grid_size: Vector2i = Vector2i(5, 5)
@@ -15,6 +17,8 @@ signal inventory_interact(inventory_data: InventoryData, index: int, button: int
 
 @export var slot_datas: Array[SlotData]
 
+## Флаг авторитетности (сервер имеет право изменять данные напрямую)
+var is_authoritative: bool = false
 
 ## Инициализация инвентаря
 func init_inventory() -> void:
@@ -591,3 +595,48 @@ func on_slot_clicked(
 		index,
 		button
 	)
+
+## Применяет снапшот данных от сервера (для клиентов)
+func apply_snapshot(data: Dictionary) -> void:
+	if not InventoryNetworkManager:
+		return
+	
+	InventoryNetworkManager.deserialize_inventory_data(data, self)
+
+## Отправляет действие на сервер (для клиентов)
+func _send_action_to_server(
+	action: String,
+	index: int,
+	target_index: int = -1,
+	item_type: String = "",
+	quantity: int = 0,
+	grabbed_data: SlotData = null
+) -> void:
+	if is_authoritative or not InventoryNetworkManager:
+		return
+	
+	var grabbed_dict: Dictionary = {}
+	if grabbed_data != null:
+		grabbed_dict = InventoryNetworkManager.serialize_slot_data(grabbed_data)
+	
+	send_action_to_server.emit(
+		inv_name,
+		action,
+		index,
+		target_index,
+		item_type,
+		quantity,
+		grabbed_dict
+	)
+
+## Сериализация InventoryData в Dictionary (для сохранения и сети)
+func to_dict() -> Dictionary:
+	if not InventoryNetworkManager:
+		return {}
+	return InventoryNetworkManager.serialize_inventory_data(self)
+
+## Десериализация InventoryData из Dictionary
+static func from_dict(data: Dictionary, inventory_data: InventoryData) -> void:
+	if not InventoryNetworkManager:
+		return
+	InventoryNetworkManager.deserialize_inventory_data(data, inventory_data)
