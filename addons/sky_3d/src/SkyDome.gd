@@ -52,7 +52,8 @@ func _update_ambient_color() -> void:
 func _ready() -> void:
 	set_process(false)
 	set_physics_process(false)
-	_build_scene()
+	if not OS.has_feature("dedicated_server"):
+		_build_scene()
 	_check_cloud_processing()
 
 

@@ -458,9 +458,8 @@ func _start_sky_contrib_tween(daytime: bool = is_day()) -> void:
 
 func _notification(what: int) -> void:
 	# Must be after _init and before _enter_tree to properly set vars like 'sky' for setters
-	if not OS.has_feature("dedicated_server"):
-		if what in [ NOTIFICATION_SCENE_INSTANTIATED, NOTIFICATION_ENTER_TREE ]:
-			_initialize()
+	if what in [ NOTIFICATION_SCENE_INSTANTIATED, NOTIFICATION_ENTER_TREE ]:
+		_initialize()
 
 
 func _initialize() -> void:
@@ -483,7 +482,8 @@ func _initialize() -> void:
 		environment.sky.sky_material.shader = load(SKY_SHADER)
 		
 	# Set a reference to the sky material for easy access.
-	sky_material = environment.sky.sky_material
+	if not OS.has_feature("dedicated_server"):
+		sky_material = environment.sky.sky_material
 		
 	# Create default camera attributes
 	if camera_attributes == null:
