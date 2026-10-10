@@ -458,8 +458,9 @@ func _start_sky_contrib_tween(daytime: bool = is_day()) -> void:
 
 func _notification(what: int) -> void:
 	# Must be after _init and before _enter_tree to properly set vars like 'sky' for setters
-	if what in [ NOTIFICATION_SCENE_INSTANTIATED, NOTIFICATION_ENTER_TREE ]:
-		_initialize()
+	if not OS.has_feature("dedicated_server"):
+		if what in [ NOTIFICATION_SCENE_INSTANTIATED, NOTIFICATION_ENTER_TREE ]:
+			_initialize()
 
 
 func _initialize() -> void:

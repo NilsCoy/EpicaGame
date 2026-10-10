@@ -64,8 +64,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.06426715, 0.61746943)
-shader_parameter/cirrus_position2 = Vector2(0.06426715, 0.61746943)
+shader_parameter/cirrus_position1 = Vector2(0.6832523, 0.6832523)
+shader_parameter/cirrus_position2 = Vector2(0.6832523, 0.6832523)
 shader_parameter/cirrus_texture = ExtResource("2_xqayt")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -75,7 +75,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(0.32134065, -1.9130617)
+shader_parameter/cumulus_position = Vector2(3.416425, 3.416425)
 shader_parameter/cumulus_texture = ExtResource("3_ab4n6")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -106,7 +106,8 @@ environment = SubResource("Environment_3i4rh")
 camera_attributes = SubResource("CameraAttributesPractical_owvpf")
 script = ExtResource("8_oe77o")
 editor_time_enabled = false
-wind_speed = 2.0
+game_time_enabled = false
+wind_direction = 2.35619451204804
 metadata/_custom_type_script = "uid://deo0gxkmk2ahd"
 
 [node name="SunLight" type="DirectionalLight3D" parent="." unique_id=1670811123]
@@ -125,11 +126,12 @@ sun_azimuth = -2.149827
 sun_altitude = -1.1995909
 moon_azimuth = -2.0665393
 moon_altitude = -1.4729605
-wind_speed = 2.0
+wind_direction = 2.35619451204804
 
 [node name="TimeOfDay" type="Node" parent="." unique_id=758159111]
 script = ExtResource("10_5c377")
 editor_time_enabled = false
+game_time_enabled = false
 dome_path = NodePath("../SkyDome")
 
 [node name="ReflectionProbe" type="ReflectionProbe" parent="." unique_id=2115986416]

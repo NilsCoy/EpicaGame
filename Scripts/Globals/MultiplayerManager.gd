@@ -1,9 +1,11 @@
 extends Node
 
-var ip: String = "26.179.243.226" #"127.0.0.1"
-var port: int = 12345
+const LOCALHOST: String = "127.0.0.1"
+const SERVERHOST: String = "127.0.0.1"
+var ip: String = LOCALHOST
+var port: int = 7777
 var max_players: int = 30
-var max_channels: int = 1
+var max_channels: int = 0
 
 var peer: ENetMultiplayerPeer
 var _player_scene: Resource = preload("res://Scenes/Entities/player.tscn")

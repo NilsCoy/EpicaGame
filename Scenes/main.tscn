@@ -16,10 +16,11 @@ func _ready() -> void:
 		$UI/Intro.queue_free()
 
 func _on_save_timer_timeout() -> void:
-	if OS.has_feature(\"dedicated_server\"):
-		#$Map.save()
-		#print(\"Auto save!\")
-		pass
+	#if OS.has_feature(\"dedicated_server\") or multiplayer.is_server():
+		#for player: Node in MultiplayerManager.players.get_children():
+			#SaveManager.save_player(player)
+		#SaveManager.flush()
+	pass
 "
 
 [sub_resource type="GDScript" id="GDScript_erv1k"]
@@ -32,8 +33,6 @@ script/source = "extends CanvasLayer
 script = SubResource("GDScript_bo1nx")
 
 [node name="Sky3D" parent="." unique_id=723935334 instance=ExtResource("1_kry3j")]
-current_time = 21.153786666665805
-wind_direction = 2.35619451204804
 
 [node name="Map" parent="." unique_id=1381430335 instance=ExtResource("2_8gbba")]
 

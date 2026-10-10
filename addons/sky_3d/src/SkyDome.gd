@@ -101,11 +101,13 @@ func _build_scene() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	process_tick(delta)
+	if not OS.has_feature("dedicated_server"):
+		process_tick(delta)
 
 
 func _process(delta: float) -> void:
-	process_tick(delta)
+	if not OS.has_feature("dedicated_server"):
+		process_tick(delta)
 
 
 ## If [method process_method] is set to manual, this function can be called with the number of 
