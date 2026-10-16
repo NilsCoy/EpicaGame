@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://duuqiucks6su7"]
+
+[ext_resource type="Script" uid="uid://bhq6gu0ok303q" path="res://Scripts/Classes/Components/Items/ItemComponent.gd" id="1_jtvou"]
+[ext_resource type="Script" uid="uid://iivjrwvioi7i" path="res://Scripts/Classes/Components/Items/ArmorItemComponent.gd" id="2_47a3t"]
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="2_i3onm"]
+[ext_resource type="Texture2D" uid="uid://d2pfnvhnnb1lh" path="res://Resources/Items/Assets/iron_armor.png" id="4_47a3t"]
+
+[sub_resource type="Resource" id="Resource_47a3t"]
+script = ExtResource("2_47a3t")
+model_path = "res://Assets/Models/Entities/iron_armor.tscn"
+metadata/_custom_type_script = "uid://iivjrwvioi7i"
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_av6f6"]
+atlas = ExtResource("4_47a3t")
+
+[resource]
+script = ExtResource("2_i3onm")
+type = "iron_armor"
+category = "chest"
+item_name = "Iron Armor"
+size = Vector2i(2, 3)
+texture = SubResource("AtlasTexture_av6f6")
+components = Array[ExtResource("1_jtvou")]([SubResource("Resource_47a3t")])
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

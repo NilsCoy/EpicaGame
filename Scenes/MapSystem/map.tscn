@@ -1,0 +1,137 @@
+[gd_scene format=3 uid="uid://b2doj54r58x6h"]
+
+[ext_resource type="PackedScene" uid="uid://csirajce688aq" path="res://Scenes/Utilites/ambient_system.tscn" id="1_20ysd"]
+
+[sub_resource type="GDScript" id="GDScript_58wgy"]
+script/source = "extends Node
+
+signal load_completed_signal
+
+@onready var chunks: Node = $Chunks
+@onready var entities: Node = $Entities
+@onready var players: Node = $Players
+@onready var spawn: Node3D = $Spawn
+
+@rpc(\"authority\", \"reliable\")
+func receive_chunk(pocket: Array) -> void:
+	var chunk_scene: Resource = load(\"res://Scenes/MapSystem/chunk.tscn\")
+	var decompressed: PackedByteArray = pocket[0].decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+	var data: Dictionary = bytes_to_var(decompressed)
+	var chunk: Node3D = chunk_scene.instantiate()
+	chunk.name = data.name
+	chunk.blocks = data.blocks
+	chunk.position = data.position
+	chunks.add_child(chunk)
+	chunk.rebuild()
+
+@rpc(\"authority\", \"reliable\")
+func add_player(pocket: Array) -> void:
+	var scene: Resource = load(\"res://Scenes/Entities/player.tscn\")
+	var decompressed: PackedByteArray = pocket[0].decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+	var data: Dictionary = bytes_to_var(decompressed)
+	var player: Node3D = scene.instantiate()
+	player.load_data(data)
+	player.player_id = data.get(\"player_id\", 1)
+	player.set_multiplayer_authority(player.player_id)
+	players.add_child(player)
+
+@rpc(\"authority\", \"reliable\")
+func load_completed() -> void:
+	emit_signal(\"load_completed_signal\")
+	#$AmbientSystem.init_sound()
+
+@rpc(\"any_peer\", \"reliable\")
+func load_scene() -> void:
+	if multiplayer.is_server():
+		for child: Node in chunks.get_children():
+			rpc_id(multiplayer.get_remote_sender_id(), \"receive_chunk\", [child.serialize()])
+		for player: Node in players.get_children():
+			rpc_id(multiplayer.get_remote_sender_id(), \"add_player\", [player.serialize()])
+		rpc_id(multiplayer.get_remote_sender_id(), \"load_completed\")
+
+func _ready() -> void:
+	MultiplayerManager.map = self
+	MultiplayerManager.players = $Players
+	MultiplayerManager.player_spawn = $Spawn
+	if OS.has_feature(\"dedicated_server\"):
+		update_spawn()
+		load_entities()
+		load_chunks()
+
+func load_entities() -> void:
+	var files: Array = FileManager.get_files_in_directory('./world/entities')
+	if files != []:
+		for file: String in files:
+			var path: String = './world/entities/'+file
+			var data: Dictionary = FileManager.read_json(FileManager.get_file_path(path, true))
+			var entity_scene: Resource = load(\"res://Scenes/Entities/{type}.tscn\".format({\"type\": data.type}))
+			var entity: Node = FileManager.load_file(path, entity_scene)
+			entities.add_child(entity)
+
+func load_chunks() -> void:
+	var chunk_scene: Resource = load(\"res://Scenes/MapSystem/chunk.tscn\")
+	var files: Array = FileManager.get_files_in_directory('./world/chunks')
+	if files != []:
+		for file: String in files:
+			var chunk: Node3D
+			chunk = FileManager.load_file('./world/chunks/'+file, chunk_scene)
+			chunks.add_child(chunk)
+	else:
+		var chunk: Node3D
+		chunk = chunk_scene.instantiate()
+		chunk.name = 'chunk_0_0_0'
+		chunk.starter_block = true
+		chunks.add_child(chunk)
+
+func save() -> void:
+	for chunk: Node in chunks.get_children():
+		FileManager.save_file('./world/chunks/'+chunk.name+'.json', chunk)
+	for entity: Node in entities.get_children():
+		FileManager.save_file('./world/entities/'+entity.name+'.json', entity)
+	for player: Node in players.get_children():
+		FileManager.save_file('./world/players/'+player.name+'.json', player)
+
+func rebuild_chunks() -> void:
+	for chunk: Node in chunks.get_children():
+		chunk.rebuild()
+
+func update_spawn() -> void:
+	spawn.position = Vector3(
+		Settings.world['settings']['spawn_position'][0],
+		Settings.world['settings']['spawn_position'][1],
+		Settings.world['settings']['spawn_position'][2]
+		)
+	spawn.rotation = Vector3(
+		Settings.world['settings']['spawn_rotation'][0],
+		Settings.world['settings']['spawn_rotation'][1],
+		Settings.world['settings']['spawn_rotation'][2]
+		)
+"
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_hupx5"]
+properties/0/path = NodePath("Spawn:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath("Spawn:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+
+[node name="Map" type="Node" unique_id=616319268]
+script = SubResource("GDScript_58wgy")
+
+[node name="AmbientSystem" parent="." unique_id=981918370 instance=ExtResource("1_20ysd")]
+
+[node name="Chunks" type="Node" parent="." unique_id=1473334747]
+
+[node name="Entities" type="Node" parent="." unique_id=1761748697]
+
+[node name="Players" type="Node" parent="." unique_id=548145297]
+
+[node name="MultiplayerEntities" type="MultiplayerSpawner" parent="." unique_id=1882678770]
+_spawnable_scenes = PackedStringArray("uid://v7tblekak3iq")
+spawn_path = NodePath("../Entities")
+
+[node name="Spawn" type="Node3D" parent="." unique_id=1320067427]
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1572019836]
+replication_config = SubResource("SceneReplicationConfig_hupx5")

@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/quartz_brick.png",
+		"bottom": "res://Resources/Blocks/Assets/quartz_brick.png",
+		"side": "res://Resources/Blocks/Assets/quartz_brick.png",
+	},
+	"is_rotate": false
+}

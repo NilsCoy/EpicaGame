@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://bj6pnxogxt38v"]
+
+[sub_resource type="GDScript" id="GDScript_oax4l"]
+script/source = "extends Node
+
+@export var FILE_PATH := \"save.json\"
+@export var ROOT := true
+
+
+func _ready():
+	if ROOT: FILE_PATH = 'res://' + FILE_PATH
+	else: FILE_PATH = 'user://' + FILE_PATH
+
+func save_file(node: Node) -> void:
+	var json_string = JSON.stringify(node.save_data())  # превращаем словарь в строку JSON
+	var file = FileAccess.open(FILE_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(json_string)
+		file.close()
+		print(\"Safe node!\")
+
+func load_file(scene: PackedScene) -> Node:
+	if not FileAccess.file_exists(FILE_PATH):
+		return null
+
+	var file = FileAccess.open(FILE_PATH, FileAccess.READ)
+	if file:
+		var json_string = file.get_as_text()
+		file.close()
+
+		var result = JSON.parse_string(json_string)
+		if result.error != OK:
+			push_error(\"Ошибка при разборе JSON: %s\" % result.error_string)
+			return null
+		
+		var node = scene.instantiate()
+		node.load_data(result)
+		print(\"Load node!\")
+		return node
+
+	return null
+"
+
+[node name="SaveSystem" type="Node" unique_id=1807565796]
+script = SubResource("GDScript_oax4l")

@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/podzol_top.png",
+		"bottom": "res://Resources/Blocks/Assets/dirt.png",
+		"side": "res://Resources/Blocks/Assets/podzol_side.png",
+	},
+	"is_rotate": false
+}

@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://cp0u50t6q8pqi"]
+
+[ext_resource type="PackedScene" uid="uid://5jwrhpdhgtm8" path="res://Scenes/player.tscn" id="1_a02cp"]
+[ext_resource type="PackedScene" uid="uid://bfos268tpe1gs" path="res://Scenes/chunk.tscn" id="2_go701"]
+
+[sub_resource type="GDScript" id="GDScript_go701"]
+script/source = "extends Node3D
+
+func _ready():
+	for i in range(5):
+		for j in range(5):
+			var chunk = load(\"res://Scenes/chunk.tscn\").instance()
+			add_child(chunk)
+			chunk.position = Vector3(i * 16, 0, j * 16)
+"
+
+[sub_resource type="Environment" id="Environment_a02cp"]
+background_mode = 1
+background_color = Color(0.49747366, 0.49747366, 0.49747366, 1)
+ssao_enabled = true
+ssil_enabled = true
+fog_enabled = true
+volumetric_fog_enabled = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_go701"]
+
+[node name="World" type="Node3D" unique_id=193794405]
+script = SubResource("GDScript_go701")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=89933525]
+environment = SubResource("Environment_a02cp")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1450614973]
+transform = Transform3D(0.9933286, 0.042967595, -0.10701475, 0.11531858, -0.37011337, 0.9218015, 0, -0.9279925, -0.37259912, 0, 0, 0)
+visible = false
+
+[node name="Player" parent="." unique_id=877482764 instance=ExtResource("1_a02cp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.735976, 0)
+
+[node name="Chunk" parent="." unique_id=1346054987 instance=ExtResource("2_go701")]
+visible = false
+starter_block = true
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=480579453]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4309027, 9.993654, 4.706607)
+visible = false
+shadow_enabled = true
+omni_range = 10.0
+omni_attenuation = 2.0
+omni_shadow_mode = 0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1109051609]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.4189067, 1.6870496)
+visible = false
+mesh = SubResource("BoxMesh_go701")

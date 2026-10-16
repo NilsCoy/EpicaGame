@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://cw5vd26wlfcbn"]
+
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_brtkx"]
+[ext_resource type="Texture2D" uid="uid://wvnyandadmxi" path="res://Resources/Items/Assets/Materials/Smith/iron_ingot.png" id="2_brtkx"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
+atlas = ExtResource("2_brtkx")
+
+[resource]
+script = ExtResource("1_brtkx")
+type = "iron_ingot"
+item_name = "Iron Ingot"
+max_stack = 99
+texture = SubResource("AtlasTexture_354lq")
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://r8qm0u4rmw1j"]
+
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_rep3d"]
+[ext_resource type="Texture2D" uid="uid://cl18c57in47vv" path="res://Resources/Items/Assets/Materials/Stores/gold_chest.png" id="2_60vqf"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
+atlas = ExtResource("2_60vqf")
+
+[resource]
+script = ExtResource("1_rep3d")
+type = "iron_ring"
+item_name = "Iron Ring"
+max_stack = 99
+size = Vector2i(3, 2)
+texture = SubResource("AtlasTexture_354lq")
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

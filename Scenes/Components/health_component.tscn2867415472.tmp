@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://c4j0e0v04j0vy"]
+
+[sub_resource type="GDScript" id="GDScript_j6rej"]
+script/source = "extends Node
+
+signal damaged(dmg: float, to_target: Dictionary, from_target: Dictionary)
+signal changed_health(old_value: float, new_value: float, reason: String)
+signal changed_max_health(old_value: float, new_value: float, reason: String)
+signal died(reason: String)
+
+@onready var parent: Node = get_parent().parent
+@export var health: float = 100.0
+@export var max_health: float = 100.0
+
+@rpc(\"any_peer\", \"reliable\", \"call_local\")
+func change_health(new_value: float, reason: String) -> void:
+	if get_multiplayer_authority() != multiplayer.get_unique_id():
+		rpc_id(get_multiplayer_authority(), 'change_health', new_value, reason)
+	var old_health: float = health
+	health = new_value
+	emit_signal(\"changed_health\", old_health, health, reason)
+	if health <= 0:
+		die(reason)
+
+@rpc(\"any_peer\", \"reliable\", \"call_local\")
+func change_max_health(new_value: float, reason: String) -> void:
+	#if get_multiplayer_authority() != multiplayer.get_unique_id():
+		#rpc_id(get_multiplayer_authority(), 'change_max_health', new_value, reason)
+	var old_max_health: float = max_health
+	max_health = new_value
+	emit_signal(\"changed_max_health\", old_max_health, max_health, reason)
+
+@rpc(\"any_peer\", \"reliable\", \"call_local\")
+func take_damage(from: Dictionary, dmg: float) -> void:
+	#if get_multiplayer_authority() != multiplayer.get_unique_id():
+		#rpc_id(get_multiplayer_authority(), 'take_damage', from, dmg)
+	var reason: String = 'damage'
+	var old_health: float = health
+	health -= dmg
+	emit_signal(\"damaged\", dmg, parent.save_data(), from)
+	emit_signal(\"changed_health\", old_health, health, reason)
+	if health <= 0:
+		die(reason)
+
+@rpc(\"any_peer\", \"reliable\", \"call_local\")
+func die(reason: String) -> void:
+	#if get_multiplayer_authority() != multiplayer.get_unique_id():
+		#rpc_id(get_multiplayer_authority(), 'die', reason)
+	emit_signal(\"died\", reason)
+	
+"
+
+[node name="HealthComponent" type="Node" unique_id=1135595511]
+script = SubResource("GDScript_j6rej")

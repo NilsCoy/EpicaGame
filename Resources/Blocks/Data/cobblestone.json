@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/cobblestone.png",
+		"bottom": "res://Resources/Blocks/Assets/cobblestone.png",
+		"side": "res://Resources/Blocks/Assets/cobblestone.png",
+	},
+	"is_rotate": false
+}

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://ca31uar4uva6"]
+
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_v37lp"]
+[ext_resource type="Texture2D" uid="uid://c70nmsfspq5jk" path="res://Resources/Items/Assets/Materials/Alchemy/berry_tincture.png" id="2_v37lp"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
+atlas = ExtResource("2_v37lp")
+
+[resource]
+script = ExtResource("1_v37lp")
+type = "coal_ore"
+item_name = "Coal"
+max_stack = 99
+texture = SubResource("AtlasTexture_354lq")
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

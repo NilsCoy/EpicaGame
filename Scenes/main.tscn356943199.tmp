@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://cp0u50t6q8pqi"]
+
+[ext_resource type="PackedScene" uid="uid://b2doj54r58x6h" path="res://Scenes/MapSystem/map.tscn" id="2_8gbba"]
+[ext_resource type="PackedScene" uid="uid://c3xksff8g5t4q" path="res://Scenes/main_menu.tscn" id="3_8gbba"]
+
+[sub_resource type="GDScript" id="GDScript_bo1nx"]
+script/source = "extends Node3D
+
+func _on_save_timer_timeout() -> void:
+	if OS.has_feature(\"dedicated_server\"):
+		$Map.save()
+		print(\"Auto save!\")
+"
+
+[sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_8gbba"]
+energy_multiplier = 3.0
+
+[sub_resource type="Sky" id="Sky_jjvhh"]
+sky_material = SubResource("PhysicalSkyMaterial_8gbba")
+
+[sub_resource type="Environment" id="Environment_a02cp"]
+background_mode = 2
+sky = SubResource("Sky_jjvhh")
+glow_enabled = true
+glow_intensity = 0.1
+glow_bloom = 0.3
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.2869581, 0.31226328, 0.35665286, 1)
+fog_density = 0.7
+fog_sky_affect = 0.5
+
+[node name="Main" type="Node3D" unique_id=193794405]
+script = SubResource("GDScript_bo1nx")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=89933525]
+environment = SubResource("Environment_a02cp")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1450614973]
+transform = Transform3D(0.887333, 0.17043379, 0.428477, -0.46112922, 0.327959, 0.8245015, 0, -0.9291906, 0.36960083, 0, 0, 0)
+light_energy = 2.0
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_opacity = 0.8
+
+[node name="Map" parent="." unique_id=1381430335 instance=ExtResource("2_8gbba")]
+
+[node name="SaveTimer" type="Timer" parent="." unique_id=1286163748]
+wait_time = 900.0
+one_shot = true
+autostart = true
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1553560628]
+
+[node name="MainMenu" parent="UI" unique_id=1962272188 instance=ExtResource("3_8gbba")]
+
+[connection signal="timeout" from="SaveTimer" to="." method="_on_save_timer_timeout"]

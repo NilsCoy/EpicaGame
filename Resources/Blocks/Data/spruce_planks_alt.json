@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/spruce_planks_alt.png",
+		"bottom": "res://Resources/Blocks/Assets/spruce_planks_alt.png",
+		"side": "res://Resources/Blocks/Assets/spruce_planks_alt.png",
+	},
+	"is_rotate": false
+}

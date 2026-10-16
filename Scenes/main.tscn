@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://cp0u50t6q8pqi"]
+
+[ext_resource type="PackedScene" uid="uid://crbqpvsf1ipfm" path="res://Scenes/LoadingSystem/intro.tscn" id="1_8gbba"]
+[ext_resource type="PackedScene" uid="uid://ceqfpni1wval2" path="res://Scenes/MapSystem/sky.tscn" id="1_kry3j"]
+[ext_resource type="PackedScene" uid="uid://b2doj54r58x6h" path="res://Scenes/MapSystem/map.tscn" id="2_8gbba"]
+[ext_resource type="PackedScene" uid="uid://c3xksff8g5t4q" path="res://Scenes/main_menu.tscn" id="3_8gbba"]
+[ext_resource type="PackedScene" uid="uid://bp20wxg1s4h35" path="res://Scenes/LoadingSystem/loading.tscn" id="4_jjvhh"]
+
+[sub_resource type="GDScript" id="GDScript_bo1nx"]
+script/source = "extends Node3D
+
+var intro_scene: bool = true
+
+func _ready() -> void:
+	if not(intro_scene):
+		$UI/Intro.queue_free()
+
+func _on_save_timer_timeout() -> void:
+	#if OS.has_feature(\"dedicated_server\") or multiplayer.is_server():
+		#for player: Node in MultiplayerManager.players.get_children():
+			#SaveManager.save_player(player)
+		#SaveManager.flush()
+	pass
+"
+
+[sub_resource type="GDScript" id="GDScript_erv1k"]
+script/source = "extends CanvasLayer
+
+@onready var loading: Control = $Loading
+"
+
+[node name="Main" type="Node3D" unique_id=193794405]
+script = SubResource("GDScript_bo1nx")
+
+[node name="Sky3D" parent="." unique_id=723935334 instance=ExtResource("1_kry3j")]
+
+[node name="Map" parent="." unique_id=1381430335 instance=ExtResource("2_8gbba")]
+
+[node name="SaveTimer" type="Timer" parent="." unique_id=1286163748]
+wait_time = 900.0
+one_shot = true
+autostart = true
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1553560628]
+script = SubResource("GDScript_erv1k")
+
+[node name="MainMenu" parent="UI" unique_id=1962272188 instance=ExtResource("3_8gbba")]
+
+[node name="Intro" parent="UI" unique_id=1857147256 instance=ExtResource("1_8gbba")]
+
+[node name="Loading" parent="UI" unique_id=1678772310 instance=ExtResource("4_jjvhh")]
+visible = false
+
+[connection signal="timeout" from="SaveTimer" to="." method="_on_save_timer_timeout"]

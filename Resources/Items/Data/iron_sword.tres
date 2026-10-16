@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://di0itper56v8k"]
+
+[ext_resource type="Script" uid="uid://dlcjosu5bsgwf" path="res://Scripts/Classes/InventorySystem/item_data.gd" id="1_im4tk"]
+[ext_resource type="Script" uid="uid://bhq6gu0ok303q" path="res://Scripts/Classes/Components/Items/ItemComponent.gd" id="1_pp1p1"]
+[ext_resource type="Texture2D" uid="uid://d2dxovuwxytdr" path="res://Resources/Items/Assets/iron_sword.png" id="2_im4tk"]
+[ext_resource type="Script" uid="uid://ccgdctcbbsq0u" path="res://Scripts/Classes/Components/Items/WeaponItemComponent.gd" id="2_pp1p1"]
+
+[sub_resource type="Resource" id="Resource_85s6f"]
+script = ExtResource("2_pp1p1")
+metadata/_custom_type_script = "uid://ccgdctcbbsq0u"
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_354lq"]
+atlas = ExtResource("2_im4tk")
+
+[resource]
+script = ExtResource("1_im4tk")
+type = "iron_sword"
+category = "weapon"
+item_name = "Iron Sword"
+size = Vector2i(1, 3)
+texture = SubResource("AtlasTexture_354lq")
+texture_rotate = 2.356194490192345
+texture_scale = 3.0
+components = Array[ExtResource("1_pp1p1")]([SubResource("Resource_85s6f")])
+metadata/_custom_type_script = "uid://dlcjosu5bsgwf"

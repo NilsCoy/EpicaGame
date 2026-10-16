@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/tnt_top.png",
+		"bottom": "res://Resources/Blocks/Assets/tnt_top.png",
+		"side": "res://Resources/Blocks/Assets/tnt_side.png",
+	},
+	"is_rotate": false
+}

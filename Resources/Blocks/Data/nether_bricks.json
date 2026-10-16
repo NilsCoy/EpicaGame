@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/nether_bricks.png",
+		"bottom": "res://Resources/Blocks/Assets/nether_bricks.png",
+		"side": "res://Resources/Blocks/Assets/nether_bricks.png",
+	},
+	"is_rotate": false
+}

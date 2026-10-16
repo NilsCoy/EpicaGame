@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/diorite.png",
+		"bottom": "res://Resources/Blocks/Assets/diorite.png",
+		"side": "res://Resources/Blocks/Assets/diorite.png",
+	},
+	"is_rotate": false
+}

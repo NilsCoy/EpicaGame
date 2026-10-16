@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/honey_block_top.png",
+		"bottom": "res://Resources/Blocks/Assets/honey_block_top.png",
+		"side": "res://Resources/Blocks/Assets/honey_block_top.png",
+	},
+	"is_rotate": false
+}

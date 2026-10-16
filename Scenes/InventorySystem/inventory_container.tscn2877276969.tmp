@@ -1,0 +1,111 @@
+[gd_scene format=3 uid="uid://xq6oew8fy170"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vdgd3"]
+
+[sub_resource type="GDScript" id="GDScript_vdgd3"]
+script/source = "extends PanelContainer
+
+const Slot: Resource = preload(\"res://Scenes/InventorySystem/multi_slot_container.tscn\")
+const ItemVisual: Resource = preload(\"res://Scenes/InventorySystem/item_visual.tscn\")
+
+@onready var item_grid: GridContainer = $InventoryArea/ItemGrid
+@onready var items_layer: Control = $InventoryArea/ItemsLayer
+
+@export var background: Color = Color(0, 0, 0, 100)
+@export var slot_texture: AtlasTexture
+@export var slot_color: Color = Color(0, 0, 0, 100)
+
+@export var columns: int = 9:
+	set(value):
+		columns = value
+		item_grid.columns = value
+
+func _ready() -> void:
+	$BackgroundColor.color = background
+
+func set_inventory_data(inventory_data: InventoryData) -> void:
+	inventory_data.init_inventory()
+	inventory_data.inventory_update.connect(populate_item_grid)
+	populate_item_grid(inventory_data)
+
+
+func populate_item_grid(inventory_data: InventoryData) -> void:
+	for child: Node in item_grid.get_children():
+		child.queue_free()
+
+	for index: int in range(inventory_data.slot_datas.size()):
+		var slot: Control = Slot.instantiate()
+		slot.texture = slot_texture
+		slot.color = slot_color
+
+		item_grid.add_child(slot)
+
+		slot.slot_clicked.connect(
+			inventory_data.on_slot_clicked
+		)
+
+	# Отдельно рисуем предметы
+	populate_items(inventory_data)
+
+func populate_items(inventory_data: InventoryData) -> void:
+	for child: Node in items_layer.get_children():
+		child.queue_free()
+
+	for index: int in range(inventory_data.slot_datas.size()):
+		var slot_data: SlotData = inventory_data.slot_datas[index]
+
+		if slot_data.item_data != null:
+			create_item_visual(
+				slot_data,
+				index,
+				inventory_data
+			)
+
+func create_item_visual(
+	slot_data: SlotData,
+	index: int,
+	inventory_data: InventoryData
+) -> void:
+
+	var item: PanelContainer = ItemVisual.instantiate()
+	items_layer.add_child(item)
+
+	var grid_pos: Vector2i = inventory_data.index_to_pos(index)
+	var item_size: Vector2i = slot_data.item_data.size
+	
+	var texture_size: Vector2 = item.custom_minimum_size
+
+	item.position = Vector2(
+		grid_pos.x * texture_size.x,
+		grid_pos.y * texture_size.y
+	)
+
+	item.size = Vector2(
+		item_size.x * texture_size.x,
+		item_size.y * texture_size.y
+	)
+
+	item.set_slot_data(slot_data)
+"
+
+[node name="InventoryContainer" type="PanelContainer" unique_id=2012566676]
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_vdgd3")
+script = SubResource("GDScript_vdgd3")
+
+[node name="BackgroundColor" type="ColorRect" parent="." unique_id=1847451453]
+layout_mode = 2
+color = Color(0, 0, 0, 0.39215687)
+
+[node name="InventoryArea" type="MarginContainer" parent="." unique_id=2133199738]
+layout_mode = 2
+
+[node name="ItemGrid" type="GridContainer" parent="InventoryArea" unique_id=130750918]
+layout_mode = 2
+theme_override_constants/h_separation = 0
+theme_override_constants/v_separation = 0
+
+[node name="ItemsLayer" type="Control" parent="InventoryArea" unique_id=1802092088]
+layout_mode = 2
+mouse_filter = 2

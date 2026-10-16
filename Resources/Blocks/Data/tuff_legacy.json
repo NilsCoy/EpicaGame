@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/tuff_legacy.png",
+		"bottom": "res://Resources/Blocks/Assets/tuff_legacy.png",
+		"side": "res://Resources/Blocks/Assets/tuff_legacy.png",
+	},
+	"is_rotate": false
+}

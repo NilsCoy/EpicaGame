@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/sandstone.png",
+		"bottom": "res://Resources/Blocks/Assets/sandstone.png",
+		"side": "res://Resources/Blocks/Assets/sandstone.png",
+	},
+	"is_rotate": false
+}

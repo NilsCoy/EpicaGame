@@ -1,0 +1,126 @@
+[gd_scene format=3 uid="uid://c3xksff8g5t4q"]
+
+[ext_resource type="StyleBox" uid="uid://dk45lsh22vljs" path="res://Assets/UI Stules/line_edit_normal.tres" id="1_1ehe0"]
+[ext_resource type="StyleBox" uid="uid://l7wpfg4e30xe" path="res://Assets/UI Stules/line_edit_pressed.tres" id="2_ce3w2"]
+[ext_resource type="StyleBox" uid="uid://cmr76xmcaxo63" path="res://Assets/UI Stules/button_normal.tres" id="3_1ehe0"]
+[ext_resource type="Texture2D" uid="uid://bw1pqrsfdlkq0" path="res://Assets/UI Stules/button_disable.tres" id="4_ce3w2"]
+[ext_resource type="StyleBox" uid="uid://ctvogwiyqqa3p" path="res://Assets/UI Stules/button_hover.tres" id="4_n45e2"]
+[ext_resource type="StyleBox" uid="uid://iaeqsvtg1ox0" path="res://Assets/UI Stules/button_pressed.tres" id="4_opfnp"]
+
+[sub_resource type="GDScript" id="GDScript_erv1k"]
+script/source = "extends Control
+
+@onready var username: LineEdit = $GridContainer/UsernameEdit
+
+func _ready() -> void:
+	if not(OS.has_feature(\"dedicated_server\")):
+		multiplayer.connected_to_server.connect(_on_connected)
+		multiplayer.connection_failed.connect(_on_failed)
+	else:
+		hide()
+
+func _on_connected() -> void:
+	hide()
+func _on_failed() -> void:
+	get_parent().loading.visible = false
+
+func _on_connect_button_pressed() -> void:
+	if username.text != '':
+		if username.text.strip_edges() != '':
+			if MultiplayerManager.get_connect() != 'connected' or MultiplayerManager.get_connect() != 'connection':
+				get_parent().loading.visible = true
+				MultiplayerManager.create_client()
+
+func _on_server_button_pressed() -> void:
+	MultiplayerManager.create_server()
+
+@rpc(\"authority\")
+func register_player() -> void:
+	MultiplayerManager.map.load_completed_signal.connect(world_loaded)
+
+func world_loaded() -> void:
+	MultiplayerManager.rpc_id(1, \"create_player\", multiplayer.get_unique_id(), username.text)
+	get_parent().loading.visible = false
+	print(\"Map loaded\")
+
+func _on_username_edit_text_changed(new_text: String) -> void:
+	var regex: RegEx = RegEx.new()
+	regex.compile(\"^[a-zA-Z0-9_]*$\")
+	if regex.search(new_text) == null and new_text != \"\":
+		var clean_text: String = \"\"
+		var allowed_regex: RegEx = RegEx.new()
+		allowed_regex.compile(\"[^a-zA-Z0-9_]\")
+		clean_text = allowed_regex.sub(new_text, \"\", true)
+		username.text = clean_text
+		username.caret_column = clean_text.length()
+"
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_n45e2"]
+texture = ExtResource("4_ce3w2")
+
+[node name="MainMenu" type="Control" unique_id=1962272188]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_erv1k")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1863963148]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.29803923, 0.29803923, 0.29803923, 1)
+
+[node name="GridContainer" type="GridContainer" parent="." unique_id=43260767]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -64.0
+offset_top = -33.0
+offset_right = 64.0
+offset_bottom = 33.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="UsernameEdit" type="LineEdit" parent="GridContainer" unique_id=124508694]
+custom_minimum_size = Vector2(250, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = ExtResource("1_1ehe0")
+theme_override_styles/read_only = ExtResource("2_ce3w2")
+theme_override_styles/focus = ExtResource("2_ce3w2")
+placeholder_text = "Nickname"
+alignment = 1
+max_length = 15
+context_menu_enabled = false
+emoji_menu_enabled = false
+
+[node name="ConnectButton" type="Button" parent="GridContainer" unique_id=1832501475]
+custom_minimum_size = Vector2(250, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = ExtResource("3_1ehe0")
+theme_override_styles/pressed = ExtResource("4_opfnp")
+theme_override_styles/hover = ExtResource("4_n45e2")
+theme_override_styles/hover_pressed = ExtResource("4_opfnp")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_n45e2")
+theme_override_styles/focus = ExtResource("4_n45e2")
+text = "Connect"
+
+[node name="ServerButton" type="Button" parent="GridContainer" unique_id=85875312]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Host"
+
+[connection signal="text_changed" from="GridContainer/UsernameEdit" to="." method="_on_username_edit_text_changed"]
+[connection signal="pressed" from="GridContainer/ConnectButton" to="." method="_on_connect_button_pressed"]
+[connection signal="pressed" from="GridContainer/ServerButton" to="." method="_on_server_button_pressed"]

@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/granite.png",
+		"bottom": "res://Resources/Blocks/Assets/granite.png",
+		"side": "res://Resources/Blocks/Assets/granite.png",
+	},
+	"is_rotate": false
+}

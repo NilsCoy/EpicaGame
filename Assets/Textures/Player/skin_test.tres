@@ -1,0 +1,13 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bf7ho107qm1es"]
+
+[ext_resource type="Texture2D" uid="uid://ifchk3mivvn1" path="res://Assets/Textures/Player/steve.png" id="1_1nt3t"]
+
+[resource]
+resource_name = "material_0"
+transparency = 2
+alpha_scissor_threshold = 0.05
+alpha_antialiasing_mode = 0
+cull_mode = 2
+albedo_texture = ExtResource("1_1nt3t")
+texture_filter = 0
+texture_repeat = false

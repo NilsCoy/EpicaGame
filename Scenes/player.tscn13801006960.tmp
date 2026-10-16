@@ -1,0 +1,396 @@
+[gd_scene format=3 uid="uid://5jwrhpdhgtm8"]
+
+[ext_resource type="Texture2D" uid="uid://bky2jo0bab0sv" path="res://Assets/crosshair.png" id="1_v0iea"]
+[ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="2_cvnsp"]
+[ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/InventorySystem/inventory_data.gd" id="2_fkybt"]
+[ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/InventorySystem/slot_data.gd" id="3_x3wgy"]
+[ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="4_vgqql"]
+
+[sub_resource type="GDScript" id="GDScript_f60y1"]
+script/source = "extends CharacterBody3D
+
+# Move
+const SPEED: float = 5.0
+const JUMP_VELOCITY: float = 4.5
+var FLY_SPEED: float = 5.0
+
+# Mouse
+var mouse_sensitivity: float = 0.003
+var vertical_angle: float = 0.0 
+var max_vertical_angle: float = 90.0
+
+# Player settings
+@export var gamemode: int = 0 # 0=spectator, 1=survival, 2=creative
+
+# Utils
+var pause: bool = false
+var curr_block: String = \"\"
+
+@onready var inventory = $UI/Inventory
+
+func _ready() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	$UI/HUD/Label.text = str(curr_block)
+
+func _physics_process(delta) -> void:
+	if pause == false:
+		_move(delta)
+
+func _input(event) -> void:
+	_ui(event)
+	if pause == false:
+		fly_speed(event)
+		for i in range(10):
+			if Input.is_action_just_pressed(str(i)):
+				if inventory.hot_bar_data.slot_datas[i-1]:
+					if inventory.hot_bar_data.slot_datas[i-1].item_data.attributes.has(\"action\"):
+						if inventory.hot_bar_data.slot_datas[i-1].item_data.attributes[\"action\"] == \"block\":
+							curr_block = inventory.hot_bar_data.slot_datas[i-1].item_data.name
+				else: curr_block = \"\"
+				$UI/HUD/Label.text = str(curr_block)
+				break
+		if event is InputEventMouseButton and event.pressed:
+			if event.button_index == MOUSE_BUTTON_LEFT and curr_block != \"\":
+				try_break_block()
+			elif event.button_index == MOUSE_BUTTON_RIGHT and curr_block != \"\":
+				try_place_block()
+
+func get_rotation_from_forward(forward: Vector3) -> Vector3:
+	if abs(forward.x) > abs(forward.z):
+		return Vector3.RIGHT if forward.x > 0 else Vector3.LEFT
+	else:
+		return Vector3.BACK if forward.z > 0 else Vector3.FORWARD
+
+func try_place_block() -> void:
+	var camera = $Camera3D
+	var forward = -camera.global_transform.basis.z
+	forward.y = 0
+	forward = forward.normalized()
+	var rot = get_rotation_from_forward(forward)
+	
+	var space_state = get_world_3d().direct_space_state
+	
+	var from = camera.global_transform.origin
+	var to = from + camera.global_transform.basis.z * -6.0
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
+	var result = space_state.intersect_ray(query)
+	
+	if result:
+		var chunk = result.collider.get_parent()
+		if chunk.has_method(\"place_block\"):
+			chunk.place_block(result.position, result.normal, curr_block, rot)
+
+func try_break_block() -> void:
+	var camera = $Camera3D
+	var space_state = get_world_3d().direct_space_state
+	
+	var from = camera.global_transform.origin
+	var to = from + camera.global_transform.basis.z * -6.0
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
+	var result = space_state.intersect_ray(query)
+
+	if result:
+		var chunk = result.collider.get_parent()
+		if chunk.has_method(\"break_block\"):
+			chunk.break_block(result.position, result.normal)
+
+
+func _move(delta) -> void:
+	match gamemode:
+		0: spectator_move(delta)
+		1: survival_move(delta)
+		2: creative_move(delta)
+
+func _ui(e) -> void:
+	if e is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		rotate_y(-e.relative.x * mouse_sensitivity)
+		
+		vertical_angle -= e.relative.y * mouse_sensitivity
+		vertical_angle = clamp(vertical_angle, deg_to_rad(-max_vertical_angle), deg_to_rad(max_vertical_angle))
+		
+		$Camera3D.rotation.x = vertical_angle
+	
+	if e.is_action_pressed(\"esc\"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			$UI/Inventory/ScrollContainer.show()
+			pause = true
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			$UI/Inventory/ScrollContainer.hide()
+			pause = false
+
+func fly_speed(e) -> void:
+	if e is InputEventMouseButton:
+		if e.button_index == MOUSE_BUTTON_WHEEL_UP and FLY_SPEED < 50.0:
+			FLY_SPEED += 0.5
+		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN and FLY_SPEED > 5.0:
+			FLY_SPEED -= 0.5
+
+func spectator_move(delta) -> void:
+	if Input.is_action_pressed(\"space\"):
+		velocity.y = FLY_SPEED
+	elif Input.is_action_pressed(\"shift\"):
+		velocity.y = -FLY_SPEED
+	else:
+		velocity.y = 0
+
+	var input_dir = Input.get_vector(\"left\", \"right\", \"up\", \"down\")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	if direction:
+		velocity.x = direction.x * FLY_SPEED
+		velocity.z = direction.z * FLY_SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, FLY_SPEED)
+		velocity.z = move_toward(velocity.z, 0, FLY_SPEED)
+
+	move_and_slide()
+
+func survival_move(delta) -> void:
+	# Add the gravity.
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+
+	# Handle jump.
+	if Input.is_action_just_pressed(\"space\") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+
+	# Get the input direction and handle the movement/deceleration.
+	# As good practice, you should replace UI actions with custom gameplay actions.
+	var input_dir = Input.get_vector(\"left\", \"right\", \"up\", \"down\")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	if direction:
+		velocity.x = direction.x * SPEED
+		velocity.z = direction.z * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+		velocity.z = move_toward(velocity.z, 0, SPEED)
+
+	move_and_slide()
+
+func creative_move(delta) -> void:
+	spectator_move(delta)
+"
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_f60y1"]
+
+[sub_resource type="GDScript" id="GDScript_vgqql"]
+script/source = "extends Control
+
+# Inventory
+@export var inventory_data: InventoryData
+@export var hot_bar_data: InventoryData
+var grabbed_slot_data: SlotData
+@onready var grabbed_slot_container = $GrabbedSlotContainer
+
+func _ready() -> void:
+	var files = SaveSystem.get_files_in_directory('Resources/Blocks/Data/')
+	for file in files:
+		var slot = SlotData.new()
+		var item = ItemData.new()
+		item.name = file.split(\".\")[0]
+		var block = SaveSystem.read_json(SaveSystem.get_file_path('Resources/Blocks/Data/'+file, true))
+		if block[\"type\"] == \"block\":
+			var atlas_texture = load(block[\"textures\"][\"side\"]) as Texture2D
+			var texture = AtlasTexture.new()
+			texture.atlas = atlas_texture
+			item.texture = texture
+		elif block[\"type\"] == \"model\":
+			item.texture = get_texture_3d(block[\"asset\"])
+		item.attributes[\"action\"] = \"block\"
+		item.max_stack = 99
+		slot.item_data = item
+		slot.quantity = item.max_stack
+		inventory_data.slot_datas.append(slot)
+	inventory_data.inventory_interact.connect(on_inventory_interact)
+	$ScrollContainer/Control/InventoryContainer.set_inventory_data(inventory_data)
+	hot_bar_data.inventory_interact.connect(on_inventory_interact)
+	$HotBarContainer.set_inventory_data(hot_bar_data)
+
+func _physics_process(delta) -> void:
+	if grabbed_slot_container.visible:
+		grabbed_slot_container.global_position = get_global_mouse_position() + Vector2(5, 5)
+
+func get_texture_3d(path: String) -> AtlasTexture:
+	for i in $SubViewport/Scene.get_children():
+		i.free()
+	var node = load(path).instantiate()
+	$SubViewport/Scene.add_child(node)
+	var texture = AtlasTexture.new()
+	texture.atlas = $SubViewport.get_texture()
+	return texture
+
+func on_inventory_interact(inventory_data: InventoryData, index: int, button: int) -> void:
+	match [grabbed_slot_data, button]:
+		[null, MOUSE_BUTTON_LEFT]:
+			if Input.is_action_pressed(\"shift\"):
+				pass
+			else:
+				grabbed_slot_data = inventory_data.grab_slot_data(index)
+		[_, MOUSE_BUTTON_LEFT]:
+			if Input.is_action_pressed(\"shift\"):
+				pass
+			else:
+				grabbed_slot_data = inventory_data.drop_slot_data(grabbed_slot_data, index)
+		[null, MOUSE_BUTTON_RIGHT]:
+			grabbed_slot_data = inventory_data.grab_hafl_slot_data(index)
+		[_, MOUSE_BUTTON_RIGHT]:
+			grabbed_slot_data = inventory_data.drop_single_slot_data(grabbed_slot_data, index)
+	update_grabbed_slot()
+
+func update_grabbed_slot() -> void:
+	if grabbed_slot_data:
+		grabbed_slot_container.set_slot_data(grabbed_slot_data)
+		grabbed_slot_container.show()
+	else: grabbed_slot_container.hide()
+"
+
+[sub_resource type="Resource" id="Resource_fkybt"]
+script = ExtResource("2_fkybt")
+inv_name = "ItemTabs"
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Resource" id="Resource_3smsa"]
+script = ExtResource("2_fkybt")
+inv_name = "HotBar"
+slot_datas = Array[ExtResource("3_x3wgy")]([null, null, null, null, null, null, null, null, null])
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Environment" id="Environment_3smsa"]
+
+[sub_resource type="World3D" id="World3D_8erm5"]
+environment = SubResource("Environment_3smsa")
+
+[node name="Player" type="CharacterBody3D" unique_id=877482764]
+collision_layer = 0
+collision_mask = 0
+script = SubResource("GDScript_f60y1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1863849229]
+shape = SubResource("SphereShape3D_f60y1")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=2072109049]
+current = true
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=864584949]
+
+[node name="HUD" type="Control" parent="UI" unique_id=25603552]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+metadata/_edit_lock_ = true
+
+[node name="Label" type="Label" parent="UI/HUD" unique_id=425599743]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -111.0
+offset_right = 40.0
+offset_bottom = -88.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Control" type="Control" parent="UI/HUD" unique_id=1763639806]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -24.0
+offset_top = -24.0
+offset_right = 24.0
+offset_bottom = 24.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Crosshair" type="Sprite2D" parent="UI/HUD/Control" unique_id=1581645751]
+scale = Vector2(3, 3)
+texture = ExtResource("1_v0iea")
+centered = false
+
+[node name="Inventory" type="Control" parent="UI" unique_id=1579392038]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_vgqql")
+inventory_data = SubResource("Resource_fkybt")
+hot_bar_data = SubResource("Resource_3smsa")
+metadata/_edit_lock_ = true
+
+[node name="HotBarContainer" parent="UI/Inventory" unique_id=1601073822 instance=ExtResource("2_cvnsp")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -8.0
+offset_top = -16.0
+offset_right = 8.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="GrabbedSlotContainer" parent="UI/Inventory" unique_id=1947869178 instance=ExtResource("4_vgqql")]
+visible = false
+modulate = Color(1, 1, 1, 0.49411765)
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/Inventory" unique_id=1423352971]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -312.0
+offset_top = -230.0
+offset_right = 312.0
+offset_bottom = 230.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Control" type="Control" parent="UI/Inventory/ScrollContainer" unique_id=1477067615]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="InventoryContainer" parent="UI/Inventory/ScrollContainer/Control" unique_id=2012566676 instance=ExtResource("2_cvnsp")]
+layout_mode = 0
+offset_right = 16.0
+offset_bottom = 16.0
+
+[node name="SubViewport" type="SubViewport" parent="UI/Inventory" unique_id=1153669609]
+own_world_3d = true
+world_3d = SubResource("World3D_8erm5")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="UI/Inventory/SubViewport" unique_id=1553131943]
+transform = Transform3D(0.8328903, 0.4372957, 0.3392141, -0.55343753, 0.6572007, 0.5116583, 0.00081419945, -0.61388904, 0.7893919, 0, 0, 0)
+
+[node name="Scene" type="Node3D" parent="UI/Inventory/SubViewport" unique_id=688651325]
+
+[node name="Camera3D" type="Camera3D" parent="UI/Inventory/SubViewport" unique_id=822104734]
+transform = Transform3D(0.7071067, -0.4055798, 0.579228, 0, 0.81915206, 0.57357645, -0.7071067, -0.4055798, 0.579228, 1.25, 1.25, 1.25)
+fov = 60.0

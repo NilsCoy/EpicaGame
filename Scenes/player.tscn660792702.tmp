@@ -1,0 +1,1063 @@
+[gd_scene format=3 uid="uid://5jwrhpdhgtm8"]
+
+[ext_resource type="Texture2D" uid="uid://bky2jo0bab0sv" path="res://Assets/crosshair.png" id="1_v0iea"]
+[ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="2_cvnsp"]
+[ext_resource type="Script" uid="uid://bnojduwe7dw4n" path="res://Scripts/InventorySystem/inventory_data.gd" id="2_fkybt"]
+[ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/InventorySystem/slot_data.gd" id="3_x3wgy"]
+[ext_resource type="PackedScene" uid="uid://bud750atb0nn8" path="res://Scenes/InventorySystem/slot_container.tscn" id="4_vgqql"]
+[ext_resource type="AnimationNodeBlendTree" uid="uid://bfsc40fkwmylr" path="res://Assets/Animations/move_blend_tree.tres" id="6_3smsa"]
+[ext_resource type="PackedScene" uid="uid://b6nn7pkvkrum1" path="res://Assets/Models/human.gltf" id="7_f1ek2"]
+[ext_resource type="PackedScene" uid="uid://cm4jgqdf45be" path="res://Scenes/texture_model.tscn" id="8_f1ek2"]
+[ext_resource type="Texture2D" uid="uid://d2dxovuwxytdr" path="res://Resources/Items/Assets/iron_sword.png" id="9_tx1dd"]
+
+[sub_resource type="GDScript" id="GDScript_f60y1"]
+script/source = "extends CharacterBody3D
+
+# Move
+const JUMP_VELOCITY: float = 7.0
+const WALK_SPEED: float = 2.0
+const RUN_SPEED: float = 5.0
+const AIR_SPEED: float = 8.0
+var FLY_SPEED: float = 5.0
+var current_speed: float = WALK_SPEED
+var is_weapon: bool = true
+var direction: Vector3
+
+# Player settings
+@export_range(0, 2, 1) var gamemode: int = 1 # 0=spectator, 1=survival, 2=creative
+@export_range(0, 2, 1) var move_state: int = 1 # 0=crawl, 1=walk, 2=run
+var fly: bool = true
+
+# Utils
+var curr_block: String = \"\"
+
+@onready var inventory: Control = $UI/Inventory
+@onready var camera: Node3D = $Model/Camera
+@onready var animation: AnimationTree = $AnimationTree
+
+func _ready() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	$UI/HUD/ItemName.text = str(curr_block)
+	switch_gamemode(gamemode)
+
+func _physics_process(delta: float) -> void:
+	$UI/HUD/FPS.text = str(int(Performance.get_monitor(Performance.TIME_FPS)))
+
+	_move(delta)
+	
+	#animation.animation_update()
+
+func _input(event: InputEvent) -> void:
+	_ui(event)
+	_attack(event)
+
+func _attack(e: InputEvent) -> void:
+	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		if Input.is_action_just_pressed(\"left_click\") and  animation.is_attack() == false:
+			if animation.move_state == 'jump':
+				animation.start_attack_animation('strong')
+			elif animation.move_state == 'run':
+				if animation.is_attack() == false:
+					velocity = -transform.basis.z * 20
+				animation.start_attack_animation('lunge')
+			else:
+				animation.start_attack_animation('attack')
+		if Input.is_action_pressed(\"right_click\") and animation.is_attack() == false:
+			if animation.is_block() == false:
+				animation.start_attack_animation('block_pressed')
+		else:
+			if animation.is_block() == true:
+				animation.start_attack_animation('block_relesed')
+
+func _get_rotation_from_forward(forward: Vector3) -> Vector3:
+	if abs(forward.x) > abs(forward.z):
+		return Vector3.RIGHT if forward.x > 0 else Vector3.LEFT
+	else:
+		return Vector3.BACK if forward.z > 0 else Vector3.FORWARD
+
+func _place_block() -> void:
+	var forward: Vector3 = -camera.global_transform.basis.z
+	forward.y = 0
+	forward = forward.normalized()
+	var rot: Vector3 = _get_rotation_from_forward(forward)
+	
+	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	
+	var from: Vector3 = camera.global_transform.origin
+	var to: Vector3 = from + camera.global_transform.basis.z * -6.0
+	
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
+	var result: Dictionary = space_state.intersect_ray(query)
+	
+	if result:
+		var chunk: Variant = result.collider.get_parent()
+		if chunk.has_method(\"place_block\"):
+			chunk.place_block(result.position, result.normal, curr_block, rot)
+
+func _break_block() -> void:
+	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	
+	var from: Vector3 = camera.global_transform.origin
+	var to: Vector3 = from + camera.global_transform.basis.z * -6.0
+	
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, to)
+	query.set_collision_mask(2)
+	var result: Dictionary = space_state.intersect_ray(query)
+
+	if result:
+		var chunk: Variant = result.collider.get_parent()
+		if chunk.has_method(\"break_block\"):
+			chunk.break_block(result.position, result.normal)
+
+
+func _move(delta: float) -> void:
+	$UI/HUD/debug.text = str($FallTimer.is_stopped()) + ' / ' + animation.move_state
+	if is_on_floor() or fly == true:
+		var anim_switch: bool = true
+		if $FallTimer.is_stopped():
+			if animation.move_state == 'jump' or animation.move_state == 'fall':
+				anim_switch = false
+		$FallTimer.stop()
+		if is_weapon == false:
+			if anim_switch == true:
+				if velocity:
+					$Model.sum_rotation(delta)
+					match move_state:
+						1: animation.update_move_state(\"walk\")
+						2: animation.update_move_state(\"run\")
+				else: animation.update_move_state(\"idle\")
+		else:
+			if anim_switch == true:
+				$Model.sum_rotation(delta)
+				if velocity:
+					match move_state:
+						1: animation.update_move_state(\"walk\")
+						2: animation.update_move_state(\"run\")
+				else: animation.update_move_state(\"idle\")
+	
+	match gamemode:
+		0: _spectator_move(delta)
+		1: _survival_move(delta)
+		2: _creative_move(delta)
+	
+	var input_dir: Vector2 = Input.get_vector(\"left\", \"right\", \"up\", \"down\")
+	if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
+		input_dir.x = 0
+		input_dir.y = 0
+	direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var rot_speed: float = 5
+	match input_dir:
+		Vector2(0, -1): #FORWARD
+			animation.update_move_direction(\"forward\")
+			animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta))
+			if not is_weapon:
+				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
+		Vector2(0, 1): #BACK
+			animation.update_move_direction(\"back\")
+			animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
+			if not is_weapon:
+				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(0), rot_speed * delta)
+		Vector2(-1, 0): #LEFT
+			if is_weapon:
+				animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(-1, 0), rot_speed*delta))
+			else:
+				animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
+				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(90), rot_speed * delta)
+		Vector2(1, 0): #RIGHT
+			if is_weapon:
+				animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(1, 0), rot_speed*delta))
+			else:
+				animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
+				$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(90), rot_speed * delta)
+		Vector2.ZERO:
+			animation.update_move_direction(\"forward\")
+			animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2.ZERO, rot_speed*delta))
+		_:
+			if (input_dir.x < 0 and input_dir.y < 0):
+				animation.update_move_direction(\"forward\")
+				if is_weapon:
+					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(-1, 1), rot_speed*delta))
+				else:
+					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta))
+					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(45), rot_speed * delta)
+			elif (input_dir.x > 0 and input_dir.y > 0):
+				animation.update_move_direction(\"back\")
+				if is_weapon:
+					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(1, -1), rot_speed*delta))
+				else:
+					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
+					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, deg_to_rad(45), rot_speed * delta)
+			elif (input_dir.x > 0 and input_dir.y < 0):
+				animation.update_move_direction(\"forward\")
+				if is_weapon:
+					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(1, 1), rot_speed*delta))
+				else:
+					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, 1), rot_speed*delta))
+					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(45), rot_speed * delta)
+			elif (input_dir.x < 0 and input_dir.y > 0):
+				animation.update_move_direction(\"back\")
+				if is_weapon:
+					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(-1, -1), rot_speed*delta))
+				else:
+					animation.update_move_rotate_direction(animation.move_rotate_direction.lerp(Vector2(0, -1), rot_speed*delta))
+					$Model/Model/Import.rotation.y = lerpf($Model/Model/Import.rotation.y, -deg_to_rad(45), rot_speed * delta)
+	
+	direction = direction.rotated(Vector3.UP, camera.global_rotation.y)
+	if animation.move_state != 'fall':
+		if direction:
+			if is_on_floor() or fly == true:
+				velocity.x = direction.x * current_speed
+				velocity.z = direction.z * current_speed
+			else:
+				velocity.x += direction.x * WALK_SPEED * delta
+				velocity.z += direction.z * WALK_SPEED * delta
+		else:
+			if is_on_floor() or fly == true:
+				velocity.x = move_toward(velocity.x, 0, current_speed)
+				velocity.z = move_toward(velocity.z, 0, current_speed)
+	else:
+		velocity.x = move_toward(velocity.x, 0, current_speed)
+		velocity.z = move_toward(velocity.z, 0, current_speed)
+		
+
+	move_and_slide()
+
+func _ui(e: InputEvent) -> void:
+	if Input.is_action_just_pressed(\"esc\"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		else: Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	if Input.is_action_just_pressed(\"tab\"):
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			$UI/Inventory/ScrollContainer.show()
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			$UI/Inventory/ScrollContainer.hide()
+
+	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		if fly:
+			_fly_speed(e)
+
+		if gamemode == 0: # spectator
+			for i: int in range(10):
+				if Input.is_action_just_pressed(str(i)):
+					if inventory.hot_bar_data.slot_datas[i-1]:
+						if inventory.hot_bar_data.slot_datas[i-1].item_data.attributes.has(\"action\"):
+							if inventory.hot_bar_data.slot_datas[i-1].item_data.attributes[\"action\"] == \"block\":
+								curr_block = inventory.hot_bar_data.slot_datas[i-1].item_data.name
+					else: curr_block = \"\"
+					$UI/HUD/ItemName.text = str(curr_block)
+					break
+
+			if e is InputEventMouseButton and e.pressed:
+				if e.button_index == MOUSE_BUTTON_LEFT:
+					_break_block()
+				elif e.button_index == MOUSE_BUTTON_RIGHT and curr_block != \"\":
+					_place_block()
+
+func _fly_speed(e: InputEvent) -> void:
+	if e is InputEventMouseButton:
+		if e.button_index == MOUSE_BUTTON_WHEEL_UP and FLY_SPEED < 50.0:
+			FLY_SPEED += 0.5
+		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN and FLY_SPEED > 5.0:
+			FLY_SPEED -= 0.5
+
+func _spectator_move(delta: float) -> void:
+	# There is no gravity
+	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		if Input.is_action_pressed(\"space\"):
+			velocity.y = FLY_SPEED
+		elif Input.is_action_pressed(\"shift\"):
+			velocity.y = -FLY_SPEED
+		else:
+			velocity.y = 0
+		
+		current_speed = FLY_SPEED
+
+func _survival_move(delta: float) -> void:
+	# Add the jump
+	if is_on_floor():
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			if Input.is_action_just_pressed(\"space\") and animation.is_block() == false and animation.is_attack() == false:
+				velocity.y = JUMP_VELOCITY
+				animation.update_move_state('jump')
+				$FallTimer.start()
+			
+			if Input.is_action_pressed(\"shift\") and animation.is_block() == false and animation.is_attack() == false:
+				current_speed = move_toward(current_speed, RUN_SPEED, 10*delta)
+				move_state = 2
+			else: 
+				current_speed = move_toward(current_speed, WALK_SPEED, 10*delta)
+				move_state = 1
+	# Add the gravity
+	else:
+		velocity += get_gravity() * delta
+		if animation.move_state != 'jump':
+			$FallTimer.start()
+			animation.update_move_state('jump')
+	
+	_try_step()
+
+func _try_step() -> void:
+	var input_dir: Vector2 = Input.get_vector(\"left\", \"right\", \"up\", \"down\")
+	#var direction: Vector3 = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	#direction = direction.rotated(Vector3.UP, camera.global_rotation.y)
+	
+	var step_height: float = 0.5
+	var step_forward: float = 0.5
+	
+	# направление движения
+	var move_dir: Vector3 = (direction*current_speed).normalized()
+	move_dir.y = 0
+	
+	# поворачиваем рейкасты в сторону движения
+	if move_dir.length() != 0:
+		$LowerRay.target_position = move_dir * step_forward
+		$UpperRay.target_position = move_dir * step_forward
+		$UpperRay2.target_position = move_dir * step_forward
+	
+	# проверка ступеньки
+	if $LowerRay.is_colliding() and not $UpperRay.is_colliding() and not $UpperRay2.is_colliding() and not $UpperRay3.is_colliding():
+		
+		var step_up: Vector3 = Vector3.UP * step_height
+		var forward: Vector3 = move_dir * step_forward
+		
+		if not test_move(global_transform, step_up) \\
+		and not test_move(global_transform.translated(step_up), forward):
+			translate(step_up + (move_dir*0.2))
+
+func _creative_move(delta: float) -> void:
+	var fly_switch_timer: Timer = $FlySwitchTimer
+	if Input.is_action_just_pressed(\"space\"):
+		if fly_switch_timer.is_stopped(): fly_switch_timer.start()
+		else: 
+			fly = not(fly)
+			current_speed = RUN_SPEED
+	if fly: _spectator_move(delta)
+	else: _survival_move(delta)
+
+func switch_gamemode(to_gamemode: int) -> void:
+	gamemode = to_gamemode
+	if to_gamemode == 0:
+		$Model.switch_camera(1)
+		$CollisionShape3D.disabled = true
+	else:
+		$Model.switch_camera(3)
+		$CollisionShape3D.disabled = false
+"
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_x3wgy"]
+height = 1.9
+radius = 0.3
+
+[sub_resource type="GDScript" id="GDScript_vgqql"]
+script/source = "extends Control
+
+# Inventory
+@export var blocks_data: InventoryData
+@export var hot_bar_data: InventoryData
+var grabbed_slot_data: SlotData
+@onready var grabbed_slot_container: Control = $GrabbedSlotContainer
+
+func _ready() -> void:
+	var files: Array = SaveSystem.get_files_in_directory('Resources/Blocks/Data/')
+	for file: String in files:
+		var slot: SlotData = SlotData.new()
+		var item: ItemData = ItemData.new()
+		item.name = file.split(\".\")[0]
+		var block: Dictionary = SaveSystem.read_json(SaveSystem.get_file_path('Resources/Blocks/Data/'+file, true))
+		if block[\"type\"] == \"block\":
+			var atlas_texture: Texture2D = load(block[\"textures\"][\"side\"])
+			var texture: AtlasTexture = AtlasTexture.new()
+			texture.atlas = atlas_texture
+			item.texture = texture
+		elif block[\"type\"] == \"model\":
+			item.texture = get_texture_3d(block[\"asset\"])
+		item.attributes[\"action\"] = \"block\"
+		item.max_stack = 99
+		slot.item_data = item
+		slot.quantity = item.max_stack
+		blocks_data.slot_datas.append(slot)
+	blocks_data.inventory_interact.connect(on_inventory_interact)
+	$ScrollContainer/BlocksContainer.set_inventory_data(blocks_data)
+	hot_bar_data.inventory_interact.connect(on_inventory_interact)
+	$HotBarContainer.set_inventory_data(hot_bar_data)
+
+func _physics_process(delta: float) -> void:
+	if grabbed_slot_container.visible:
+		grabbed_slot_container.global_position = get_global_mouse_position() + Vector2(5, 5)
+
+func get_texture_3d(path: String) -> AtlasTexture:
+	for i: Node in $SubViewport/Scene.get_children():
+		i.free()
+	var node: Variant = load(path).instantiate()
+	$SubViewport/Scene.add_child(node)
+	var texture: AtlasTexture = AtlasTexture.new()
+	texture.atlas = $SubViewport.get_texture()
+	return texture
+
+func on_inventory_interact(inventory_data: InventoryData, index: int, button: int) -> void:
+	if Input.is_action_pressed(\"shift\"):
+		if inventory_data.inv_name == \"ItemTabs\":
+			inventory_data.transportation_slot_data(index, hot_bar_data)
+		elif inventory_data.inv_name == \"HotBar\":
+			inventory_data.transportation_slot_data(index, blocks_data)
+	else:
+		match [grabbed_slot_data, button]:
+			[null, MOUSE_BUTTON_LEFT]:
+					grabbed_slot_data = inventory_data.grab_slot_data(index)
+			[_, MOUSE_BUTTON_LEFT]:
+				grabbed_slot_data = inventory_data.drop_slot_data(grabbed_slot_data, index)
+			[null, MOUSE_BUTTON_RIGHT]:
+				grabbed_slot_data = inventory_data.grab_hafl_slot_data(index)
+			[_, MOUSE_BUTTON_RIGHT]:
+				grabbed_slot_data = inventory_data.drop_single_slot_data(grabbed_slot_data, index)
+	update_grabbed_slot()
+
+func update_grabbed_slot() -> void:
+	if grabbed_slot_data:
+		grabbed_slot_container.set_slot_data(grabbed_slot_data)
+		grabbed_slot_container.show()
+	else: grabbed_slot_container.hide()
+"
+
+[sub_resource type="Resource" id="Resource_fkybt"]
+script = ExtResource("2_fkybt")
+inv_name = "ItemTabs"
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Resource" id="Resource_3smsa"]
+script = ExtResource("2_fkybt")
+inv_name = "HotBar"
+slot_datas = Array[ExtResource("3_x3wgy")]([null, null, null, null, null, null, null, null, null])
+metadata/_custom_type_script = "uid://bnojduwe7dw4n"
+
+[sub_resource type="Environment" id="Environment_3smsa"]
+
+[sub_resource type="World3D" id="World3D_8erm5"]
+environment = SubResource("Environment_3smsa")
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_f1ek2"]
+input_0/name = "attack_1"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "attack_2"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+input_2/name = "strong"
+input_2/auto_advance = false
+input_2/break_loop_at_end = false
+input_2/reset = true
+input_3/name = "lunge"
+input_3/auto_advance = false
+input_3/break_loop_at_end = false
+input_3/reset = true
+
+[sub_resource type="Curve" id="Curve_3smsa"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_8erm5"]
+xfade_time = 0.3
+xfade_curve = SubResource("Curve_3smsa")
+input_0/name = "false"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "true"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+
+[sub_resource type="Curve" id="Curve_tx1dd"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.99999, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_gymyn"]
+fadein_time = 0.3
+fadein_curve = SubResource("Curve_tx1dd")
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_pu2lt"]
+animation = &"sword_attack_1"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ukyrk"]
+animation = &"sword_attack_2"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_h4iuc"]
+animation = &"sword_attack_lunge"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_fd4e3"]
+animation = &"sword_attack_strong"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gymyn"]
+animation = &"sword_block"
+
+[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_f1ek2"]
+filter_enabled = true
+filters = ["", "base/Skeleton3D:base_2", "base/Skeleton3D:body", "base/Skeleton3D:head", "base/Skeleton3D:left_knee", "base/Skeleton3D:left_leg", "base/Skeleton3D:right_knee", "base/Skeleton3D:right_leg"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8erm5"]
+animation = &"sword_fall"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_7dp3o"]
+animation = &"sword_idle"
+use_custom_timeline = true
+timeline_length = 1.0
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_tx1dd"]
+input_0/name = "false"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "true"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_f1ek2"]
+animation = &"sword_jump"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_tx1dd"]
+animation = &"sword_run"
+use_custom_timeline = true
+timeline_length = 0.7
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_3smsa"]
+animation = &"sword_walk"
+use_custom_timeline = true
+timeline_length = 1.0
+stretch_time_scale = true
+start_offset = 0.0
+loop_mode = 1
+
+[sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_h4iuc"]
+filter_enabled = true
+filters = ["Skeleton3D:base", "Skeleton3D:body", "Skeleton3D:head", "Skeleton3D:left_arm", "Skeleton3D:left_elbow", "Skeleton3D:left_knee", "Skeleton3D:left_leg", "Skeleton3D:right_arm", "Skeleton3D:right_elbow", "Skeleton3D:right_equip", "Skeleton3D:right_knee", "Skeleton3D:right_leg", "base/Skeleton3D:base_2", "base/Skeleton3D:body", "base/Skeleton3D:left_knee", "base/Skeleton3D:left_leg", "base/Skeleton3D:right_knee", "base/Skeleton3D:right_leg", "base/body2", "base/left_leg2", "base/left_leg2/left_knee2", "base/right_leg2", "base/right_leg2/right_knee2"]
+
+[sub_resource type="Curve" id="Curve_pu2lt"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_ukyrk"]
+xfade_time = 0.3
+xfade_curve = SubResource("Curve_pu2lt")
+input_0/name = "idle"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "walk"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+input_2/name = "run"
+input_2/auto_advance = false
+input_2/break_loop_at_end = false
+input_2/reset = true
+input_3/name = "jump"
+input_3/auto_advance = false
+input_3/break_loop_at_end = false
+input_3/reset = true
+input_4/name = "fall"
+input_4/auto_advance = false
+input_4/break_loop_at_end = false
+input_4/reset = true
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_pu2lt"]
+input_0/name = "one_sword"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_f1ek2"]
+nodes/output/position = Vector2(1280, 320)
+nodes/move_blend_tree/node = ExtResource("6_3smsa")
+nodes/move_blend_tree/position = Vector2(500, 260)
+nodes/weapon_blend/node = SubResource("AnimationNodeAdd2_h4iuc")
+nodes/weapon_blend/position = Vector2(440, 560)
+nodes/sword_idle/node = SubResource("AnimationNodeAnimation_7dp3o")
+nodes/sword_idle/position = Vector2(-980, -240)
+nodes/sword_walk/node = SubResource("AnimationNodeAnimation_3smsa")
+nodes/sword_walk/position = Vector2(-980, -80)
+nodes/weapon_move_state/node = SubResource("AnimationNodeTransition_ukyrk")
+nodes/weapon_move_state/position = Vector2(-760, -80)
+nodes/sword_run/node = SubResource("AnimationNodeAnimation_tx1dd")
+nodes/sword_run/position = Vector2(-980, 80)
+nodes/is_weapon/node = SubResource("AnimationNodeTransition_8erm5")
+nodes/is_weapon/position = Vector2(760, 320)
+nodes/AnimationNodeBlendTree/node = ExtResource("6_3smsa")
+nodes/AnimationNodeBlendTree/position = Vector2(80, 820)
+nodes/sword_jump/node = SubResource("AnimationNodeAnimation_f1ek2")
+nodes/sword_jump/position = Vector2(-980, 240)
+nodes/sword_fall/node = SubResource("AnimationNodeAnimation_8erm5")
+nodes/sword_fall/position = Vector2(-980, 400)
+nodes/on_attack/node = SubResource("AnimationNodeOneShot_gymyn")
+nodes/on_attack/position = Vector2(60, 500)
+nodes/sword_attack_1/node = SubResource("AnimationNodeAnimation_pu2lt")
+nodes/sword_attack_1/position = Vector2(-640, 840)
+nodes/attack_type/node = SubResource("AnimationNodeTransition_f1ek2")
+nodes/attack_type/position = Vector2(-320, 940)
+nodes/sword_attack_2/node = SubResource("AnimationNodeAnimation_ukyrk")
+nodes/sword_attack_2/position = Vector2(-640, 1000)
+nodes/sword_attack_strong/node = SubResource("AnimationNodeAnimation_fd4e3")
+nodes/sword_attack_strong/position = Vector2(-640, 1160)
+nodes/sword_attack_lunge/node = SubResource("AnimationNodeAnimation_h4iuc")
+nodes/sword_attack_lunge/position = Vector2(-640, 1320)
+nodes/sword_block/node = SubResource("AnimationNodeAnimation_gymyn")
+nodes/sword_block/position = Vector2(-760, 280)
+nodes/weapon_type/node = SubResource("AnimationNodeTransition_pu2lt")
+nodes/weapon_type/position = Vector2(-220, 80)
+nodes/sword_is_block/node = SubResource("AnimationNodeTransition_tx1dd")
+nodes/sword_is_block/position = Vector2(-460, 80)
+"nodes/AnimationNodeBlendTree 2/node" = ExtResource("6_3smsa")
+"nodes/AnimationNodeBlendTree 2/position" = Vector2(-820, 500)
+nodes/sword_block_blend/node = SubResource("AnimationNodeAdd2_f1ek2")
+nodes/sword_block_blend/position = Vector2(-540, 380)
+node_connections = [&"output", 0, &"is_weapon", &"weapon_blend", 0, &"on_attack", &"weapon_blend", 1, &"AnimationNodeBlendTree", &"weapon_move_state", 0, &"sword_idle", &"weapon_move_state", 1, &"sword_walk", &"weapon_move_state", 2, &"sword_run", &"weapon_move_state", 3, &"sword_jump", &"weapon_move_state", 4, &"sword_fall", &"is_weapon", 0, &"move_blend_tree", &"is_weapon", 1, &"weapon_blend", &"on_attack", 0, &"weapon_type", &"on_attack", 1, &"attack_type", &"attack_type", 0, &"sword_attack_1", &"attack_type", 1, &"sword_attack_2", &"attack_type", 2, &"sword_attack_strong", &"attack_type", 3, &"sword_attack_lunge", &"weapon_type", 0, &"sword_is_block", &"sword_is_block", 0, &"weapon_move_state", &"sword_is_block", 1, &"sword_block_blend", &"sword_block_blend", 0, &"sword_block", &"sword_block_blend", 1, &"AnimationNodeBlendTree 2"]
+
+[sub_resource type="GDScript" id="GDScript_8erm5"]
+script/source = "extends AnimationTree
+
+@export_enum('idle', 'walk', 'run', 'jump', 'fall') var move_state: String = 'idle'
+@export_enum('forward', 'back') var move_direction: String = 'forward'
+@export var move_rotate_direction: Vector2 = Vector2.ZERO
+@export var is_weapon: bool = false
+
+func _ready() -> void:
+	update_move_state(move_state)
+	update_move_direction(move_direction)
+	update_move_rotate_direction(move_rotate_direction)
+	start_attack_animation('block_relesed')
+
+func _physics_process(delta: float) -> void:
+	if get_parent().is_on_floor():
+		if move_state == 'jump':
+			update_move_state('fall')
+
+func update_move_state(state: String) -> void:
+	move_state = state
+	self[\"parameters/move_blend_tree/move_state/transition_request\"] = move_state
+	self[\"parameters/AnimationNodeBlendTree/move_state/transition_request\"] = move_state
+	self[\"parameters/AnimationNodeBlendTree 2/move_state/transition_request\"] = move_state
+	self[\"parameters/weapon_move_state/transition_request\"] = move_state
+
+func update_move_direction(direction: String) -> void:
+	move_direction = direction
+	self[\"parameters/move_blend_tree/walk_direction/transition_request\"] = move_direction
+	self[\"parameters/move_blend_tree/run_direction/transition_request\"] = move_direction
+	self[\"parameters/AnimationNodeBlendTree/walk_direction/transition_request\"] = move_direction
+	self[\"parameters/AnimationNodeBlendTree/run_direction/transition_request\"] = move_direction
+	self[\"parameters/AnimationNodeBlendTree 2/walk_direction/transition_request\"] = move_direction
+	self[\"parameters/AnimationNodeBlendTree 2/run_direction/transition_request\"] = move_direction
+
+func update_move_rotate_direction(rotate_direction: Vector2) -> void:
+	move_rotate_direction = rotate_direction
+	self[\"parameters/move_blend_tree/walk_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/move_blend_tree/run_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/move_blend_tree/jump_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/AnimationNodeBlendTree/walk_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/AnimationNodeBlendTree/run_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/AnimationNodeBlendTree/jump_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/AnimationNodeBlendTree 2/walk_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/AnimationNodeBlendTree 2/run_rotate_direction/blend_position\"] = move_rotate_direction
+	self[\"parameters/AnimationNodeBlendTree 2/jump_rotate_direction/blend_position\"] = move_rotate_direction
+
+func start_attack_animation(state: String) -> void:
+	match state:
+		'attack':
+			if self[\"parameters/attack_type/current_state\"] == 'attack_1' and not $AttackTimer.is_stopped():
+				self[\"parameters/attack_type/transition_request\"] = 'attack_2'
+				self[\"parameters/on_attack/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+				$AttackTimer.start()
+			elif self[\"parameters/attack_type/current_state\"] == 'attack_2' and not $AttackTimer.is_stopped():
+				self[\"parameters/attack_type/transition_request\"] = 'attack_1'
+				self[\"parameters/on_attack/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+				$AttackTimer.start()
+			else:
+				self[\"parameters/attack_type/transition_request\"] = 'attack_1'
+				self[\"parameters/on_attack/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+				$AttackTimer.start()
+		'strong':
+			self[\"parameters/attack_type/transition_request\"] = 'strong'
+			self[\"parameters/on_attack/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+		'lunge':
+			self[\"parameters/attack_type/transition_request\"] = 'lunge'
+			self[\"parameters/on_attack/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+		'block_pressed':
+			self[\"parameters/sword_is_block/transition_request\"] = 'true'
+		'block_relesed':
+			self[\"parameters/sword_is_block/transition_request\"] = 'false'
+			#move_state = 'block'
+
+func is_block() -> bool:
+	if self[\"parameters/sword_is_block/current_state\"] == 'true':
+		return true
+	else: return false
+
+func is_attack() -> bool:
+	return self[\"parameters/on_attack/active\"]
+
+func _on_animation_finished(anim_name: String) -> void:
+	if anim_name == 'fall':
+		move_state = 'idle'
+"
+
+[sub_resource type="GDScript" id="GDScript_3smsa"]
+script/source = "extends Node3D
+
+@onready var camera: Node3D = $Camera
+@onready var model: Node3D = $Model
+@export var mouse_sensitivity: float = 0.003
+@export_range(-90, 0, 0.1, \"radians_as_degrees\") var min_vertical_angle: float = -PI/2
+@export_range(0, 90, 0.1, \"radians_as_degrees\") var max_vertical_angle: float = PI/2
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		camera.rotate_y(-event.relative.x * mouse_sensitivity)
+		#camera.rotation.y -= event.relative.x * mouse_sensitivity
+		#camera.rotation.y = wrapf(rotation.y, 0, TAU)
+		
+		camera.rotation.x -= event.relative.y * mouse_sensitivity
+		camera.rotation.x = clamp(camera.rotation.x, min_vertical_angle, max_vertical_angle)
+
+func switch_camera(camera_id: int) -> void:
+	match camera_id:
+		1:
+			$Camera/FirstCamera.current = true
+			$Camera/ThirdCamera/OffsetCamera/Camera3D.current = false
+			$Model.visible = false
+		3:
+			$Camera/FirstCamera.current = false
+			$Camera/ThirdCamera/OffsetCamera/Camera3D.current = true
+			$Model.visible = true
+
+func sum_rotation(delta: float) -> void:
+	var rot_speed: float = 10
+	model.rotation.y = lerp_angle(model.rotation.y, camera.rotation.y, rot_speed * delta)
+"
+
+[node name="Player" type="CharacterBody3D" unique_id=877482764]
+collision_layer = 4
+script = SubResource("GDScript_f60y1")
+metadata/_edit_lock_ = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1863849229]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+shape = SubResource("CylinderShape3D_x3wgy")
+debug_color = Color(0.2726146, 0.819198, 0, 0.41960785)
+metadata/_edit_lock_ = true
+
+[node name="LowerRay" type="RayCast3D" parent="." unique_id=565531127]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+target_position = Vector3(0, 0, 0.5)
+
+[node name="UpperRay" type="RayCast3D" parent="." unique_id=829242413]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+target_position = Vector3(0, 0, 0.5)
+
+[node name="UpperRay2" type="RayCast3D" parent="." unique_id=957148810]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+target_position = Vector3(0, 0, 0.5)
+
+[node name="UpperRay3" type="RayCast3D" parent="." unique_id=663667589]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+target_position = Vector3(0, 0.5, 0)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=864584949]
+
+[node name="HUD" type="Control" parent="UI" unique_id=25603552]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+metadata/_edit_lock_ = true
+
+[node name="FPS" type="Label" parent="UI/HUD" unique_id=82568468]
+layout_mode = 0
+offset_left = 16.0
+offset_right = 56.0
+offset_bottom = 23.0
+text = "60"
+metadata/_edit_lock_ = true
+
+[node name="debug" type="Label" parent="UI/HUD" unique_id=1892608704]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 169.0
+offset_right = 56.0
+offset_bottom = 192.0
+text = "60"
+
+[node name="ItemName" type="Label" parent="UI/HUD" unique_id=425599743]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -111.0
+offset_right = 40.0
+offset_bottom = -88.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_lock_ = true
+
+[node name="Control" type="Control" parent="UI/HUD" unique_id=1763639806]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -24.0
+offset_top = -24.0
+offset_right = 24.0
+offset_bottom = 24.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_lock_ = true
+
+[node name="Crosshair" type="Sprite2D" parent="UI/HUD/Control" unique_id=1581645751]
+scale = Vector2(3, 3)
+texture = ExtResource("1_v0iea")
+centered = false
+metadata/_edit_lock_ = true
+
+[node name="Inventory" type="Control" parent="UI" unique_id=1579392038]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_vgqql")
+blocks_data = SubResource("Resource_fkybt")
+hot_bar_data = SubResource("Resource_3smsa")
+metadata/_edit_lock_ = true
+
+[node name="HotBarContainer" parent="UI/Inventory" unique_id=1601073822 instance=ExtResource("2_cvnsp")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -8.0
+offset_top = -16.0
+offset_right = 8.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="GrabbedSlotContainer" parent="UI/Inventory" unique_id=1947869178 instance=ExtResource("4_vgqql")]
+visible = false
+modulate = Color(1, 1, 1, 0.49411765)
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/Inventory" unique_id=1423352971]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -312.0
+offset_top = -230.0
+offset_right = 322.0
+offset_bottom = 171.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="BlocksContainer" parent="UI/Inventory/ScrollContainer" unique_id=2012566676 instance=ExtResource("2_cvnsp")]
+layout_mode = 2
+
+[node name="SubViewport" type="SubViewport" parent="UI/Inventory" unique_id=1153669609]
+own_world_3d = true
+world_3d = SubResource("World3D_8erm5")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="UI/Inventory/SubViewport" unique_id=1553131943]
+transform = Transform3D(0.8328903, 0.4372957, 0.3392141, -0.55343753, 0.6572007, 0.5116583, 0.00081419945, -0.61388904, 0.7893919, 0, 0, 0)
+metadata/_edit_lock_ = true
+
+[node name="Scene" type="Node3D" parent="UI/Inventory/SubViewport" unique_id=688651325]
+metadata/_edit_lock_ = true
+
+[node name="Camera3D" type="Camera3D" parent="UI/Inventory/SubViewport" unique_id=822104734]
+transform = Transform3D(0.7071067, -0.4055798, 0.579228, 0, 0.81915206, 0.57357645, -0.7071067, -0.4055798, 0.579228, 1.25, 1.25, 1.25)
+fov = 60.0
+metadata/_edit_lock_ = true
+
+[node name="AnimationTree" type="AnimationTree" parent="." unique_id=901218641]
+root_node = NodePath("../Model/Model/Import/blockbench_export")
+tree_root = SubResource("AnimationNodeBlendTree_f1ek2")
+anim_player = NodePath("../Model/Model/Import/blockbench_export/AnimationPlayer")
+parameters/move_blend_tree/move_state/current_state = "walk"
+parameters/move_blend_tree/move_state/transition_request = ""
+parameters/move_blend_tree/move_state/current_index = 1
+parameters/move_blend_tree/walk_rotate_direction/blend_position = Vector2(0, 0)
+parameters/move_blend_tree/run_rotate_direction/blend_position = Vector2(0, 0)
+parameters/move_blend_tree/walk_blend/add_amount = 1.0
+parameters/move_blend_tree/run_blend/add_amount = 1.0
+parameters/move_blend_tree/walk_direction/current_state = "forward"
+parameters/move_blend_tree/walk_direction/transition_request = ""
+parameters/move_blend_tree/walk_direction/current_index = 0
+parameters/move_blend_tree/run_direction/current_state = "forward"
+parameters/move_blend_tree/run_direction/transition_request = ""
+parameters/move_blend_tree/run_direction/current_index = 0
+parameters/move_blend_tree/jump_blend/add_amount = 1.0
+parameters/move_blend_tree/jump_rotate_direction/blend_position = Vector2(0, 0)
+parameters/weapon_blend/add_amount = 1.0
+parameters/weapon_move_state/current_state = "idle"
+parameters/weapon_move_state/transition_request = ""
+parameters/weapon_move_state/current_index = 0
+parameters/is_weapon/current_state = "true"
+parameters/is_weapon/transition_request = ""
+parameters/is_weapon/current_index = 1
+parameters/AnimationNodeBlendTree/move_state/current_state = "idle"
+parameters/AnimationNodeBlendTree/move_state/transition_request = ""
+parameters/AnimationNodeBlendTree/move_state/current_index = 0
+parameters/AnimationNodeBlendTree/walk_rotate_direction/blend_position = Vector2(0, 0)
+parameters/AnimationNodeBlendTree/run_rotate_direction/blend_position = Vector2(0, 0)
+parameters/AnimationNodeBlendTree/walk_blend/add_amount = 1.0
+parameters/AnimationNodeBlendTree/run_blend/add_amount = 1.0
+parameters/AnimationNodeBlendTree/walk_direction/current_state = "forward"
+parameters/AnimationNodeBlendTree/walk_direction/transition_request = ""
+parameters/AnimationNodeBlendTree/walk_direction/current_index = 0
+parameters/AnimationNodeBlendTree/run_direction/current_state = ""
+parameters/AnimationNodeBlendTree/run_direction/transition_request = "forward"
+parameters/AnimationNodeBlendTree/run_direction/current_index = -1
+parameters/AnimationNodeBlendTree/jump_blend/add_amount = 1.0
+parameters/AnimationNodeBlendTree/jump_rotate_direction/blend_position = Vector2(0, 0)
+parameters/on_attack/active = false
+parameters/on_attack/internal_active = false
+parameters/on_attack/request = 0
+parameters/attack_type/current_state = "strong"
+parameters/attack_type/transition_request = ""
+parameters/attack_type/current_index = 2
+parameters/weapon_type/current_state = "one_sword"
+parameters/weapon_type/transition_request = ""
+parameters/weapon_type/current_index = 0
+parameters/sword_is_block/current_state = "false"
+parameters/sword_is_block/transition_request = ""
+parameters/sword_is_block/current_index = 0
+"parameters/AnimationNodeBlendTree 2/move_state/current_state" = "idle"
+"parameters/AnimationNodeBlendTree 2/move_state/transition_request" = ""
+"parameters/AnimationNodeBlendTree 2/move_state/current_index" = 0
+"parameters/AnimationNodeBlendTree 2/walk_rotate_direction/blend_position" = Vector2(0, 0)
+"parameters/AnimationNodeBlendTree 2/run_rotate_direction/blend_position" = Vector2(0, 0)
+"parameters/AnimationNodeBlendTree 2/walk_blend/add_amount" = 1.0
+"parameters/AnimationNodeBlendTree 2/run_blend/add_amount" = 1.0
+"parameters/AnimationNodeBlendTree 2/walk_direction/current_state" = "forward"
+"parameters/AnimationNodeBlendTree 2/walk_direction/transition_request" = ""
+"parameters/AnimationNodeBlendTree 2/walk_direction/current_index" = 0
+"parameters/AnimationNodeBlendTree 2/run_direction/current_state" = ""
+"parameters/AnimationNodeBlendTree 2/run_direction/transition_request" = "forward"
+"parameters/AnimationNodeBlendTree 2/run_direction/current_index" = -1
+"parameters/AnimationNodeBlendTree 2/jump_blend/add_amount" = 1.0
+"parameters/AnimationNodeBlendTree 2/jump_rotate_direction/blend_position" = Vector2(0, 0)
+parameters/sword_block_blend/add_amount = 1.0
+script = SubResource("GDScript_8erm5")
+
+[node name="AttackTimer" type="Timer" parent="AnimationTree" unique_id=787514879]
+wait_time = 1.2999999999999998
+one_shot = true
+
+[node name="Model" type="Node3D" parent="." unique_id=2038029055]
+script = SubResource("GDScript_3smsa")
+
+[node name="Camera" type="Node3D" parent="Model" unique_id=1825356973]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+metadata/_edit_lock_ = true
+
+[node name="FirstCamera" type="Camera3D" parent="Model/Camera" unique_id=58642018]
+metadata/_edit_lock_ = true
+
+[node name="ThirdCamera" type="SpringArm3D" parent="Model/Camera" unique_id=1006196592]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+spring_length = 1.2
+metadata/_edit_lock_ = true
+
+[node name="OffsetCamera" type="SpringArm3D" parent="Model/Camera/ThirdCamera" unique_id=424098025]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 1.2)
+spring_length = 0.6
+metadata/_edit_lock_ = true
+
+[node name="Camera3D" type="Camera3D" parent="Model/Camera/ThirdCamera/OffsetCamera" unique_id=995003801]
+transform = Transform3D(-4.371139e-08, 0.1650476, -0.9862856, 0, 0.9862856, 0.1650476, 1, 7.2144597e-09, -4.3111914e-08, 0, 0, 0.6)
+current = true
+fov = 90.0
+metadata/_edit_lock_ = true
+
+[node name="Model" type="Node3D" parent="Model" unique_id=1594007780]
+metadata/_edit_lock_ = true
+
+[node name="Import" type="Node3D" parent="Model/Model" unique_id=71535928]
+metadata/_edit_lock_ = true
+
+[node name="blockbench_export" parent="Model/Model/Import" unique_id=1966122651 instance=ExtResource("7_f1ek2")]
+
+[node name="Skeleton3D" parent="Model/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(1966122651, 1127894481) index="0" unique_id=1536167094]
+bones/0/position = Vector3(0, -0.01875, 0)
+bones/1/rotation = Quaternion(-0.0018880083, 0, 0, 0.9999982)
+bones/11/rotation = Quaternion(-0.16342637, -0.102876335, 0.08410096, 0.9775661)
+bones/12/rotation = Quaternion(0.087155744, 0, 0, 0.9961947)
+bones/14/rotation = Quaternion(0.049718298, 0.19325155, -0.043516494, 0.97892207)
+bones/15/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
+bones/17/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
+bones/18/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
+bones/19/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
+bones/20/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
+
+[node name="right_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="1" unique_id=455013527]
+transform = Transform3D(0.964687, -0.16851625, -0.20243837, 0.19870815, 0.97009844, 0.1393698, 0.17289908, -0.1746744, 0.9693269, 0.4235882, 0.88568145, 0.11213839)
+bone_name = "right_equip"
+bone_idx = 13
+
+[node name="TextureModel" parent="Model/Model/Import/blockbench_export/base/Skeleton3D/right_equip" unique_id=1094807894 instance=ExtResource("8_f1ek2")]
+transform = Transform3D(-3.090862e-08, -3.0908623e-08, 1.0000001, -0.70710677, 0.7071068, 0, -0.70710677, -0.7071068, -4.3711392e-08, 0, 0, 0)
+texture = ExtResource("9_tx1dd")
+pixel_size = 0.05
+depth = 0.05
+pivot = Vector2(8, 20)
+
+[node name="left_equip" type="BoneAttachment3D" parent="Model/Model/Import/blockbench_export/base/Skeleton3D" index="2" unique_id=636606705]
+transform = Transform3D(0.92152035, 0.13661623, 0.36350557, -0.06742677, 0.97814584, -0.19668326, -0.38243157, 0.15673763, 0.9105929, -0.41096362, 0.8564682, -0.056965545)
+bone_name = "left_equip"
+bone_idx = 16
+
+[node name="Components" type="Node" parent="." unique_id=1119627159]
+
+[node name="FlySwitchTimer" type="Timer" parent="." unique_id=2109156986]
+wait_time = 0.2
+one_shot = true
+
+[node name="FallTimer" type="Timer" parent="." unique_id=2070106158]
+wait_time = 0.8
+one_shot = true
+
+[connection signal="animation_finished" from="AnimationTree" to="AnimationTree" method="_on_animation_finished"]
+
+[editable path="Model/Model/Import/blockbench_export"]

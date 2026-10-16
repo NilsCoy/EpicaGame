@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://c4j0e0v04j0vy"]
+
+[sub_resource type="GDScript" id="GDScript_j6rej"]
+script/source = "extends Node
+
+signal damaged(dmg: float, to_target: Node, from_target: Node)
+signal changed_health(old_value: float, new_value: float, reason: String)
+signal changed_max_health(old_value: float, new_value: float, reason: String)
+signal died(reason: String)
+
+@onready var parent: Node = get_parent().parent
+@export var health: float = 100.0
+@export var max_health: float = 100.0
+
+func change_health(new_value: float, reason: String) -> void:
+	var old_health: float = health
+	health = new_value
+	emit_signal(\"changed_health\", old_health, health, reason)
+
+func change_max_health(new_value: float, reason: String) -> void:
+	var old_max_health: float = max_health
+	max_health = new_value
+	emit_signal(\"changed_max_health\", old_max_health, max_health, reason)
+
+func take_damage(from: Node, dmg: float) -> void:
+	var old_health: float = health
+	health -= dmg
+	emit_signal(\"damaged\", dmg, get_parent(), from)
+	emit_signal(\"changed_health\", old_health, health, \"damage\")
+
+func die(reason: String) -> void:
+	emit_signal(reason)
+	
+"
+
+[node name="HealthComponent" type="Node" unique_id=1135595511]
+script = SubResource("GDScript_j6rej")

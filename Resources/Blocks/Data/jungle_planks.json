@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/jungle_planks_.png",
+		"bottom": "res://Resources/Blocks/Assets/jungle_planks_.png",
+		"side": "res://Resources/Blocks/Assets/jungle_planks_.png",
+	},
+	"is_rotate": false
+}

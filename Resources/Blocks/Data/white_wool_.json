@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/white_wool_.png",
+		"bottom": "res://Resources/Blocks/Assets/white_wool_.png",
+		"side": "res://Resources/Blocks/Assets/white_wool_.png",
+	},
+	"is_rotate": false
+}

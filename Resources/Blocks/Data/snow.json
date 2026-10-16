@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/snow.png",
+		"bottom": "res://Resources/Blocks/Assets/snow.png",
+		"side": "res://Resources/Blocks/Assets/snow.png",
+	},
+	"is_rotate": false
+}

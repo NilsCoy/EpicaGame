@@ -1,0 +1,9 @@
+{
+	"type": "block",
+	"textures": {
+		"top": "res://Resources/Blocks/Assets/jukebox_top.png",
+		"bottom": "res://Resources/Blocks/Assets/jukebox_bottom.png",
+		"side": "res://Resources/Blocks/Assets/jukebox_side.png",
+	},
+	"is_rotate": true
+}
