@@ -24,19 +24,30 @@ func _ready() -> void:
 func init_inventory() -> void:
 	super.init_inventory()
 	
+	# Ресурсы сцены общие для всех игроков, поэтому у каждого игрока своя копия,
+	# зарегистрированная в InventoryNetwork под player:<player_id>:<kind>
+	inventory_data = bind_inventory(inventory_data, \"inventory\")
+	equip_data = bind_inventory(equip_data, \"equipment\")
+	bind_cursor()
+	
 	$InventoryContainer.columns = inventory_data.grid_size.x
 
 	inventory_data.inventory_interact.connect(on_inventory_interact)
-	$InventoryContainer.set_inventory_data(inventory_data)
 	equip_data.inventory_interact.connect(on_inventory_interact)
+	
+	# Выделенному серверу интерфейс не нужен
+	if OS.has_feature(\"dedicated_server\"):
+		return
+	
+	$InventoryContainer.set_inventory_data(inventory_data)
 	$EquipContainer.set_inventory_data(equip_data)
 
 func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> void:
 	if Input.is_action_pressed(\"shift\"):
-		if inv_data.inv_name == \"PlayerInventory\":
-			inv_data.transfer_slot_data(index, equip_data)
-		elif inv_data.inv_name == \"EquipInventory\":
-			inv_data.transfer_slot_data(index, inventory_data)
+		if inv_data == inventory_data:
+			request_transfer(inv_data, index, equip_data)
+		elif inv_data == equip_data:
+			request_transfer(inv_data, index, inventory_data)
 	super.on_inventory_interact(inv_data, index, button)
 "
 

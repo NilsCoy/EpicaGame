@@ -40,15 +40,6 @@ func get_properties() -> Dictionary:
 		properties.merge(component.get_properties())
 	return properties
 
+## Поиск предмета по типу (через кэш ItemRegistry, без сканирования директории)
 func find_item(type: String) -> ItemData:
-	var files: Array = FileManager.get_files_in_directory(
-		FileManager.get_file_path("Resources/Items/Data", true)
-	)
-	
-	for file: String in files:
-		if file.split(".")[0] == type:
-			return load(FileManager.get_file_path(
-				"Resources/Items/Data/" + file,
-				true
-			))
-	return null
+	return ItemRegistry.get_item(type)

@@ -30,6 +30,9 @@ Settings="*uid://dfojuqvoeaykl"
 Global="*uid://37ngxtvnw0do"
 ChatManager="*uid://48u6r55dqft0"
 ConsoleManager="*uid://betlpu28upd4t"
+ItemRegistry="*res://Scripts/Globals/ItemRegistry.gd"
+SaveManager="*res://Scripts/Globals/SaveManager.gd"
+InventoryNetwork="*res://Scripts/Globals/InventoryNetwork.gd"
 MultiplayerManager="*uid://bvr1gyml37fhx"
 
 [debug]

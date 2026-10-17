@@ -37,6 +37,8 @@ var curr_block: String = \"\"
 var is_life: bool = true
 @export var nickname: String = \"Player\"
 @export var player_id: int = 1
+## Постоянный идентификатор игрока (назначает сервер), по нему сохраняется инвентарь
+var player_uuid: String = \"\"
 
 @onready var inventory: Control = $UI/CreativeInventory
 @onready var model: Node3D = $Character
@@ -50,6 +52,7 @@ func save_data() -> Dictionary:
 		\"type\": \"player\",
 		\"name\": nickname,
 		\"nickname\": nickname,
+		\"player_uuid\": player_uuid,
 		\"position\": [position.x, position.y, position.z],
 		\"rotation\": [model.model.rotation.x, model.model.rotation.y, model.model.rotation.z],
 		\"spawn_position\": [spawn_position.x, spawn_position.y, spawn_position.z],
@@ -63,6 +66,7 @@ func save_data() -> Dictionary:
 func load_data(data: Dictionary) -> void:
 	self.name = data.get(\"name\", \"unknown\")
 	self.nickname = data.get(\"nickname\", \"unknown\")
+	self.player_uuid = data.get(\"player_uuid\", \"\")
 	$UI/HUD/TopBar.update_nickname(self.nickname)
 	
 	self.position.x = data.get(\"position\", [0, 0, 0])[0]

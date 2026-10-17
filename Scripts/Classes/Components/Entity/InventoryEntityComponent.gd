@@ -47,6 +47,10 @@ func get_equip_properties() -> Dictionary:
 
 ## Вызывается при обновлении инвентаря, обновляет одетую экипировку
 func _on_equip_inventory_update(inventory_data: InventoryData) -> void:
+	# Экипировку рассылает только владелец игрока (его equip_data приходит снапшотом с сервера),
+	# иначе копии чужих игроков на клиентах перезаписывали бы ее устаревшими данными
+	if not is_multiplayer_authority():
+		return
 	for i: int in range(inventory_data.slot_datas.size()):
 		var item: ItemData = equip_inventory.slot_datas[i].item_data
 		if item != null:
