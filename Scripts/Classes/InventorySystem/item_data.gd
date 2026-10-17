@@ -4,7 +4,7 @@ class_name ItemData
 ## Тип предмета
 @export var type: String = ""
 ## Категория предмета
-@export_enum('head', 'chest', 'weapon', 'consumable', 'material', 'coin') var category: String = "material"
+@export_enum('head', 'chest', 'weapon', 'consumable', 'material', 'coin', 'block') var category: String = 'material'
 ## Название предмета
 @export var item_name: String = ""
 ## Описание предмета

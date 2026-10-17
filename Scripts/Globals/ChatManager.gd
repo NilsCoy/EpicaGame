@@ -22,7 +22,7 @@ func send(from: Node, message: String) -> void:
 func _message(message: String) -> void:
 	for player: CharacterBody3D in get_tree().get_nodes_in_group("Players"):
 		if player.player_id == multiplayer.get_unique_id():
-			player.user_interface.chat.add_text(message + "\n")
+			player.user_interface.chat.add_text(message)
 
 func send_broadcast(message: String) -> void:
 	rpc_id(1, "_send_broadcast_to_server", message)
@@ -125,8 +125,10 @@ func _command_setspawn(from: Node, command: Array) -> void:
 func _command_gamemode(from: Node, command: Array) -> void:
 	if command.size() == 2:
 		if int(command[1]) >= 0 and int(command[1]) <= 2:
+			from.rpc('switch_gamemode', int(command[1]))
 			from.switch_gamemode(int(command[1]))
-			from.rpc_id(from.player_id, 'switch_gamemode', int(command[1]))
+			#from.switch_gamemode(int(command[1]))
+			#from.rpc_id(from.player_id, 'switch_gamemode', int(command[1]))
 			match command[1]:
 				"0": rpc_id(from.player_id, '_message', 'Ваш режим сменен на survival')
 				"1": rpc_id(from.player_id, '_message', 'Ваш режим сменен на creative')

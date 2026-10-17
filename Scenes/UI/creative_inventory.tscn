@@ -53,7 +53,7 @@ func init_inventory() -> void:
 		elif block[\"type\"] == \"model\":
 			item.texture = get_texture_3d(block[\"asset\"])
 
-		#item.attributes[\"action\"] = \"block\"
+		item.category = 'block'
 		item.max_stack = 99
 
 		slot.item_data = item
@@ -177,6 +177,7 @@ offset_right = 64.0
 offset_bottom = 64.0
 
 [node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=991526994]
+visible = false
 custom_minimum_size = Vector2(572, 500)
 layout_mode = 1
 anchors_preset = 8
