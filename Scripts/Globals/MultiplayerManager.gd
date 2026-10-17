@@ -1,11 +1,13 @@
 extends Node
 
 const LOCALHOST: String = "127.0.0.1"
-const SERVERHOST: String = "127.0.0.1"
+const SERVERHOST: String = "195.209.220.43"
 var ip: String = LOCALHOST
 var port: int = 7777
 var max_players: int = 30
 var max_channels: int = 0
+
+var has_connect_to_server: bool = false
 
 var peer: ENetMultiplayerPeer
 var _player_scene: Resource = preload("res://Scenes/Entities/player.tscn")
@@ -38,7 +40,6 @@ func create_server() -> void:
 
 func _on_peer_connected(id: int) -> void:
 	get_tree().root.get_node("Main/UI/MainMenu").rpc_id(id, "register_player")
-
 func _on_peer_disconnected(id: int) -> void:
 	print("Player disconnected: ", id)
 	rpc('delete_player', id)
@@ -48,13 +49,17 @@ func create_client() -> void:
 	var err: Error = peer.create_client(ip, port, max_channels)
 	print("Create client error: " + str(err))
 	multiplayer.multiplayer_peer = peer
+
 func _on_connected() -> void:
 	map.rpc_id(1, "load_scene")
+	has_connect_to_server = true
 	print("Connected to server")
 func _on_failed() -> void:
+	has_connect_to_server = false
 	print("Connection failed")
 func _on_disconnected() -> void:
 	print("Disconnect!")
+	has_connect_to_server = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 

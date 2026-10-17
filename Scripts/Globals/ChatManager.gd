@@ -35,7 +35,7 @@ func _send_broadcast_to_server(message: String) -> void:
 @rpc("authority", "reliable")
 func _broadcast(message: String) -> void:
 	for player: CharacterBody3D in get_tree().get_nodes_in_group("Players"):
-		player.user_interface.chat.add_text(message + "\n")
+		player.user_interface.chat.add_text(message)
 
 func send_command(from: int, command: Array) -> void:
 	rpc_id(1, "_send_command_to_server", from, command)
@@ -71,6 +71,7 @@ func _send_command_to_server(from: int, command: Array) -> void:
 					"setspawn": _command_setspawn(player, command)
 					"spawnpoint": _command_spawnpoint(player, command)
 					"summon": _command_summon(player, command)
+					"time": _command_time(player, command)
 					_:
 						#send_message(player.player_id, 'Неправильная команда!')
 						#send_message(player.player_id, 'Список команд: /help')
@@ -87,6 +88,7 @@ func _command_help(from: Node, command: Array) -> void:
 	rpc_id(from.player_id, '_message', '/spawnpoint -> Установить точку спавна игрока')
 	rpc_id(from.player_id, '_message', '/gamemode -> Смена режима пользователя')
 	rpc_id(from.player_id, '_message', '/summon -> Призвать сущность')
+	rpc_id(from.player_id, '_message', '/time -> Изменить время')
 
 func _command_broadcast(from: Node, command: Array) -> void:
 	if command.size() >= 2:
@@ -99,7 +101,7 @@ func _command_broadcast(from: Node, command: Array) -> void:
 func _command_msg(from: Node, command: Array) -> void:
 	if command.size() >= 3:
 		var has_found: bool = false 
-		for p: CharacterBody3D in get_tree().root.get_node('Main/Map').players.get_children():
+		for p: CharacterBody3D in Global.main_scene.map.players.get_children():
 			if p.nickname == command[1]:
 				has_found = true
 				var message: String = " ".join(command.slice(2))
@@ -118,7 +120,7 @@ func _command_setspawn(from: Node, command: Array) -> void:
 		Settings.world['settings']['spawn_position'] = [from.position.x, from.position.y, from.position.z]
 		Settings.world['settings']['spawn_rotation'] = [from.model.model.rotation.x, from.model.model.rotation.y, from.model.model.rotation.z]
 		Settings.save_world_settings()
-		get_tree().root.get_node('Main/Map').update_spawn()
+		Global.main_scene.map.update_spawn()
 
 func _command_gamemode(from: Node, command: Array) -> void:
 	if command.size() == 2:
@@ -202,7 +204,7 @@ func _command_spawnpoint(from: Node, command: Array) -> void:
 func _command_say(from: Node, command: Array) -> void:
 	if command.size() >= 3:
 		var has_found: bool = false 
-		for p: CharacterBody3D in get_tree().root.get_node('Main/Map').players.get_children():
+		for p: CharacterBody3D in Global.main_scene.map.players.get_children():
 			if p.nickname == command[1]:
 				has_found = true
 				var message: String = " ".join(command.slice(1))
@@ -235,7 +237,7 @@ func _command_summon(from: Node, command: Array) -> void:
 			var entity: CharacterBody3D = entity_res.instantiate()
 			entity.position = from.position
 			entity.rotation = from.model.model.rotation
-			get_tree().root.get_node("Main/Map").entities.add_child(entity)
+			Global.main_scene.map.entities.add_child(entity)
 			rpc_id(from.player_id, '_message', 'Сущность: {e} созданно x{a} раз'.format({'e':command[1], 'a':command[2]}))
 	elif command.size() == 2:
 		var path: String = "res://Scenes/Entities/" + command[1] + ".tscn"
@@ -243,8 +245,27 @@ func _command_summon(from: Node, command: Array) -> void:
 		var entity: CharacterBody3D = entity_res.instantiate()
 		entity.position = from.position
 		entity.rotation = from.model.model.rotation
-		get_tree().root.get_node("Main/Map").entities.add_child(entity)
+		Global.main_scene.map.entities.add_child(entity)
 		rpc_id(from.player_id, '_message', 'Сущность: {e} созданно 1 раз'.format({'e':command[1]}))
 	else:
 		rpc_id(from.player_id, '_message', 'Неправильная команда!')
 		rpc_id(from.player_id, '_message', 'Используй: /summon <type> <amount>')
+
+func _command_time(from: Node, command: Array) -> void:
+	if command.size() == 3:
+		get_tree().root.get_node("Main/Sky3D").current_time = float(command[2])
+		var current_time: float = get_tree().root.get_node("Main/Sky3D").current_time
+		var game_date: String = get_tree().root.get_node("Main/Sky3D").game_date
+		var game_time: String = get_tree().root.get_node("Main/Sky3D").game_time
+		rpc_id(from.player_id, '_message', 'Установлено время: {date} {time} ({current_time})'.format({'date':game_date,'time':game_time,'current_time':str(current_time)}))
+	elif command.size() == 2:
+		var game_date: String = get_tree().root.get_node("Main/Sky3D").game_date
+		var game_time: String = get_tree().root.get_node("Main/Sky3D").game_time
+		var current_time: float = get_tree().root.get_node("Main/Sky3D").current_time
+		rpc_id(from.player_id, '_message', 'Текущее время: {date} {time} ({current_time})'.format({'date':game_date,'time':game_time,'current_time':str(current_time)}))
+	else:
+		var game_date: String = get_tree().root.get_node("Main/Sky3D").game_date
+		var game_time: String = get_tree().root.get_node("Main/Sky3D").game_time
+		var current_time: float = get_tree().root.get_node("Main/Sky3D").current_time
+		rpc_id(from.player_id, '_message', 'Текущее время: {date} {time} ({current_time})'.format({'date':game_date,'time':game_time,'current_time':str(current_time)}))
+		rpc_id(from.player_id, '_message', '(Доп.) Используй: /time <get/set> <value>')

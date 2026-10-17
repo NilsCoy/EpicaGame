@@ -29,7 +29,7 @@ var equip_inventory: InventoryData:
 	'',
 ]
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "InventoryEntityComponent"
 
 func _ready() -> void:

@@ -38,7 +38,7 @@ class_name DataEntityComponent
 ## Множитель крита
 @export var base_critical_multiplier: float = 1.5
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "DataEntityComponent"
 
 func calculate_damage(dmg: float) -> float:

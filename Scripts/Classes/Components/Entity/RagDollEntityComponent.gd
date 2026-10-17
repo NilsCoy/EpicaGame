@@ -33,5 +33,5 @@ func spawn_ragdoll() -> void:
 			child.physical_bones_start_simulation()
 			break
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "RagDollEntityComponent"

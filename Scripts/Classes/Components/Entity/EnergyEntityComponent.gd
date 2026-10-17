@@ -13,5 +13,5 @@ func set_value(new_value: float, reason: String) -> void:
 func empty_value(reason: String) -> void:
 	emit_signal("empty", reason)
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "EnergyEntityComponent"

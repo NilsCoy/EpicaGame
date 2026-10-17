@@ -75,13 +75,14 @@ func rebuild() -> void:
 
 func _on_area_3d_body_entered(body: Node3D) -> void:
 	if body.has_node(\"ComponentContainer\"):
-		var component: Node = body.components.get_component('HealthComponent')
-		var body_id: int = body.get_multiplayer_authority()
+		var component: HealthEntityComponent = body.get_node('ComponentContainer').get_component('HealthEntityComponent')
+		#var body_id: int = body.get_multiplayer_authority()
+		var body_name: String = body.name
 		if component != null:
 			if body != parent:
-				if not body_id in attacked:
-					attacked.append(body_id)
-					component.rpc_id(body_id, 'damage', parent.save_data(), 10)
+				if not body_name in attacked:
+					attacked.append(body_name)
+					component.rpc('damage', parent.save_data(), 10)
 
 func _on_start_timer_timeout() -> void:
 	#$Area3D.monitoring = true

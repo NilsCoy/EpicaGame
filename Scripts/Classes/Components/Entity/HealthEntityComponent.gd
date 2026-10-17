@@ -30,6 +30,6 @@ func die(reason: String) -> void:
 		#rpc_id(get_multiplayer_authority(), 'die', reason)
 	emit_signal("died", reason)
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "HealthEntityComponent"
 	
