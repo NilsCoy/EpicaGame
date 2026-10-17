@@ -28,12 +28,14 @@ script/source = "extends Node3D
 @onready var collision_shape: CollisionShape3D = $Area3D/CollisionShape3D
 @onready var start_timer: Timer = $Area3D/StartTimer
 @onready var end_timer: Timer = $Area3D/EndTimer
+@onready var cubes: Node3D = $Cubes
 var attacked: Array
 
 func _ready() -> void:
 	if not(OS.has_feature(\"dedicated_server\")):
 		rebuild()
 
+## Перестраивает модель предмета
 func rebuild() -> void:
 	var image: Image = texture.get_image()
 
@@ -46,6 +48,7 @@ func rebuild() -> void:
 	start_timer.wait_time = start_attack
 	end_timer.wait_time = end_attack
 
+	cubes.clear_cubes()
 	for x: int in image.get_width():
 		for y: int in image.get_height():
 			var color: Color = image.get_pixel(x, y)
@@ -71,7 +74,7 @@ func rebuild() -> void:
 				0
 			)
 
-			add_child(cube)
+			cubes.add_child(cube)
 
 func _on_area_3d_body_entered(body: Node3D) -> void:
 	if body.has_node(\"ComponentContainer\"):
@@ -100,6 +103,22 @@ func attack() -> void:
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_eft0f"]
 
+[sub_resource type="GDScript" id="GDScript_wc5v8"]
+script/source = "extends Node
+
+## Проверят есть ли модель предмета
+func has_cubes() -> bool:
+	if get_child_count() > 0:
+		return true
+	else: return false
+
+## Удаляет созданную модель предмета
+func clear_cubes() -> void:
+	if has_cubes():
+		for cube: MeshInstance3D in get_children():
+			cube.queue_free()
+"
+
 [node name="TextureModel" type="Node3D" unique_id=1094807894]
 script = SubResource("GDScript_eft0f")
 collision_size = Vector3(0.5, 0.5, 0.5)
@@ -120,6 +139,9 @@ one_shot = true
 
 [node name="EndTimer" type="Timer" parent="Area3D" unique_id=973590926]
 one_shot = true
+
+[node name="Cubes" type="Node3D" parent="." unique_id=1043870760]
+script = SubResource("GDScript_wc5v8")
 
 [connection signal="body_entered" from="Area3D" to="." method="_on_area_3d_body_entered"]
 [connection signal="timeout" from="Area3D/StartTimer" to="." method="_on_start_timer_timeout"]
