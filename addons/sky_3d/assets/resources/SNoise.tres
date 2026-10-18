@@ -3,7 +3,7 @@
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_wc5v8"]
 frequency = 0.002
 fractal_type = 3
-domain_warp_enabled = true
+fractal_octaves = 10
 
 [resource]
 noise = SubResource("FastNoiseLite_wc5v8")

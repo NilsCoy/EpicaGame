@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://6v17lb7xppvc"]
+
+[ext_resource type="Script" uid="uid://didujpt1noa7l" path="res://Scripts/Other/dropdown_content.gd" id="1_6yn0u"]
+
+[node name="DropdownContent" type="VBoxContainer" unique_id=905907621]
+use_parent_material = true
+offset_right = 44.0
+offset_bottom = 24.0
+script = ExtResource("1_6yn0u")
