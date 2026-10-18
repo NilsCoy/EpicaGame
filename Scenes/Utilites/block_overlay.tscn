@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://cmc1j85jbtktt"]
+
+[ext_resource type="Shader" uid="uid://cj2wtjajfu6jr" path="res://Scripts/Shaders/block_overlay.gdshader" id="1_wkq2a"]
+
+[sub_resource type="GDScript" id="GDScript_kvkok"]
+script/source = "extends Node
+
+@export var visible: bool = false
+@onready var overlay: MeshInstance3D = $Overlay
+
+
+func _process(delta: float) -> void:
+	overlay.visible = visible
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_khhxn"]
+render_priority = 0
+shader = ExtResource("1_wkq2a")
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/outline_width = 0.01
+shader_parameter/outline_glow = 1.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_s1fef"]
+material = SubResource("ShaderMaterial_khhxn")
+
+[node name="BlockOverlay" type="Node" unique_id=1752300680]
+script = SubResource("GDScript_kvkok")
+
+[node name="Overlay" type="MeshInstance3D" parent="." unique_id=1321848600]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
+mesh = SubResource("BoxMesh_s1fef")

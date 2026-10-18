@@ -5,7 +5,7 @@
 [sub_resource type="GDScript" id="GDScript_1i61x"]
 script/source = "extends Node3D
 
-const CHUNK_SIZE: int = 16
+var CHUNK_SIZE: int = WorldEdit.CHUNK_SIZE
 @export var starter_block: bool = false
 @export var loaded_chunk: bool = false
 
@@ -384,6 +384,7 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 	var y: int = int(floor(local_pos.y))
 	var z: int = int(floor(local_pos.z))
 
+	# блок попадает внутрь текущего чанка?
 	if x >= 0 and y >= 0 and z >= 0 and \\
 		x < CHUNK_SIZE and y < CHUNK_SIZE and z < CHUNK_SIZE:
 		
@@ -399,12 +400,15 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 			}
 		if not(multiplayer.is_server()):
 			rebuild()
+	# блок вне текущего чанка (в соседнем)
 	else:
 		var neighbor_chunk_pos: Vector3 = position + normal * CHUNK_SIZE
 		var chunk_name: String = 'chunk_' + str(int(neighbor_chunk_pos.x / CHUNK_SIZE)) + \\
 						 '_' + str(int(neighbor_chunk_pos.y / CHUNK_SIZE)) + \\
 						 '_' + str(int(neighbor_chunk_pos.z / CHUNK_SIZE))
+		# Поиск соседнего чанка
 		var chunk: Node = get_parent().get_node(chunk_name)
+		# Соседнего чанка нет?
 		if chunk == null:
 			chunk = load(\"res://Scenes/MapSystem/chunk.tscn\").instantiate()
 			chunk.position = neighbor_chunk_pos
@@ -436,6 +440,7 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 				
 			if not(multiplayer.is_server()):
 				chunk.rebuild()
+		# Соседний чанк существует
 		else:
 			var neighbor_local_pos: Vector3 = chunk.to_local(hit_position + normal * 0.5)
 			var nx: int = floor(neighbor_local_pos.x)

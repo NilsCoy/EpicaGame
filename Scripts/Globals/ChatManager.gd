@@ -72,6 +72,7 @@ func _send_command_to_server(from: int, command: Array) -> void:
 					"spawnpoint": _command_spawnpoint(player, command)
 					"summon": _command_summon(player, command)
 					"time": _command_time(player, command)
+					"setblock": _command_setblock(player, command)
 					_:
 						#send_message(player.player_id, 'Неправильная команда!')
 						#send_message(player.player_id, 'Список команд: /help')
@@ -89,6 +90,7 @@ func _command_help(from: Node, command: Array) -> void:
 	rpc_id(from.player_id, '_message', '/gamemode -> Смена режима пользователя')
 	rpc_id(from.player_id, '_message', '/summon -> Призвать сущность')
 	rpc_id(from.player_id, '_message', '/time -> Изменить время')
+	rpc_id(from.player_id, '_message', '/setblock -> поставить блок')
 
 func _command_broadcast(from: Node, command: Array) -> void:
 	if command.size() >= 2:
@@ -271,3 +273,13 @@ func _command_time(from: Node, command: Array) -> void:
 		var current_time: float = get_tree().root.get_node("Main/Sky3D").current_time
 		rpc_id(from.player_id, '_message', 'Текущее время: {date} {time} ({current_time})'.format({'date':game_date,'time':game_time,'current_time':str(current_time)}))
 		rpc_id(from.player_id, '_message', '(Доп.) Используй: /time <get/set> <value>')
+
+func _command_setblock(from: Node, command: Array) -> void:
+	if command.size() == 2:
+		from.rpc_id(from.player_id,'_place_block',100,command[1])
+		rpc_id(from.player_id, '_message', 'Блок {id} был установлен по направлению взгляда'.format({'id':command[1]}))
+	if command.size() == 5:
+		WorldEdit.set_block(Vector3i(int(command[3]),int(command[4]),int(command[5])),command[2])
+		rpc_id(from.player_id, '_message', 'Блок {id} был установлен на {x}, {y}, {z}'.format({'id':command[1],'x':command[3],'y':command[4],'z':command[5]}))
+	else:
+		rpc_id(from.player_id, '_message', 'Используй: /setblock <block_id> <x> <y> <z>')
