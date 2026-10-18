@@ -82,7 +82,7 @@ func create_player(id: int, nickname: String) -> void:
 		players.add_child(player)
 		map.rpc("add_player", [player.serialize()])
 		#player.rpc("init_sunc", player.save_data(), id)
-		player._switch_gamemode(int(Settings.world['settings']['default_gamamode']))
+		player.switch_gamemode(int(Settings.world['settings']['default_gamamode']))
 		player.model.model.rotation = player_spawn.rotation
 
 @rpc("authority", "reliable", "call_local", 1)
