@@ -165,3 +165,29 @@ layout_mode = 2
 text = "Толщина стенки"
 input_type = "int"
 value = "1"
+
+[node name="Smooth" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=2067294744]
+layout_mode = 2
+
+[node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth" unique_id=457595364 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
+layout_mode = 2
+theme_override_constants/separation = 0
+switch_button = NodePath("HeadButton")
+
+[node name="HeadButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=1169821579]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+button_group = SubResource("ButtonGroup_jjus3")
+text = "Сглаживание"
+
+[node name="Raduis" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=1464952543 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Радиус"
+input_type = "int"
+value = "5"
+
+[node name="Height" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=574294116 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Сила"
+input_type = "int"
+value = "1"

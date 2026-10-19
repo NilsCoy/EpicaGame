@@ -1,6 +1,7 @@
 extends EntityComponent
 class_name RagDollEntityComponent
 
+## base -> skeleton -> other nodes
 @export var model: Node3D
 
 func generate_ragdoll() -> Node3D:
