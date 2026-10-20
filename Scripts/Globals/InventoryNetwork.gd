@@ -192,6 +192,9 @@ func unsubscribe_inventory(inventory_id: String) -> void:
 ## Полный снапшот инвентаря от сервера
 @rpc("authority", "call_remote", "reliable")
 func sync_inventory_snapshot(inventory_id: String, snapshot: Dictionary) -> void:
+	var debug: bool = false
+	if debug:
+		print("[Inventory] Снапшот '%s': %s" % [inventory_id, snapshot.get("slots", [])])
 	var inventory_data: InventoryData = get_inventory(inventory_id)
 	if inventory_data == null:
 		_pending_snapshots[inventory_id] = snapshot
@@ -201,7 +204,9 @@ func sync_inventory_snapshot(inventory_id: String, snapshot: Dictionary) -> void
 ## Сервер отклонил действие
 @rpc("authority", "call_remote", "reliable")
 func reject_inventory_action(reason: String) -> void:
-	print("[Inventory] Сервер отклонил действие: ", reason)
+	var debug: bool = false
+	if debug:
+		print("[Inventory] Сервер отклонил действие: ", reason)
 	action_rejected.emit(reason)
 
 
@@ -239,6 +244,7 @@ func on_peer_disconnected(peer: int) -> void:
 ## Возврат предмета из курсора в инвентарь или хотбар, если там есть место.
 ## Если места нет, предмет остается в курсоре и сохраняется вместе с ним
 func _return_cursor(player: Node) -> void:
+	var debug: bool = false
 	var player_id: String = get_player_uuid(player)
 	var cursor_data: InventoryData = get_inventory(make_player_inventory_id(player_id, "cursor"))
 	if cursor_data == null or cursor_data.slot_datas[0].item_data == null:
@@ -253,7 +259,7 @@ func _return_cursor(player: Node) -> void:
 		if cursor_data.slot_datas[0].item_data == null:
 			break
 
-	if cursor_data.slot_datas[0].item_data != null:
+	if debug and cursor_data.slot_datas[0].item_data != null:
 		print("[Inventory] Нет места для предмета из курсора игрока %s, он сохранен в курсоре" % player_id)
 	SaveManager.mark_dirty(player_id)
 
@@ -267,6 +273,9 @@ func _transfer_cursor(cursor_data: InventoryData, target: InventoryData) -> Stri
 # =====================================================
 
 func _process_request(peer: int, payload: Dictionary) -> void:
+	var debug: bool = false
+	if debug:
+		print("[Inventory] Запрос от peer %d: %s" % [peer, payload])
 	if not _check_rate(peer):
 		return
 
@@ -597,9 +606,11 @@ func _check_rate(peer: int) -> bool:
 # СЕРВЕР: ОТПРАВКА
 # =====================================================
 
-## Отклонение действия: лог, сообщение клиенту и актуальные снапшоты для синхронизации
+## Отклонение действия: лог (debug), сообщение клиенту и актуальные снапшоты для синхронизации
 func _reject(peer: int, reason: String, inventory_ids: Array[String]) -> void:
-	print("[Inventory] Отклонено для peer %d: %s" % [peer, reason])
+	var debug: bool = false
+	if debug:
+		print("[Inventory] Отклонено для peer %d: %s" % [peer, reason])
 
 	if peer == multiplayer.get_unique_id():
 		action_rejected.emit(reason)

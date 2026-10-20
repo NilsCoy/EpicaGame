@@ -82,6 +82,12 @@ func is_networked(inv_data: InventoryData) -> bool:
 		and InventoryNetwork.get_inventory(inv_data.inventory_id) == inv_data
 
 func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> void:
+	var debug: bool = false
+	if debug:
+		print("[Inventory] Клик: '%s' слот %d, кнопка %d, в руке: %s" % [
+			inv_data.inventory_id if inv_data.inventory_id != "" else inv_data.inv_name, index, button,
+			grabbed_slot_data.item_data.type if grabbed_slot_data.item_data != null else "-"
+		])
 	if not is_networked(inv_data):
 		_local_inventory_interact(inv_data, index, button)
 		return

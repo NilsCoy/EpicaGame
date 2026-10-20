@@ -40,6 +40,48 @@ func get_properties() -> Dictionary:
 		properties.merge(component.get_properties())
 	return properties
 
+## Данные предмета в виде словаря (для RPC и сохранения): тип и данные всех компонентов.
+## Сам ресурс ItemData (и его компоненты) по RPC не передается
+func save_data() -> Dictionary:
+	var components_data: Array = []
+	for component: ItemComponent in components:
+		if component != null:
+			components_data.append(component.save_data())
+	return {
+		'type': type,
+		'category': category,
+		'item_name': item_name,
+		'components': components_data,
+	}
+
+## Загрузка предмета из словаря save_data().
+## Остальные поля (текстура, размер и т.д.) берутся из ресурса предмета в ItemRegistry
+func load_data(data: Dictionary) -> void:
+	type = str(data.get('type', type))
+	var registry_item: ItemData = ItemRegistry.get_item(type) if type != '' else null
+	if registry_item != null:
+		max_stack = registry_item.max_stack
+		size = registry_item.size
+		texture = registry_item.texture
+		texture_rotate = registry_item.texture_rotate
+		texture_scale = registry_item.texture_scale
+		discription = registry_item.discription
+	category = str(data.get('category', category))
+	item_name = str(data.get('item_name', item_name))
+
+	var components_data: Variant = data.get('components', [])
+	if components_data is Array:
+		components = []
+		for component_data: Variant in components_data:
+			if component_data is Dictionary:
+				components.append(ItemComponent.create_from_data(component_data))
+
+## Создает предмет из словаря save_data()
+static func create_from_data(data: Dictionary) -> ItemData:
+	var item: ItemData = ItemData.new()
+	item.load_data(data)
+	return item
+
 ## Поиск предмета по типу (через кэш ItemRegistry, без сканирования директории)
 func find_item(type: String) -> ItemData:
 	return ItemRegistry.get_item(type)

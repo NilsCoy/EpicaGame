@@ -984,9 +984,6 @@ properties/11/replication_mode = 1
 properties/12/path = NodePath("ComponentContainer/EnergyEntityComponent:value")
 properties/12/spawn = true
 properties/12/replication_mode = 1
-properties/13/path = NodePath("ComponentContainer/InventoryEntityComponent:equiped")
-properties/13/spawn = true
-properties/13/replication_mode = 1
 
 [sub_resource type="GDScript" id="GDScript_66hud"]
 script/source = "extends HealthEntityComponent
@@ -1407,9 +1404,9 @@ script = ExtResource("10_85s6f")
 model = NodePath("../../Character/Model/Import/blockbench_export/base")
 metadata/_custom_type_script = "uid://c10sqibitu4de"
 
-[node name="DataEntityComponent" type="Node" parent="ComponentContainer" unique_id=1898363696 node_paths=PackedStringArray("enity", "health_component", "energy_component", "inventory_component")]
+[node name="DataEntityComponent" type="Node" parent="ComponentContainer" unique_id=1898363696 node_paths=PackedStringArray("entity", "health_component", "energy_component", "inventory_component")]
 script = ExtResource("8_2hnfo")
-enity = NodePath("../..")
+entity = NodePath("../..")
 health_component = NodePath("../HealthEntityComponent")
 energy_component = NodePath("../EnergyEntityComponent")
 inventory_component = NodePath("../InventoryEntityComponent")

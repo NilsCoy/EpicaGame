@@ -29,14 +29,14 @@ script/source = "extends Node3D
 @onready var start_timer: Timer = $Area3D/StartTimer
 @onready var end_timer: Timer = $Area3D/EndTimer
 var attacked: Array
+## Кубики текущей модели (удаляются при rebuild, чтобы модели не накладывались)
+var _cubes: Array[MeshInstance3D] = []
 
 func _ready() -> void:
 	if not(OS.has_feature(\"dedicated_server\")):
 		rebuild()
 
 func rebuild() -> void:
-	var image: Image = texture.get_image()
-
 	var shape: BoxShape3D = BoxShape3D.new()
 	shape.size = collision_size
 	collision_shape.shape = shape
@@ -45,6 +45,19 @@ func rebuild() -> void:
 	
 	start_timer.wait_time = start_attack
 	end_timer.wait_time = end_attack
+
+	for cube: MeshInstance3D in _cubes:
+		if is_instance_valid(cube):
+			remove_child(cube)
+			cube.queue_free()
+	_cubes.clear()
+
+	# Выделенному серверу нужна только коллизия, текстур на нем нет
+	if OS.has_feature(\"dedicated_server\") or texture == null:
+		return
+	var image: Image = texture.get_image()
+	if image == null:
+		return
 
 	for x: int in image.get_width():
 		for y: int in image.get_height():
@@ -72,6 +85,7 @@ func rebuild() -> void:
 			)
 
 			add_child(cube)
+			_cubes.append(cube)
 
 func _on_area_3d_body_entered(body: Node3D) -> void:
 	if body.has_node(\"ComponentContainer\"):
