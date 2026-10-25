@@ -36,3 +36,17 @@ func get_model_property() -> Dictionary:
 	return {
 		'model_path': model_path,
 	}
+
+func save_data() -> Dictionary:
+	var data: Dictionary = super.save_data()
+	data.merge(get_use_property())
+	data.merge(get_model_property())
+	return data
+
+func load_data(data: Dictionary) -> void:
+	super.load_data(data)
+	defense = float(data.get('defense', defense))
+	heat_defense = float(data.get('heat_defense', heat_defense))
+	cold_defense = float(data.get('cold_defense', cold_defense))
+	weight = int(data.get('weight', weight))
+	model_path = str(data.get('model_path', model_path))

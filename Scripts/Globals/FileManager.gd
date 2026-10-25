@@ -36,15 +36,37 @@ func read_json(path: String) -> Dictionary:
 		var json_string: String = file.get_as_text()
 		file.close()
 
-		return JSON.parse_string(json_string)
+		# Поврежденный или неверный JSON не должен вызывать краш
+		var json: JSON = JSON.new()
+		var error: Error = json.parse(json_string)
+		if error != OK:
+			push_error("Ошибка чтения JSON %s (строка %d): %s" % [path, json.get_error_line(), json.get_error_message()])
+			return {}
+		if not(json.data is Dictionary):
+			push_error("Ошибка чтения JSON %s: ожидался словарь" % path)
+			return {}
+		return json.data
 	else: return {}
 
-func save_json(path: String, data: Dictionary) -> void:
-	var json_string: String = JSON.stringify(data)
-	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-	if file:
-		file.store_string(json_string)
-		file.close()
+## Сохраняет словарь в JSON. Запись идет во временный файл, который затем заменяет основной,
+## чтобы при сбое во время записи не получить обрезанный файл
+func save_json(path: String, data: Dictionary) -> bool:
+	var json_string: String = JSON.stringify(data, "\t")
+	var temp_path: String = path + ".tmp"
+	var file: FileAccess = FileAccess.open(temp_path, FileAccess.WRITE)
+	if file == null:
+		push_error("Ошибка записи файла %s: %s" % [temp_path, error_string(FileAccess.get_open_error())])
+		return false
+	file.store_string(json_string)
+	file.close()
+
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+	var rename_error: Error = DirAccess.rename_absolute(temp_path, path)
+	if rename_error != OK:
+		push_error("Ошибка сохранения файла %s: %s" % [path, error_string(rename_error)])
+		return false
+	return true
 
 func save_file(path: String, node: Node) -> void:
 	var json_string: String = JSON.stringify(node.save_data())

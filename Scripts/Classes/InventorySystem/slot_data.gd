@@ -56,6 +56,42 @@ func create_single_slot_data() -> SlotData:
 ## Если предмет не стакабельный (max_stack == 1), сбрасывает количество на 1 и выводит ошибку
 func set_quantity(value: int) -> void:
 	quantity = value
-	if quantity > 1 and item_data.max_stack == 1:
+	if item_data != null and quantity > 1 and item_data.max_stack == 1:
 		quantity = 1
 		push_error("%s is not stackable, max_stack == 1" % item_data.name)
+
+## Сериализация слота в словарь.
+## Передается только строковый идентификатор предмета (item_data.type), без ресурса
+func to_dict() -> Dictionary:
+	return {
+		"item": item_data.type if item_data != null else "",
+		"quantity": quantity if item_data != null else 0,
+		"item_category": item_category
+	}
+
+## Восстановление слота из словаря.
+## Неизвестный предмет не вызывает краш: слот остается пустым, выводится предупреждение
+static func from_dict(data: Dictionary) -> SlotData:
+	var slot_data: SlotData = SlotData.new()
+	slot_data.item_category = str(data.get("item_category", "all"))
+
+	var item_type: String = str(data.get("item", ""))
+	if item_type == "":
+		return slot_data
+
+	var item: ItemData = ItemRegistry.get_item(item_type)
+	if item == null:
+		push_warning("SlotData.from_dict: неизвестный предмет '%s', слот очищен" % item_type)
+		return slot_data
+
+	var item_quantity: int = int(data.get("quantity", 0))
+	if item_quantity <= 0:
+		push_warning("SlotData.from_dict: неверное количество %d для '%s', слот очищен" % [item_quantity, item_type])
+		return slot_data
+	if item_quantity > item.max_stack:
+		push_warning("SlotData.from_dict: количество %d для '%s' больше max_stack %d, обрезано" % [item_quantity, item_type, item.max_stack])
+		item_quantity = item.max_stack
+
+	slot_data.item_data = item
+	slot_data.quantity = item_quantity
+	return slot_data

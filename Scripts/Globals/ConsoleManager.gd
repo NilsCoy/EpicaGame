@@ -47,6 +47,8 @@ func _command_stop() -> void:
 	print('Server is stopping')
 	get_tree().root.get_node("Main/Map").save()
 	print('Map saved')
+	SaveManager.save_all()
+	print('Players saved')
 	
 	# Даём потоку команду завершиться
 	# (нужно добавить флаг или использовать Mutex)

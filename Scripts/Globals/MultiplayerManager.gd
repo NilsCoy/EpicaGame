@@ -42,6 +42,12 @@ func _on_peer_connected(id: int) -> void:
 	get_tree().root.get_node("Main/UI/MainMenu").rpc_id(id, "register_player")
 func _on_peer_disconnected(id: int) -> void:
 	print("Player disconnected: ", id)
+	# Предмет из руки возвращается в инвентарь, игрок гарантированно сохраняется
+	var player: Node = InventoryNetwork.get_player_by_peer(id)
+	InventoryNetwork.on_peer_disconnected(id)
+	if player != null:
+		SaveManager.save_player(player)
+		SaveManager.forget_player(InventoryNetwork.get_player_uuid(player))
 	rpc('delete_player', id)
 
 func create_client() -> void:
@@ -66,6 +72,10 @@ func _on_disconnected() -> void:
 @rpc("any_peer", "call_local", "reliable", 1)
 func create_player(id: int, nickname: String) -> void:
 	if multiplayer.is_server():
+		var sender_id: int = multiplayer.get_remote_sender_id()
+		if sender_id != id and sender_id != multiplayer.get_unique_id():
+			print("Игрок ", sender_id, " пытался создать персонажа за ", id)
+			return
 		for user: Node in players.get_children():
 			if user.name == nickname:
 				kick_player(id, "nickname is occupied")
@@ -73,6 +83,7 @@ func create_player(id: int, nickname: String) -> void:
 		var player: CharacterBody3D = _player_scene.instantiate()
 		print("Player connected: ", id, " / ", nickname)
 		player.player_id = id
+		player.player_uuid = SaveManager.get_player_id(nickname)
 		player.name = nickname
 		player.nickname = nickname
 		player.position = player_spawn.position
@@ -80,6 +91,7 @@ func create_player(id: int, nickname: String) -> void:
 		player.spawn_rotation = player_spawn.rotation
 		player.set_multiplayer_authority(id)
 		players.add_child(player)
+		SaveManager.load_player(player)
 		map.rpc("add_player", [player.serialize()])
 		#player.rpc("init_sunc", player.save_data(), id)
 		player.switch_gamemode(int(Settings.world['settings']['default_gamamode']))

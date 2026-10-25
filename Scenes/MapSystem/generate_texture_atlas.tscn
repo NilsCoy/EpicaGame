@@ -84,7 +84,7 @@ func generate_texture_atlas() -> void:
 
 	var texture_count: int = unique_paths.size()
 	var first_tex: Texture2D = load(unique_paths[0])
-	var tile_px_size: int = first_tex.get_width()
+	var tile_px_size: int = first_tex.get_width() if first_tex != null else 16
 
 	ATLAS_SIZE = int(ceil(sqrt(texture_count)))
 	TILE_SIZE = 1.0 / ATLAS_SIZE
@@ -95,23 +95,27 @@ func generate_texture_atlas() -> void:
 
 	for i: int in texture_count:
 		var tex: Texture2D = load(unique_paths[i])
-		var img: Image = tex.get_image()
+		var img: Image = tex.get_image() if tex != null else null
+
+		var x: int = i % ATLAS_SIZE
+		var y: int = i / ATLAS_SIZE
+		texture_uv_lookup[unique_paths[i]] = Vector2i(x, y)
+
+		# На выделенном сервере картинок текстур нет: UV нужны для меша и коллизии,
+		# а сам атлас не рисуется
+		if img == null:
+			continue
 
 		if img.is_compressed():
 			img.decompress()
 		if img.get_format() != Image.FORMAT_RGBA8:
 			img.convert(Image.FORMAT_RGBA8)
 
-		var x: int = i % ATLAS_SIZE
-		var y: int = i / ATLAS_SIZE
-
 		atlas_image.blit_rect(
 			img,
 			Rect2i(0, 0, tile_px_size, tile_px_size),
 			Vector2i(x * tile_px_size, y * tile_px_size)
 		)
-
-		texture_uv_lookup[unique_paths[i]] = Vector2i(x, y)
 
 	# Теперь собираем UV для блоков
 	for block_id: String in blocks:

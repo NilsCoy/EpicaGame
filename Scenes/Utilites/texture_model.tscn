@@ -37,8 +37,6 @@ func _ready() -> void:
 
 ## Перестраивает модель предмета
 func rebuild() -> void:
-	var image: Image = texture.get_image()
-
 	var shape: BoxShape3D = BoxShape3D.new()
 	shape.size = collision_size
 	collision_shape.shape = shape
@@ -49,6 +47,14 @@ func rebuild() -> void:
 	end_timer.wait_time = end_attack
 
 	cubes.clear_cubes()
+
+	# Выделенному серверу нужна только коллизия, текстур на нем нет
+	if OS.has_feature(\"dedicated_server\") or texture == null:
+		return
+	var image: Image = texture.get_image()
+	if image == null:
+		return
+
 	for x: int in image.get_width():
 		for y: int in image.get_height():
 			var color: Color = image.get_pixel(x, y)
