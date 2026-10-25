@@ -3,7 +3,7 @@ class_name DamagedEntityComponent
 
 @export var data_entity_component: DataEntityComponent
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "DamagedEntityComponent"
 
 func damaged(dmg: float, to_target: Dictionary, from_target: Dictionary) -> void:

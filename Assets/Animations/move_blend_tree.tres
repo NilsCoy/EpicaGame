@@ -193,7 +193,7 @@ blend_point_3/pos = Vector2(1, 0)
 blend_point_3/name = &"3"
 
 [resource]
-graph_offset = Vector2(-186.09879, 424.75232)
+graph_offset = Vector2(338.49927, 507.5459)
 nodes/output/position = Vector2(1240, 540)
 nodes/move_state/node = SubResource("AnimationNodeTransition_wpjfl")
 nodes/move_state/position = Vector2(1020, 540)

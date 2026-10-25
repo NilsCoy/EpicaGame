@@ -1,16 +1,19 @@
 [gd_scene format=3 uid="uid://v7tblekak3iq"]
 
+[ext_resource type="PackedScene" uid="uid://brgb1si12b804" path="res://Assets/Models/Entities/traning_dummy/traning_dummy.gltf" id="1_ymciu"]
 [ext_resource type="Script" uid="uid://cq8ts751yfvxb" path="res://Scripts/Classes/Components/Entity/EntityComponentContainer.gd" id="2_i7d65"]
-[ext_resource type="Script" uid="uid://ba3p1tiqgc6vs" path="res://Scripts/Classes/Components/Entity/HealthEntityComponent.gd" id="2_ymciu"]
-[ext_resource type="PackedScene" uid="uid://bo8h0lspkd545" path="res://Assets/Models/Entities/traning_dummy.gltf" id="3_uhc0p"]
 
 [sub_resource type="GDScript" id="GDScript_uhc0p"]
 script/source = "extends CharacterBody3D
 
 @onready var animation: AnimationTree = $AnimationTree
 @onready var components: Node = $ComponentContainer
+@onready var health_entity_component: HealthEntityComponent = $ComponentContainer/HealthEntityComponent
 @export var is_life: bool = true
 @export var id: String
+@onready var health: Label = $Sprite3D/SubViewport/Health
+@onready var damage: Label = $Sprite3D/SubViewport/Damage
+@onready var text_timer: Timer = $Sprite3D/TextTimer
 
 func save_data() -> Dictionary:
 	return {
@@ -40,8 +43,8 @@ func _ready() -> void:
 	if get_multiplayer_authority() == multiplayer.get_unique_id():
 		id = Global.generate_uuid_v4()
 		name = id
-	$Sprite3D/SubViewport/Damage.text = ''
-	_health_update()
+	damage.text = ''
+	health_update()
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
@@ -51,37 +54,37 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_health_component_damaged(dmg: float, to_target: Dictionary, from_target: Dictionary) -> void:
-	$Sprite3D/SubViewport/Damage.text = str(dmg)
-	_health_update()
-	$Sprite3D/TextTimer.start()
-	
-	if from_target.get(\"type\") == \"player\":
-		for player: CharacterBody3D in get_tree().root.get_node('Main/Map').players.get_children():
-			if player.name == from_target.get(\"name\"):
-				animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
-				var direction3: Vector3 = (player.global_transform.origin - global_transform.origin)
-				var direction: Vector2 = Vector2(direction3.x, direction3.z)
-				animation[\"parameters/damage_direction/blend_position\"] = direction
-	elif from_target.get(\"type\") == \"entity\":
-		for entity: CharacterBody3D in get_tree().root.get_node('Main/Map').entites.get_children():
-			if entity.id == from_target.get(\"id\"):
-				animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
-				var direction3: Vector3 = (entity.global_transform.origin - global_transform.origin)
-				var direction: Vector2 = Vector2(direction3.x, direction3.z)
-				animation[\"parameters/damage_direction/blend_position\"] = direction
+	pass
+	#$Sprite3D/SubViewport/Damage.text = str(dmg)
+	#health_update()
+	#$Sprite3D/TextTimer.start()
+	#
+	#if from_target.get(\"type\") == \"player\":
+		#for player: CharacterBody3D in get_tree().root.get_node('Main/Map').players.get_children():
+			#if player.name == from_target.get(\"name\"):
+				#animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+				#var direction3: Vector3 = (player.global_transform.origin - global_transform.origin)
+				#var direction: Vector2 = Vector2(direction3.x, direction3.z)
+				#animation[\"parameters/damage_direction/blend_position\"] = direction
+	#elif from_target.get(\"type\") == \"entity\":
+		#for entity: CharacterBody3D in get_tree().root.get_node('Main/Map').entites.get_children():
+			#if entity.id == from_target.get(\"id\"):
+				#animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+				#var direction3: Vector3 = (entity.global_transform.origin - global_transform.origin)
+				#var direction: Vector2 = Vector2(direction3.x, direction3.z)
+				#animation[\"parameters/damage_direction/blend_position\"] = direction
 
 func _on_health_component_died(reason: String) -> void:
-	is_life = false
-	_health_update()
+	pass
 
-func _health_update() -> void:
+func health_update() -> void:
 	if is_life:
-		$Sprite3D/SubViewport/Health.text = str($ComponentContainer/HealthEntityComponent.value) + ' / ' + str($ComponentContainer/HealthEntityComponent.max_value)
+		health.text = str(health_entity_component.value) + ' / ' + str(health_entity_component.max_value)
 	else:
-		$Sprite3D/SubViewport/Health.text = 'Died' + ' / ' + str($ComponentContainer/HealthEntityComponent.max_value)
+		health.text = 'Died' + ' / ' + str(health_entity_component.max_value)
 
 func _on_text_timer_timeout() -> void:
-	$Sprite3D/SubViewport/Damage.text = ''
+	damage.text = ''
 "
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_gaqyi"]
@@ -120,7 +123,7 @@ blend_point_3/name = &"3"
 animation = &"idle"
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_b6lmq"]
-graph_offset = Vector2(-693.5673, 64.86145)
+graph_offset = Vector2(-930.57886, 0)
 nodes/damage_direction/node = SubResource("AnimationNodeBlendSpace2D_gaqyi")
 nodes/damage_direction/position = Vector2(-260, 300)
 nodes/damaged/node = SubResource("AnimationNodeOneShot_cs86c")
@@ -165,6 +168,36 @@ properties/5/path = NodePath("ComponentContainer/HealthEntityComponent:value")
 properties/5/spawn = true
 properties/5/replication_mode = 1
 
+[sub_resource type="GDScript" id="GDScript_wc5v8"]
+script/source = "extends HealthEntityComponent
+
+@onready var parent: CharacterBody3D = get_parent().get_parent()
+
+func _on_damaged(dmg: float, to_target: Dictionary, from_target: Dictionary) -> void:
+	parent.damage.text = str(dmg)
+	parent.health_update()
+	parent.text_timer.start()
+	
+	if from_target.get(\"type\") == \"player\":
+		for player: CharacterBody3D in get_tree().root.get_node('Main/Map').players.get_children():
+			if player.name == from_target.get(\"name\"):
+				parent.animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+				var direction3: Vector3 = (player.global_transform.origin - parent.global_transform.origin)
+				var direction: Vector2 = Vector2(direction3.x, direction3.z)
+				parent.animation[\"parameters/damage_direction/blend_position\"] = direction
+	elif from_target.get(\"type\") == \"entity\":
+		for entity: CharacterBody3D in get_tree().root.get_node('Main/Map').entites.get_children():
+			if entity.id == from_target.get(\"id\"):
+				parent.animation[\"parameters/damaged/request\"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+				var direction3: Vector3 = (entity.global_transform.origin - parent.global_transform.origin)
+				var direction: Vector2 = Vector2(direction3.x, direction3.z)
+				parent.animation[\"parameters/damage_direction/blend_position\"] = direction
+
+func _on_died(reason: String) -> void:
+	parent.is_life = false
+	parent.health_update()
+"
+
 [node name="TraningDummy" type="CharacterBody3D" unique_id=601348322]
 collision_layer = 8
 script = SubResource("GDScript_uhc0p")
@@ -184,7 +217,7 @@ parameters/damaged/request = 0
 
 [node name="Model" type="Node3D" parent="." unique_id=1992072933]
 
-[node name="blockbench_export" parent="Model" unique_id=1393724873 instance=ExtResource("3_uhc0p")]
+[node name="blockbench_export" parent="Model" unique_id=1472765486 instance=ExtResource("1_ymciu")]
 
 [node name="Sprite3D" type="Sprite3D" parent="." unique_id=1877656889]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0022495, 0)
@@ -197,8 +230,9 @@ size = Vector2i(111, 51)
 script = SubResource("GDScript_gaqyi")
 
 [node name="Health" type="Label" parent="Sprite3D/SubViewport" unique_id=700441942]
+visible = false
 offset_right = 111.0
-offset_bottom = 23.0
+offset_bottom = 28.0
 theme_override_font_sizes/font_size = 32
 text = "100/100"
 horizontal_alignment = 1
@@ -224,11 +258,11 @@ script = ExtResource("2_i7d65")
 metadata/_custom_type_script = "uid://cq8ts751yfvxb"
 
 [node name="HealthEntityComponent" type="Node" parent="ComponentContainer" unique_id=1599286235]
-script = ExtResource("2_ymciu")
+script = SubResource("GDScript_wc5v8")
 metadata/_custom_type_script = "uid://ba3p1tiqgc6vs"
 
 [connection signal="timeout" from="Sprite3D/TextTimer" to="." method="_on_text_timer_timeout"]
-[connection signal="damaged" from="ComponentContainer/HealthEntityComponent" to="." method="_on_health_component_damaged"]
-[connection signal="died" from="ComponentContainer/HealthEntityComponent" to="." method="_on_health_component_died"]
+[connection signal="damaged" from="ComponentContainer/HealthEntityComponent" to="ComponentContainer/HealthEntityComponent" method="_on_damaged"]
+[connection signal="died" from="ComponentContainer/HealthEntityComponent" to="ComponentContainer/HealthEntityComponent" method="_on_died"]
 
 [editable path="Model/blockbench_export"]

@@ -11,6 +11,10 @@ script/source = "extends Node3D
 
 var intro_scene: bool = true
 
+@onready var sky: Sky3D = $Sky3D
+@onready var map: Node = $Map
+@onready var ui: CanvasLayer = $UI
+
 func _ready() -> void:
 	if not(intro_scene):
 		$UI/Intro.queue_free()

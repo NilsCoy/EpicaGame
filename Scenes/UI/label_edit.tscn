@@ -1,0 +1,92 @@
+[gd_scene format=3 uid="uid://cvdxfsaxlj71g"]
+
+[sub_resource type="GDScript" id="GDScript_8jfm4"]
+script/source = "extends HBoxContainer
+
+signal value_changed(new_value: Variant)
+
+## Title ввода
+@export var text: String = 'Text'
+## Тип ввода
+@export_enum('text', 'int', 'float', 'bool') var input_type: String = 'text'
+## Вводимое значение
+@export var value: String = 'test'
+## Позиция курсора
+var caret_column: int = 0
+
+@onready var label: Label = $Label
+@onready var line_edit: LineEdit = $LineEdit
+@onready var check_box: CheckBox = $CheckBox
+
+func _ready() -> void:
+	line_edit.placeholder_text = input_type
+	label.text = text+':'
+	# Если тип ввода bool, то мы используем check_box
+	if input_type == 'bool':
+		var lower: String = value.to_lower()
+		if lower == \"true\" or lower == \"1\":
+			check_box.button_pressed = true
+		elif lower == \"false\" or lower == \"0\":
+			check_box.button_pressed = false
+		check_box.show()
+		line_edit.hide()
+		check_box.pressed.connect(_on_check_box_pressed)
+	# Если тип ввода не bool, то мы используем line_edit
+	else:
+		line_edit.text = value
+		check_box.hide()
+		line_edit.show()
+		line_edit.text_changed.connect(_on_line_edit_text_changed)
+
+## Обрабатываем изменение check_box
+func _on_check_box_pressed() -> void:
+	value_changed.emit(bool(check_box.button_pressed))
+
+## Обрабатываем изменение line_edit
+func _on_line_edit_text_changed(new_text: String) -> void:
+	caret_column = line_edit.caret_column
+	match input_type:
+		'text':
+			value = new_text
+			value_changed.emit(new_text)
+		'int':
+			if new_text.is_valid_int():
+				value = str(int(new_text))
+				line_edit.text = value
+				value_changed.emit(int(new_text))
+			else:
+				if new_text == '':
+					value_changed.emit(int(0))
+				else:
+					line_edit.text = value
+		'float':
+			if new_text.is_valid_float():
+				value = str(float(new_text))
+				line_edit.text = value
+				value_changed.emit(float(new_text))
+			else:
+				if new_text == '':
+					value_changed.emit(float(0))
+				else:
+					line_edit.text = value
+	line_edit.caret_column = caret_column
+"
+
+[node name="LabelEdit" type="HBoxContainer" unique_id=421085760]
+offset_right = 40.0
+offset_bottom = 40.0
+script = SubResource("GDScript_8jfm4")
+
+[node name="Label" type="Label" parent="." unique_id=815257635]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Text:"
+
+[node name="LineEdit" type="LineEdit" parent="." unique_id=1116566488]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+
+[node name="CheckBox" type="CheckBox" parent="." unique_id=1125321344]
+visible = false
+layout_mode = 2

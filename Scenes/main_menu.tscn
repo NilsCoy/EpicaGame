@@ -24,10 +24,15 @@ func _on_connected() -> void:
 func _on_failed() -> void:
 	get_parent().loading.visible = false
 
+func _input(event: InputEvent) -> void:
+	if not(MultiplayerManager.has_connect_to_server):
+		if event.is_action_pressed('ui_select'):
+			_on_connect_button_pressed()
+
 func _on_connect_button_pressed() -> void:
 	if username.text != '':
 		if username.text.strip_edges() != '':
-			if MultiplayerManager.get_connect() != 'connected' or MultiplayerManager.get_connect() != 'connection':
+			if not(MultiplayerManager.has_connect_to_server):
 				get_parent().loading.visible = true
 				MultiplayerManager.create_client()
 

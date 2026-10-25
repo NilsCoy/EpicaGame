@@ -1,5 +1,7 @@
 extends Node
 
+@onready var main_scene: Node3D = get_tree().root.get_node("Main")
+
 func has_flag(flag: String) -> bool:
 	return flag in OS.get_cmdline_args()
 

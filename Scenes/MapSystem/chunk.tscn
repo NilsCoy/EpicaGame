@@ -5,7 +5,7 @@
 [sub_resource type="GDScript" id="GDScript_1i61x"]
 script/source = "extends Node3D
 
-const CHUNK_SIZE: int = 16
+var CHUNK_SIZE: int = WorldEdit.CHUNK_SIZE
 @export var starter_block: bool = false
 @export var loaded_chunk: bool = false
 
@@ -76,9 +76,11 @@ func _ready() -> void:
 			\"id\": \"stone\",
 			\"rotation\": Vector3.UP
 		} # первый блок
-		rebuild()
+		if not(multiplayer.is_server()):
+			rebuild()
 	if loaded_chunk:
-		rebuild()
+		if not(multiplayer.is_server()):
+			rebuild()
 
 # Генерация массива блоков
 func generate_blocks(blocks_ids: Array = [[[]]], blocks_rotations: Array = [[[]]]) -> void:
@@ -118,7 +120,9 @@ func rebuild() -> void:
 	for child: Node in get_children():
 		if 'ModelBlock' in child.name:
 			child.free()
-	
+
+	if rebuild_thread.is_started():
+		rebuild_thread.wait_to_finish()
 	rebuild_thread.start(_rebuild)
 
 func _rebuild() -> void:
@@ -371,7 +375,8 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 	st.add_vertex(v[3])
 
 
-# Установка блока
+## Установка блока
+@rpc(\"any_peer\", \"reliable\")
 func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"grass_block\", player_rotation: Vector3 = Vector3.ZERO) -> void:
 	var local_pos: Vector3 = to_local(hit_position + normal * 0.5)
 
@@ -379,6 +384,7 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 	var y: int = int(floor(local_pos.y))
 	var z: int = int(floor(local_pos.z))
 
+	# блок попадает внутрь текущего чанка?
 	if x >= 0 and y >= 0 and z >= 0 and \\
 		x < CHUNK_SIZE and y < CHUNK_SIZE and z < CHUNK_SIZE:
 		
@@ -392,13 +398,17 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 				\"id\": block_id,
 				\"rotation\": normal
 			}
-		rebuild()
+		if not(multiplayer.is_server()):
+			rebuild()
+	# блок вне текущего чанка (в соседнем)
 	else:
 		var neighbor_chunk_pos: Vector3 = position + normal * CHUNK_SIZE
 		var chunk_name: String = 'chunk_' + str(int(neighbor_chunk_pos.x / CHUNK_SIZE)) + \\
 						 '_' + str(int(neighbor_chunk_pos.y / CHUNK_SIZE)) + \\
 						 '_' + str(int(neighbor_chunk_pos.z / CHUNK_SIZE))
+		# Поиск соседнего чанка
 		var chunk: Node = get_parent().get_node(chunk_name)
+		# Соседнего чанка нет?
 		if chunk == null:
 			chunk = load(\"res://Scenes/MapSystem/chunk.tscn\").instantiate()
 			chunk.position = neighbor_chunk_pos
@@ -427,7 +437,10 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 					\"id\": block_id,
 					\"rotation\": normal
 				}
-			chunk.rebuild()
+				
+			if not(multiplayer.is_server()):
+				chunk.rebuild()
+		# Соседний чанк существует
 		else:
 			var neighbor_local_pos: Vector3 = chunk.to_local(hit_position + normal * 0.5)
 			var nx: int = floor(neighbor_local_pos.x)
@@ -446,9 +459,11 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 					\"id\": block_id,
 					\"rotation\": normal
 				}
-			chunk.rebuild()
+			if not(multiplayer.is_server()):
+				chunk.rebuild()
 
-# Ломание блока
+## Ломание блока
+@rpc(\"any_peer\", \"reliable\")
 func break_block(hit_position: Vector3, normal: Vector3) -> void:
 	var local_pos: Vector3 = to_local(hit_position - normal * 0.01)
 
@@ -462,7 +477,8 @@ func break_block(hit_position: Vector3, normal: Vector3) -> void:
 			\"id\": \"air\",
 			\"rotation\": Vector3.ZERO
 		}
-		rebuild()
+		if not(multiplayer.is_server()):
+			rebuild()
 
 
 
@@ -478,136 +494,135 @@ func break_block(hit_position: Vector3, normal: Vector3) -> void:
 
 
 
-
-func greedy_mesh(st: SurfaceTool) -> void:
-	var dims: Array = [CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE]
-	var mask: Array = []
-
-	for d: int in 3:  # d = 0,1,2 -> X,Y,Z
-		var u: int = (d + 1) % 3
-		var v: int = (d + 2) % 3
-
-		var q: Vector3i = Vector3i()
-		q[d] = 1
-
-		for id: int in range(-1, dims[d]):
-			mask.clear()
-			
-			# строим маску для слоя
-			for j_v: int in range(dims[v]):
-				for i_u: int in range(dims[u]):
-					var x: Vector3i = Vector3i()
-					x[d] = id
-					x[u] = i_u
-					x[v] = j_v
-
-					var a: bool = false
-					var b: bool = false
-					if id >= 0:
-						a = get_block_vec(x)
-					if id < dims[d] - 1:
-						b = get_block_vec(x + q)
-
-					if a != b:
-						mask.append(a)
-					else:
-						mask.append(null)
-
-			# greedy по 2D маске
-			var n: int = 0
-			for j_v: int in range(dims[v]):
-				var i_u: int = 0
-				while i_u < dims[u]:
-					if mask[n] != null:
-						# ширина
-						var w: int = 1
-						while i_u + w < dims[u] and mask[n + w] == mask[n]:
-							w += 1
-
-						# высота
-						var h: int = 1
-						var done: bool = false
-						while j_v + h < dims[v] and not done:
-							for k_w: int in range(w):
-								if mask[n + k_w + h * dims[u]] != mask[n]:
-									done = true
-									break
-							if not done:
-								h += 1
-
-						# создаем quad
-						var x0: Vector3i = Vector3i()
-						x0[d] = id + 1
-						x0[u] = i_u
-						x0[v] = j_v
-
-						var du: Vector3i = Vector3i()
-						du[u] = w
-						var dv: Vector3i = Vector3i()
-						dv[v] = h
-
-						add_quad(st, x0, du, dv, d, mask[n])
-
-						# очищаем маску
-						for l_h: int in range(h):
-							for k_w: int in range(w):
-								mask[n + k_w + l_h * dims[u]] = null
-
-						i_u += w
-						n += w
-					else:
-						i_u += 1
-						n += 1
-
-# универсальное добавление квадов для любого направления
-func add_quad(st: SurfaceTool, pos: Vector3i, du: Vector3i, dv: Vector3i, d: int, filled: bool) -> void:
-	var p: Vector3 = Vector3(pos)
-	var du3: Vector3 = Vector3(du.x, du.y, du.z)
-	var dv3: Vector3 = Vector3(dv.x, dv.y, dv.z)
-
-	var v1: Vector3 = p
-	var v2: Vector3 = p + du3
-	var v3: Vector3 = p + du3 + dv3
-	var v4: Vector3 = p + dv3
-
-	var normal: Vector3 = Vector3()
-
-	# Явно задаем нормаль и порядок вершин в зависимости от направления
-	match d:
-		0: # X-ось
-			normal = Vector3(1,0,0) if filled else Vector3(-1,0,0)
-			if filled:
-				st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v2)
-				st.add_vertex(v1); st.add_vertex(v4); st.add_vertex(v3)
-			else:
-				st.add_vertex(v1); st.add_vertex(v2); st.add_vertex(v3)
-				st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v4)
-		1: # Y-ось
-			normal = Vector3(0,1,0) if filled else Vector3(0,-1,0)
-			if filled:
-				st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v2)
-				st.add_vertex(v1); st.add_vertex(v4); st.add_vertex(v3)
-			else:
-				st.add_vertex(v1); st.add_vertex(v2); st.add_vertex(v3)
-				st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v4)
-		2: # Z-ось
-			normal = Vector3(0,0,1) if filled else Vector3(0,0,-1)
-			if filled:
-				st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v2)
-				st.add_vertex(v1); st.add_vertex(v4); st.add_vertex(v3)
-			else:
-				st.add_vertex(v1); st.add_vertex(v2); st.add_vertex(v3)
-				st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v4)
-
-	# для всех вершин нормаль одна
-	st.set_normal(normal)
-
-func get_block_vec(v: Vector3i) -> bool:
-	if v.x < 0 or v.y < 0 or v.z < 0:
-		return false
-	if v.x >= CHUNK_SIZE or v.y >= CHUNK_SIZE or v.z >= CHUNK_SIZE:
-		return false
-	return blocks[v.x][v.y][v.z]
+#func greedy_mesh(st: SurfaceTool) -> void:
+	#var dims: Array = [CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE]
+	#var mask: Array = []
+#
+	#for d: int in 3:  # d = 0,1,2 -> X,Y,Z
+		#var u: int = (d + 1) % 3
+		#var v: int = (d + 2) % 3
+#
+		#var q: Vector3i = Vector3i()
+		#q[d] = 1
+#
+		#for id: int in range(-1, dims[d]):
+			#mask.clear()
+			#
+			## строим маску для слоя
+			#for j_v: int in range(dims[v]):
+				#for i_u: int in range(dims[u]):
+					#var x: Vector3i = Vector3i()
+					#x[d] = id
+					#x[u] = i_u
+					#x[v] = j_v
+#
+					#var a: bool = false
+					#var b: bool = false
+					#if id >= 0:
+						#a = get_block_vec(x)
+					#if id < dims[d] - 1:
+						#b = get_block_vec(x + q)
+#
+					#if a != b:
+						#mask.append(a)
+					#else:
+						#mask.append(null)
+#
+			## greedy по 2D маске
+			#var n: int = 0
+			#for j_v: int in range(dims[v]):
+				#var i_u: int = 0
+				#while i_u < dims[u]:
+					#if mask[n] != null:
+						## ширина
+						#var w: int = 1
+						#while i_u + w < dims[u] and mask[n + w] == mask[n]:
+							#w += 1
+#
+						## высота
+						#var h: int = 1
+						#var done: bool = false
+						#while j_v + h < dims[v] and not done:
+							#for k_w: int in range(w):
+								#if mask[n + k_w + h * dims[u]] != mask[n]:
+									#done = true
+									#break
+							#if not done:
+								#h += 1
+#
+						## создаем quad
+						#var x0: Vector3i = Vector3i()
+						#x0[d] = id + 1
+						#x0[u] = i_u
+						#x0[v] = j_v
+#
+						#var du: Vector3i = Vector3i()
+						#du[u] = w
+						#var dv: Vector3i = Vector3i()
+						#dv[v] = h
+#
+						#add_quad(st, x0, du, dv, d, mask[n])
+#
+						## очищаем маску
+						#for l_h: int in range(h):
+							#for k_w: int in range(w):
+								#mask[n + k_w + l_h * dims[u]] = null
+#
+						#i_u += w
+						#n += w
+					#else:
+						#i_u += 1
+						#n += 1
+#
+## универсальное добавление квадов для любого направления
+#func add_quad(st: SurfaceTool, pos: Vector3i, du: Vector3i, dv: Vector3i, d: int, filled: bool) -> void:
+	#var p: Vector3 = Vector3(pos)
+	#var du3: Vector3 = Vector3(du.x, du.y, du.z)
+	#var dv3: Vector3 = Vector3(dv.x, dv.y, dv.z)
+#
+	#var v1: Vector3 = p
+	#var v2: Vector3 = p + du3
+	#var v3: Vector3 = p + du3 + dv3
+	#var v4: Vector3 = p + dv3
+#
+	#var normal: Vector3 = Vector3()
+#
+	## Явно задаем нормаль и порядок вершин в зависимости от направления
+	#match d:
+		#0: # X-ось
+			#normal = Vector3(1,0,0) if filled else Vector3(-1,0,0)
+			#if filled:
+				#st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v2)
+				#st.add_vertex(v1); st.add_vertex(v4); st.add_vertex(v3)
+			#else:
+				#st.add_vertex(v1); st.add_vertex(v2); st.add_vertex(v3)
+				#st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v4)
+		#1: # Y-ось
+			#normal = Vector3(0,1,0) if filled else Vector3(0,-1,0)
+			#if filled:
+				#st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v2)
+				#st.add_vertex(v1); st.add_vertex(v4); st.add_vertex(v3)
+			#else:
+				#st.add_vertex(v1); st.add_vertex(v2); st.add_vertex(v3)
+				#st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v4)
+		#2: # Z-ось
+			#normal = Vector3(0,0,1) if filled else Vector3(0,0,-1)
+			#if filled:
+				#st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v2)
+				#st.add_vertex(v1); st.add_vertex(v4); st.add_vertex(v3)
+			#else:
+				#st.add_vertex(v1); st.add_vertex(v2); st.add_vertex(v3)
+				#st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v4)
+#
+	## для всех вершин нормаль одна
+	#st.set_normal(normal)
+#
+#func get_block_vec(v: Vector3i) -> bool:
+	#if v.x < 0 or v.y < 0 or v.z < 0:
+		#return false
+	#if v.x >= CHUNK_SIZE or v.y >= CHUNK_SIZE or v.z >= CHUNK_SIZE:
+		#return false
+	#return blocks[v.x][v.y][v.z]
 "
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1i61x"]

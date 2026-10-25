@@ -50,7 +50,7 @@ var equip_items: Dictionary = {}
 ## Владелец уже запросил характеристики, значит узел игрока у него создан (только на сервере)
 var _owner_ready: bool = false
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "DataEntityComponent"
 
 func _ready() -> void:

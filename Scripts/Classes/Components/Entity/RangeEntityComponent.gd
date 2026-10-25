@@ -35,5 +35,5 @@ func set_max_value(new_value: float, reason: String) -> void:
 	max_value = new_value
 	emit_signal("changed_max_value", old_max_value, max_value, reason)
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "RangeEntityComponent"

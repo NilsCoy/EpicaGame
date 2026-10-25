@@ -40,7 +40,7 @@ var _shown: Array[String] = []
 ## Пиры, у которых уже создан этот игрок и которые ждут обновления экипировки (только на сервере)
 var _listeners: Array[int] = []
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "InventoryEntityComponent"
 
 func _ready() -> void:

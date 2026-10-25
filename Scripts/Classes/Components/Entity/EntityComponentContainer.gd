@@ -15,8 +15,8 @@ func is_component(node: Variant) -> bool:
 	if 'Component' in component_name: return true
 	else: return false
 
-func has_component(component_class: Script) -> bool:
-	if get_component(component_class) != null:
+func has_component(component_name: String) -> bool:
+	if get_component(component_name) != null:
 		return true
 	return false
 
@@ -25,14 +25,14 @@ func has_component(component_class: Script) -> bool:
 		#return components[component_name]
 	#return null
 
-func get_component(component_class: Script) -> EntityComponent:
+func get_component(component_name: String) -> EntityComponent:
 	for component: EntityComponent in components:
-		if component.get_script() == component_class:
+		if component.get_component_type() == component_name:
 			return component
 	return null
 
 func get_all_components() -> Array[EntityComponent]:
 	return components.duplicate()
 
-func get_component_type() -> String:
+static func get_component_type() -> String:
 	return "EntityComponentContainer"

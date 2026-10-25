@@ -19,6 +19,7 @@ script/source = "extends CanvasLayer
 
 @onready var player_inventory: InventoryWindow = $PlayerInventory
 @onready var chat: Control = $Chat
+@onready var hud: Control = $HUD
 
 
 func _ready() -> void:
@@ -158,6 +159,7 @@ metadata/_edit_use_anchors_ = true
 metadata/_edit_lock_ = true
 
 [node name="PerformanceStats" type="Control" parent="HUD" unique_id=1551538850]
+visible = false
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 1
 anchors_preset = 10
