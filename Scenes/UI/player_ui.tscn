@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" uid="uid://c0m4ufvoff2i0" path="res://Assets/Models/Entities/human.gltf" id="10_we3k3"]
 [ext_resource type="PackedScene" uid="uid://bpa5r2i2c8gv0" path="res://Scenes/UI/creative_inventory.tscn" id="11_axtvl"]
 [ext_resource type="Shader" uid="uid://cngvw826l31p8" path="res://Scripts/Shaders/blur.gdshader" id="11_plo7s"]
+[ext_resource type="PackedScene" uid="uid://cmp4jpvhs0pat" path="res://Scenes/UI/world_edit_ui.tscn" id="11_we3k3"]
 [ext_resource type="PackedScene" uid="uid://bddn6irh7p6vb" path="res://Scenes/UI/player_inventory.tscn" id="12_onufr"]
 
 [sub_resource type="GDScript" id="GDScript_s1fef"]
@@ -54,13 +55,15 @@ func _process(delta: float) -> void:
 					Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 					close_all_windows()
 	
-	if Input.is_action_just_pressed(\"chat\"):
+	if Input.is_action_just_pressed(\"chat\") and get_parent().gamemode != 2:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 			open_window(\"Chat\")
 		else:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 			close_all_windows()
+	
+	
 
 func close_all_windows() -> void:
 	$Background.hide()
@@ -68,21 +71,22 @@ func close_all_windows() -> void:
 	$CreativeInventory/ScrollContainer.hide()
 	$Chat/BackgroundRect.hide()
 	$Chat/SendChat.release_focus()
+	$HUD/WorldEdit_UI.hide()
 
 func open_window(window_name: String) -> void:
+	close_all_windows()
 	match window_name:
 		\"PlayerInventory\":
-			close_all_windows()
 			$PlayerInventory.show()
 			$Background.show()
 		\"CreativeInventory\":
-			close_all_windows()
 			$CreativeInventory/ScrollContainer.show()
 			$Background.show()
 		\"Chat\":
-			close_all_windows()
 			$Chat/BackgroundRect.show()
 			$Chat/SendChat.grab_focus()
+		\"WorldEdit\":
+			$HUD/WorldEdit_UI.show()
 "
 
 [sub_resource type="GDScript" id="GDScript_2hnfo"]
@@ -363,6 +367,10 @@ bones/20/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
 transform = Transform3D(-0.81512773, -0.07661365, 0.57419264, 0, 0.9912155, 0.1322564, -0.5792813, 0.10780585, -0.8079673, 0.3633367, 0.8457718, -0.4523987)
 projection = 1
 fov = 60.0
+
+[node name="WorldEdit_UI" parent="HUD" unique_id=1948536089 instance=ExtResource("11_we3k3")]
+visible = false
+layout_mode = 1
 
 [node name="Chat" type="Control" parent="." unique_id=295325971]
 layout_mode = 3

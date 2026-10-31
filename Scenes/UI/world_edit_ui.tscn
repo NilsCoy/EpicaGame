@@ -13,6 +13,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+metadata/_edit_lock_ = true
 
 [node name="PanelContainer" type="PanelContainer" parent="." unique_id=1206141595]
 layout_mode = 1
@@ -34,12 +35,37 @@ layout_mode = 2
 [node name="MainContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/ScrollContainer" unique_id=792253935]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
 
 [node name="BlockID" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=421085760 instance=ExtResource("2_jjus3")]
 layout_mode = 2
 text = "Block ID"
 value = "stone"
+
+[node name="HBoxContainer" type="GridContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=234646452]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+
+[node name="X" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=1988694762 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "X"
+input_type = "int"
+value = ""
+
+[node name="Y" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=2057844565 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Y"
+input_type = "int"
+value = ""
+
+[node name="Z" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=1556628453 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Z"
+input_type = "int"
+value = ""
 
 [node name="Title" type="Label" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=314544913]
 layout_mode = 2
