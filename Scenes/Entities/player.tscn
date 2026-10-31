@@ -33,7 +33,12 @@ var spawn_position: Vector3
 var spawn_rotation: Vector3
 
 # Utils
-var curr_block: String = \"\"
+var curr_block: String = \"\":
+	set(new_value):
+		curr_block = new_value
+		current_block_update.emit(new_value)
+signal current_block_update(value: String)
+
 var is_life: bool = true
 @export var nickname: String = \"Player\"
 @export var player_id: int = 1
@@ -136,7 +141,6 @@ func _ready() -> void:
 		if has_weapon:
 			$Character/Model/Import/blockbench_export/base/Skeleton3D/right_equip/TextureModel.show()
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-		$UI/CreativeInventory/ItemName.text = str(curr_block)
 	pass
 
 @rpc(\"authority\")
@@ -154,7 +158,6 @@ func init_sunc(data: Dictionary, id: int) -> void:
 	if has_weapon:
 		$Character/Model/Import/blockbench_export/base/Skeleton3D/right_equip/TextureModel.show()
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-	$UI/CreativeInventory/ItemName.text = str(curr_block)
 
 func _physics_process(delta: float) -> void:
 	#print(multiplayer.get_unique_id())
@@ -207,11 +210,11 @@ func _get_rotation_from_forward(forward: Vector3) -> Vector3:
 		return Vector3.BACK if forward.z > 0 else Vector3.FORWARD
 
 ## Получает позицию блока на который смотрит
-func _get_block(range: int) -> Dictionary:
+func _get_block(raduis: int) -> Dictionary:
 	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	
 	var from: Vector3 = camera.global_transform.origin
-	var to: Vector3 = from + camera.global_transform.basis.z * -1 * range
+	var to: Vector3 = from + camera.global_transform.basis.z * -1 * raduis
 	
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, to)
 	query.set_collision_mask(2)
@@ -225,7 +228,7 @@ func _set_block_overlay() -> void:
 	forward = forward.normalized()
 	
 	var rot: Vector3 = _get_rotation_from_forward(forward)
-	var result: Dictionary = _get_block(100)
+	var result: Dictionary = _get_block(25)
 	
 	if result:
 		$BlockOverlay.visible = true
@@ -244,13 +247,13 @@ func _set_block_overlay() -> void:
 
 ## Установка блоков
 @rpc(\"any_peer\")
-func _place_block(range: int = 6, block: String = curr_block) -> void:
+func _place_block(raduis: int = 25, block: String = curr_block) -> void:
 	var forward: Vector3 = -camera.global_transform.basis.z
 	forward.y = 0
 	forward = forward.normalized()
 	
 	var rot: Vector3 = _get_rotation_from_forward(forward)
-	var result: Dictionary = _get_block(range)
+	var result: Dictionary = _get_block(raduis)
 	
 	if result:
 		var chunk: Node3D = result.collider.get_parent()
@@ -258,9 +261,58 @@ func _place_block(range: int = 6, block: String = curr_block) -> void:
 			chunk.place_block(result.position, result.normal, block, rot)
 			chunk.rpc(\"place_block\", result.position, result.normal, block, rot)
 
+## Получает глобальные координаты блока
+func _get_select_block_pos(raduis: int = 25) -> Variant:
+	var result: Dictionary = _get_block(raduis)
+	if result.is_empty():
+		return null
+	
+	var inside: Vector3 = result.position - result.normal * 0.01
+	return Vector3i(floori(inside.x), floori(inside.y), floori(inside.z))
+
+## Копирование блока на который смотришь
+func _copy_block(raduis: int = 25) -> void:
+	var result: Dictionary = _get_block(raduis)
+	if result.is_empty():
+		return
+	
+	# 1. Получаем чанк (скрипт чанка)
+	var collider: Node = result.collider
+	# collider может быть StaticBody3D (меш-блоки) или родителем ModelBlock
+	# В твоём коде: $StaticBody3D для мешей, а ModelBlock_* — тоже StaticBody3D,
+	# и оба лежат прямо в чанке. Значит скрипт чанка — это collider.get_parent()
+	# для меш-коллизии, ИЛИ сам collider, если это ModelBlock (у него скрипта нет).
+	var chunk: Node = collider
+	while chunk != null and not chunk.has_method(\"place_block\"):
+		chunk = chunk.get_parent()
+	
+	if chunk == null:
+		return
+	
+	# 2. Точка попадания -> локальные координаты внутри чанка
+	#    Слегка сдвигаем внутрь по нормали, чтобы не попасть на границу
+	var local_pos: Vector3 = chunk.to_local(result.position - result.normal * 0.01)
+	
+	var x: int = int(floor(local_pos.x))
+	var y: int = int(floor(local_pos.y))
+	var z: int = int(floor(local_pos.z))
+	
+	# 3. Проверка границ
+	if x < 0 or y < 0 or z < 0 or \\
+	   x >= chunk.CHUNK_SIZE or y >= chunk.CHUNK_SIZE or z >= chunk.CHUNK_SIZE:
+		return
+	
+	var block_id: String = str(chunk.blocks[x][y][z][\"id\"])
+	var block_rot: Vector3 = chunk.blocks[x][y][z][\"rotation\"]
+	
+	if block_id == \"air\":
+		return
+	
+	curr_block = block_id
+
 ## Ломание блоков
-func _break_block(range: int = 6) -> void:
-	var result: Dictionary = _get_block(range)
+func _break_block(raduis: int = 25) -> void:
+	var result: Dictionary = _get_block(raduis)
 
 	if result:
 		var chunk: Variant = result.collider.get_parent()
@@ -383,6 +435,7 @@ func _ui(e: InputEvent) -> void:
 		if fly:
 			_fly_speed(e)
 
+		# если мы в спектаторе, то нажимая на цифры, мы выбираем блок
 		if gamemode == 2: # spectator
 			for i: int in range(10):
 				if Input.is_action_just_pressed(str(i)):
@@ -391,17 +444,22 @@ func _ui(e: InputEvent) -> void:
 							if inventory.hot_bar_data.slot_datas[i-1].item_data.category == 'block':
 								curr_block = inventory.hot_bar_data.slot_datas[i-1].item_data.item_name
 					else: curr_block = \"\"
-					$UI/CreativeInventory/ItemName.text = str(curr_block)
 					break
 
 			if e is InputEventMouseButton and e.pressed:
-				if e.button_index == MOUSE_BUTTON_LEFT:
-					_break_block()
-				elif e.button_index == MOUSE_BUTTON_RIGHT and curr_block != \"\":
-					_place_block()
+				if user_interface.world_edit_ui.visible:
+					if e.button_index == MOUSE_BUTTON_MIDDLE:
+						_copy_block(25)
+				else:
+					if e.button_index == MOUSE_BUTTON_LEFT:
+						_break_block(25)
+					if e.button_index == MOUSE_BUTTON_MIDDLE:
+						_copy_block(25)
+					elif e.button_index == MOUSE_BUTTON_RIGHT and curr_block != \"\":
+						_place_block(25)
 	
 	if Input.is_action_just_pressed('F1'):
-		$UI.visible = not($UI.visible)
+		user_interface.visible = not(user_interface.visible)
 	if Input.is_action_just_pressed('F2'):
 		var dir: DirAccess = FileManager.open_or_create_directory('user://','Screenshots')
 		var t: Dictionary = Time.get_datetime_dict_from_system()
@@ -413,6 +471,8 @@ func _ui(e: InputEvent) -> void:
 		ChatManager.rpc_id(player_id, '_message', \"Скриншот сохранён: \", dir.get_current_dir(false)+'/'+filename)
 	if Input.is_action_just_pressed('F3'):
 		$UI/HUD/PerformanceStats.visible = not($UI/HUD/PerformanceStats.visible)
+	if Input.is_action_just_pressed('WorldEdit') and gamemode == 2:
+		user_interface.world_edit_ui.visible = not(user_interface.world_edit_ui.visible)
 
 ## Изменение скорости полета
 func _fly_speed(e: InputEvent) -> void:
@@ -1205,10 +1265,10 @@ metadata/_edit_lock_ = true
 
 [node name="Skeleton3D" parent="Character/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(2055412372, 1433825283) index="0" unique_id=948983089]
 bones/0/position = Vector3(0, -0.01875, 0)
-bones/1/rotation = Quaternion(-0.0068145404, 0, 0, 0.9999768)
-bones/12/rotation = Quaternion(0.043586347, 0.0016975238, 0.038879685, 0.9982915)
+bones/1/rotation = Quaternion(-0.00023170165, 0, 0, 1)
+bones/12/rotation = Quaternion(0.043608498, 0.00097466644, 0.022323528, 0.99879885)
 bones/13/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
-bones/15/rotation = Quaternion(0.043586347, -0.0016975238, -0.038879685, 0.9982915)
+bones/15/rotation = Quaternion(0.043608498, -0.00097466644, -0.022323528, 0.99879885)
 bones/16/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
 bones/18/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
 bones/19/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
@@ -1216,12 +1276,12 @@ bones/20/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
 bones/21/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
 
 [node name="head" type="BoneAttachment3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="1" unique_id=1469560934]
-transform = Transform3D(1, 0, 0, 0, 0.99990714, 0.013628763, 0, -0.013628763, 0.99990714, 0, 1.4811804, -0.010221573)
+transform = Transform3D(1, 0, 0, 0, 0.9999999, 0.0004634033, 0, -0.0004634033, 0.9999999, 0, 1.4812498, -0.00034755247)
 bone_name = "head"
 bone_idx = 2
 
 [node name="right_equip" type="BoneAttachment3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="2" unique_id=455013527]
-transform = Transform3D(0.99697095, -0.076592915, 0.013505397, 0.07776726, 0.9841002, -0.15968439, -0.00105997, 0.16025099, 0.98707575, 0.38311452, 0.85392344, -0.101660684)
+transform = Transform3D(0.99900144, -0.04399967, 0.0077583287, 0.044678427, 0.9839047, -0.1730184, -2.0704365e-05, 0.17319226, 0.9848881, 0.3664329, 0.85111356, -0.10003492)
 bone_name = "right_equip"
 bone_idx = 14
 
@@ -1232,7 +1292,7 @@ texture = ExtResource("9_tx1dd")
 collision_size = Vector3(0.3, 0.8, 0.3)
 
 [node name="left_equip" type="BoneAttachment3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="3" unique_id=636606705]
-transform = Transform3D(0.99697095, 0.076592915, -0.013505397, -0.07776726, 0.9841002, -0.15968439, 0.00105997, 0.16025099, 0.98707575, -0.38311452, 0.85392344, -0.101660684)
+transform = Transform3D(0.99900144, 0.04399967, -0.0077583287, -0.044678427, 0.9839047, -0.1730184, 2.0704365e-05, 0.17319226, 0.9848881, -0.3664329, 0.85111356, -0.10003492)
 bone_name = "left_equip"
 bone_idx = 17
 
@@ -1255,12 +1315,12 @@ shape = SubResource("SphereShape3D_s1fef")
 disabled = true
 
 [node name="Physical Bone body" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=324781836]
-transform = Transform3D(1, -5.653219e-13, -2.8263585e-08, -2.8260951e-08, 0.013629227, -0.99990714, 3.8577608e-10, 0.99990714, 0.013629227, 1.3848767e-06, 1.1188581, -0.0052735484)
+transform = Transform3D(1, -5.697578e-13, -2.850989e-08, -2.8509886e-08, 0.0004638866, -0.9999999, 1.37951135e-11, 0.9999999, 0.0004638866, 1.3848767e-06, 1.121727, -0.00017136478)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3739204e-06, -9.739815e-06, 0.38764393)
-body_offset = Transform3D(1, -5.6534963e-13, -2.8263582e-08, -2.8263583e-08, 4.6379864e-07, -1, 5.7845395e-13, 1, 4.6379864e-07, 1.3848767e-06, 0.38764393, 9.560026e-06)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3737442e-06, -9.772288e-06, 0.39047706)
+body_offset = Transform3D(1, -5.697578e-13, -2.850989e-08, -2.850989e-08, 4.832982e-07, -1, 5.835367e-13, 1, 4.832982e-07, 1.3848767e-06, 0.39047706, 9.583571e-06)
 friction = 0.5
 bone_name = "body"
 joint_constraints/bias = 0.3
@@ -1272,12 +1332,12 @@ transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0)
 shape = SubResource("BoxShape3D_m8n4g")
 
 [node name="Physical Bone head" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=1091599046]
-transform = Transform3D(0.99929166, -0.026871562, -0.02634782, 0.00051290076, 0.70977354, -0.70442975, 0.037630115, 0.7039172, 0.70928454, 0.0041692127, 1.5951635, -0.1257092)
+transform = Transform3D(0.9992799, -0.027095268, -0.026561478, 1.7581304e-05, 0.7003683, -0.71378165, 0.037942924, 0.7132672, 0.69986445, 0.0041692127, 1.5977031, -0.115302466)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00012109103, 0.0005036518, 0.16231644)
-body_offset = Transform3D(0.99929166, -0.02687156, -0.026347818, 1.2223609e-09, 0.70011413, -0.714031, 0.03763361, 0.7135252, 0.69961816, 0.0041692127, 0.115546346, -0.11392346)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00019346736, 0.0005463287, 0.1636858)
+body_offset = Transform3D(0.9992799, -0.02709527, -0.026561478, -1.5734258e-09, 0.7000377, -0.71410596, 0.037942927, 0.71359175, 0.69953364, 0.0041692127, 0.11650658, -0.11490094)
 friction = 0.5
 bone_name = "head"
 joint_constraints/bias = 0.3
@@ -1289,12 +1349,12 @@ transform = Transform3D(0.99999994, 0, 0, 0, 0.7193396, -0.6946583, 0, 0.6946582
 shape = SubResource("BoxShape3D_i84mr")
 
 [node name="Physical Bone right_arm" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=278945233]
-transform = Transform3D(-0.5493171, 0.5654314, -0.61525446, -0.103981465, 0.68431365, 0.72173595, 0.8291191, 0.460437, -0.31711084, 0.34113505, 1.2332327, 0.04490192)
+transform = Transform3D(-0.5540712, 0.5866353, -0.5906472, -0.096433975, 0.6595056, 0.7454883, 0.82686496, 0.470012, -0.3088415, 0.33735308, 1.2291434, 0.05170967)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.007014893, 0.008015512, 0.1617553)
-body_offset = Transform3D(-0.55661845, 0.6164479, -0.5569273, 0.00020733848, 0.67047924, 0.74192834, 0.8307683, 0.41285536, -0.3733289, 0.08124018, -0.12538362, 0.06290643)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0068539567, 0.00814281, 0.16241086)
+body_offset = Transform3D(-0.55784357, 0.61550534, -0.5567438, 0.00037054718, 0.67100376, 0.74145365, 0.82994604, 0.4134089, -0.37454325, 0.081585854, -0.12588143, 0.06315199)
 friction = 0.5
 bone_name = "right_arm"
 joint_constraints/bias = 0.3
@@ -1306,12 +1366,12 @@ transform = Transform3D(0.99999666, -7.8231096e-08, 1.2218952e-06, -2.3245811e-0
 shape = SubResource("CapsuleShape3D_f5ba2")
 
 [node name="Physical Bone right_elbow" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=447285116]
-transform = Transform3D(0.84672576, -0.48332065, 0.22238877, 0.14883655, 0.6164978, 0.7731612, -0.51078695, -0.62155586, 0.5939403, 0.417193, 0.9854074, -0.0023370832)
+transform = Transform3D(0.8507807, -0.46311995, 0.248379, 0.12741807, 0.64031786, 0.757468, -0.50984, -0.6127912, 0.6037799, 0.40463862, 0.9800068, 0.00094185024)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0018119402, -0.0027051903, 0.16688931)
-body_offset = Transform3D(0.856277, -0.43325448, 0.28121224, -0.00023722649, 0.5441096, 0.839014, -0.51651686, -0.7184952, 0.4658057, -0.04965487, -0.1385501, -0.07874576)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.001794517, -0.002753023, 0.16702816)
+body_offset = Transform3D(0.8556345, -0.4340364, 0.28196096, -0.00036715716, 0.5442581, 0.83891773, -0.51758033, -0.7179104, 0.4655267, -0.049825788, -0.1386239, -0.078803696)
 friction = 0.5
 bone_name = "right_elbow"
 joint_constraints/bias = 0.3
@@ -1323,12 +1383,12 @@ transform = Transform3D(0.99927115, 0.032967016, -0.019239038, -0.033542603, 0.5
 shape = SubResource("CapsuleShape3D_kvkok")
 
 [node name="Physical Bone left_arm" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=1130741554]
-transform = Transform3D(-0.5494718, -0.5653769, 0.6151665, 0.10397808, 0.6842787, 0.7217696, -0.8290171, 0.46055585, -0.31720507, -0.35437554, 1.2336428, 0.04488946)
+transform = Transform3D(-0.5541785, -0.5866091, 0.59057266, 0.09641954, 0.65947, 0.7455217, -0.82679474, 0.47009483, -0.30890352, -0.3506385, 1.2290584, 0.05169845)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00033331662, 0.0002491083, 0.16960163)
-body_offset = Transform3D(-0.5567723, -0.6163907, 0.55683684, -0.0002151765, 0.6704575, 0.74194795, -0.8306652, 0.41297615, -0.37342477, -0.09447247, -0.12600267, 0.062953696)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00052448735, 0.00040422007, 0.17031772)
+body_offset = Transform3D(-0.55795, -0.6154775, 0.5566678, -0.00038360804, 0.67097664, 0.74147826, -0.82987434, 0.41349432, -0.3746076, -0.094854236, -0.1265583, 0.06319991)
 friction = 0.5
 bone_name = "left_arm"
 joint_constraints/bias = 0.3
@@ -1340,12 +1400,12 @@ transform = Transform3D(-0.38219717, 0.022356372, 0.92381096, 0.6932694, 0.66792
 shape = SubResource("CapsuleShape3D_f5ba2")
 
 [node name="Physical Bone left_elbow" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=1423749290]
-transform = Transform3D(0.84674186, 0.4832985, -0.22237547, -0.14883296, 0.61650205, 0.7731585, 0.51076126, -0.6215688, 0.59394884, -0.41901347, 0.9836761, -0.002253607)
+transform = Transform3D(0.8507807, 0.46311018, -0.24839723, -0.12741807, 0.6403477, 0.7574428, 0.50984, -0.6127674, 0.60380405, -0.40658197, 0.9782175, 0.0009863153)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00057354197, -0.0007059686, 0.16777346)
-body_offset = Transform3D(0.8562927, 0.4332321, -0.2811987, 0.00023788214, 0.54411, 0.8390137, 0.5164907, -0.71850824, 0.4658144, 0.047974646, -0.14037997, -0.07836231)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0003918372, -0.0006733686, 0.1678741)
+body_offset = Transform3D(0.8556345, 0.4340253, -0.28197804, 0.00036715716, 0.54429126, 0.8388963, 0.51758033, -0.7178921, 0.465555, 0.047964334, -0.14046228, -0.07843522)
 friction = 0.5
 bone_name = "left_elbow"
 joint_constraints/bias = 0.3

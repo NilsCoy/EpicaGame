@@ -18,13 +18,17 @@
 [sub_resource type="GDScript" id="GDScript_s1fef"]
 script/source = "extends CanvasLayer
 
+@onready var world_edit_ui: Control = $WorldEdit_UI
 @onready var player_inventory: InventoryWindow = $PlayerInventory
+@onready var creative_inventory: InventoryWindow = $CreativeInventory
 @onready var chat: Control = $Chat
 @onready var hud: Control = $HUD
 
 
 func _ready() -> void:
 	close_all_windows()
+	world_edit_ui.connect_to_parent(get_parent())
+	get_parent().current_block_update.connect(creative_inventory._current_block_update)
 
 func _process(delta: float) -> void:
 	if get_multiplayer_authority() != multiplayer.get_unique_id():
@@ -71,7 +75,7 @@ func close_all_windows() -> void:
 	$CreativeInventory/ScrollContainer.hide()
 	$Chat/BackgroundRect.hide()
 	$Chat/SendChat.release_focus()
-	$HUD/WorldEdit_UI.hide()
+	world_edit_ui.hide()
 
 func open_window(window_name: String) -> void:
 	close_all_windows()
@@ -83,10 +87,12 @@ func open_window(window_name: String) -> void:
 			$CreativeInventory/ScrollContainer.show()
 			$Background.show()
 		\"Chat\":
+			chat.show()
 			$Chat/BackgroundRect.show()
 			$Chat/SendChat.grab_focus()
 		\"WorldEdit\":
-			$HUD/WorldEdit_UI.show()
+			chat.hide()
+			world_edit_ui.show()
 "
 
 [sub_resource type="GDScript" id="GDScript_2hnfo"]
@@ -368,10 +374,6 @@ transform = Transform3D(-0.81512773, -0.07661365, 0.57419264, 0, 0.9912155, 0.13
 projection = 1
 fov = 60.0
 
-[node name="WorldEdit_UI" parent="HUD" unique_id=1948536089 instance=ExtResource("11_we3k3")]
-visible = false
-layout_mode = 1
-
 [node name="Chat" type="Control" parent="." unique_id=295325971]
 layout_mode = 3
 anchors_preset = 2
@@ -464,6 +466,9 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
+
+[node name="WorldEdit_UI" parent="." unique_id=1948536089 instance=ExtResource("11_we3k3")]
+visible = false
 
 [connection signal="text_submitted" from="Chat/SendChat" to="Chat" method="_on_send_chat_text_submitted"]
 

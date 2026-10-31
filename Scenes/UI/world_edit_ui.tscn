@@ -3,8 +3,142 @@
 [ext_resource type="PackedScene" uid="uid://6v17lb7xppvc" path="res://Scenes/UI/dropdown_content.tscn" id="1_jymxp"]
 [ext_resource type="PackedScene" uid="uid://cvdxfsaxlj71g" path="res://Scenes/UI/label_edit.tscn" id="2_jjus3"]
 
+[sub_resource type="GDScript" id="GDScript_14y0q"]
+script/source = "extends Control
+
+var current_block: String = \"\"
+var parent: Node
+
+@onready var block_id: HBoxContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/BlockID
+@onready var block_x: HBoxContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer/BlockX
+@onready var block_y: HBoxContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer/BlockY
+@onready var block_z: HBoxContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer/BlockZ
+
+@onready var sphere: PanelContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere
+@onready var cylinder: PanelContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder
+@onready var cube: PanelContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube
+@onready var smooth: PanelContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth
+
+
+func _physics_process(delta: float) -> void:
+	if visible:
+		if Input.is_action_just_pressed('alt'):
+			if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			else:
+				Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		
+		if Input.is_action_just_pressed('right_click') and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			_apply_tool()
+
+func connect_to_parent(p: Node) -> void:
+	parent = p
+	parent.current_block_update.connect(_current_block_update)
+	block_id.change_value.connect(_change_value)
+
+func _change_value(value: String) -> void:
+	current_block = value
+
+func _current_block_update(value: String) -> void:
+	#current_block = value
+	block_id.value = value
+
+func _apply_tool() -> void:
+	if sphere.content.window_visible:
+		var tool_data: Dictionary = sphere.get_tool()
+		var hit: Vector3i = parent._get_select_block_pos()
+		if parent._get_select_block_pos() != null and current_block != '':
+			block_x.value = str(hit.x)
+			block_y.value = str(hit.y)
+			block_z.value = str(hit.z)
+			WorldEdit.sphere(hit, tool_data['radius'], current_block, tool_data['hollow'], tool_data['thickness'])
+	elif cylinder.content.window_visible:
+		var tool_data: Dictionary = cylinder.get_tool()
+		var hit: Vector3i = parent._get_select_block_pos()
+		if hit != null and current_block != '':
+			block_x.value = str(hit.x)
+			block_y.value = str(hit.y)
+			block_z.value = str(hit.z)
+			WorldEdit.cylinder(hit, tool_data['radius'], tool_data['height'], current_block, tool_data['hollow'], tool_data['thickness'])
+	#elif cube.content.window_visible:
+		#var tool_data: Dictionary = cube.get_tool()
+		#var hit: Vector3i = parent._get_select_block_pos()
+		#if parent._get_select_block_pos() != null and current_block != '':
+			#WorldEdit.cube(hit, tool_data['radius'], tool_data['height'], current_block, tool_data['hollow'], tool_data['thickness'])
+"
+
+[sub_resource type="GDScript" id="GDScript_jjus3"]
+script/source = "extends PanelContainer
+
+@export var tool_type: String = 'sphere'
+
+@onready var content: VBoxContainer = $DropdownContent
+
+@onready var raduis: HBoxContainer = $DropdownContent/Raduis
+@onready var hollow_button: CheckButton = $DropdownContent/DropdownContent/HollowButton
+@onready var thickness: HBoxContainer = $DropdownContent/DropdownContent/Thickness
+
+func get_tool() -> Dictionary:
+	var tool_data: Dictionary
+	
+	tool_data['tool_type'] = tool_type
+	tool_data['radius'] = int(raduis.value)
+	tool_data['hollow'] = hollow_button.button_pressed
+	tool_data['thickness'] = int(thickness.value)
+	
+	return tool_data
+"
+
 [sub_resource type="ButtonGroup" id="ButtonGroup_jjus3"]
 allow_unpress = true
+
+[sub_resource type="GDScript" id="GDScript_f5ba2"]
+script/source = "extends PanelContainer
+
+@export var tool_type: String = 'cube'
+
+@onready var content: VBoxContainer = $DropdownContent
+
+@onready var raduis: HBoxContainer = $DropdownContent/Raduis
+@onready var height: HBoxContainer = $DropdownContent/Height
+@onready var hollow_button: CheckButton = $DropdownContent/DropdownContent/HollowButton
+@onready var thickness: HBoxContainer = $DropdownContent/DropdownContent/Thickness
+
+func get_tool() -> Dictionary:
+	var tool_data: Dictionary
+	
+	tool_data['tool_type'] = tool_type
+	tool_data['radius'] = int(raduis.value)
+	tool_data['height'] = int(height.value)
+	tool_data['hollow'] = hollow_button.button_pressed
+	tool_data['thickness'] = int(thickness.value)
+	
+	return tool_data
+"
+
+[sub_resource type="GDScript" id="GDScript_8jfm4"]
+script/source = "extends PanelContainer
+
+@export var tool_type: String = 'cylinder'
+
+@onready var content: VBoxContainer = $DropdownContent
+
+@onready var raduis: HBoxContainer = $DropdownContent/Raduis
+@onready var height: HBoxContainer = $DropdownContent/Height
+@onready var hollow_button: CheckButton = $DropdownContent/DropdownContent/HollowButton
+@onready var thickness: HBoxContainer = $DropdownContent/DropdownContent/Thickness
+
+func get_tool() -> Dictionary:
+	var tool_data: Dictionary
+	
+	tool_data['tool_type'] = tool_type
+	tool_data['radius'] = int(raduis.value)
+	tool_data['height'] = int(height.value)
+	tool_data['hollow'] = hollow_button.button_pressed
+	tool_data['thickness'] = int(thickness.value)
+	
+	return tool_data
+"
 
 [node name="WorldEdit_UI" type="Control" unique_id=1948536089]
 layout_mode = 3
@@ -13,6 +147,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = SubResource("GDScript_14y0q")
 metadata/_edit_lock_ = true
 
 [node name="PanelContainer" type="PanelContainer" parent="." unique_id=1206141595]
@@ -46,21 +181,21 @@ layout_mode = 2
 size_flags_vertical = 3
 columns = 3
 
-[node name="X" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=1988694762 instance=ExtResource("2_jjus3")]
+[node name="BlockX" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=1988694762 instance=ExtResource("2_jjus3")]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "X"
 input_type = "int"
 value = ""
 
-[node name="Y" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=2057844565 instance=ExtResource("2_jjus3")]
+[node name="BlockY" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=2057844565 instance=ExtResource("2_jjus3")]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Y"
 input_type = "int"
 value = ""
 
-[node name="Z" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=1556628453 instance=ExtResource("2_jjus3")]
+[node name="BlockZ" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=1556628453 instance=ExtResource("2_jjus3")]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Z"
@@ -77,6 +212,7 @@ uppercase = true
 
 [node name="Sphere" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=742205217]
 layout_mode = 2
+script = SubResource("GDScript_jjus3")
 
 [node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere" unique_id=905907621 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
 layout_mode = 2
@@ -85,6 +221,7 @@ switch_button = NodePath("HeadButton")
 
 [node name="HeadButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere/DropdownContent" unique_id=1424342239]
 layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 32
 button_group = SubResource("ButtonGroup_jjus3")
 text = "Сфера"
@@ -97,10 +234,11 @@ value = "5"
 
 [node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere/DropdownContent" unique_id=386246879 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
 layout_mode = 2
-switch_button = NodePath("CheckButton")
+switch_button = NodePath("HollowButton")
 
-[node name="CheckButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere/DropdownContent/DropdownContent" unique_id=1277767733]
+[node name="HollowButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere/DropdownContent/DropdownContent" unique_id=1277767733]
 layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 24
 text = "Полая"
 
@@ -112,6 +250,7 @@ value = "1"
 
 [node name="Cylinder" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1841188216]
 layout_mode = 2
+script = SubResource("GDScript_f5ba2")
 
 [node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder" unique_id=300286811 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
 layout_mode = 2
@@ -120,6 +259,7 @@ switch_button = NodePath("HeadButton")
 
 [node name="HeadButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent" unique_id=112009651]
 layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 32
 button_group = SubResource("ButtonGroup_jjus3")
 text = "Цилиндр"
@@ -138,10 +278,11 @@ value = "5"
 
 [node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent" unique_id=1209688233 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
 layout_mode = 2
-switch_button = NodePath("CheckButton")
+switch_button = NodePath("HollowButton")
 
-[node name="CheckButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent/DropdownContent" unique_id=703410958]
+[node name="HollowButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent/DropdownContent" unique_id=703410958]
 layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 24
 text = "Полая"
 
@@ -153,6 +294,7 @@ value = "1"
 
 [node name="Cube" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1045443351]
 layout_mode = 2
+script = SubResource("GDScript_8jfm4")
 
 [node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube" unique_id=1528595213 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
 layout_mode = 2
@@ -161,6 +303,7 @@ switch_button = NodePath("HeadButton")
 
 [node name="HeadButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent" unique_id=854806745]
 layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 32
 button_group = SubResource("ButtonGroup_jjus3")
 text = "Прямоугольник"
@@ -179,10 +322,11 @@ value = "5"
 
 [node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent" unique_id=571131716 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
 layout_mode = 2
-switch_button = NodePath("CheckButton")
+switch_button = NodePath("HollowButton")
 
-[node name="CheckButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent/DropdownContent" unique_id=547773815]
+[node name="HollowButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent/DropdownContent" unique_id=547773815]
 layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 24
 text = "Полая"
 
@@ -191,6 +335,14 @@ layout_mode = 2
 text = "Толщина стенки"
 input_type = "int"
 value = "1"
+
+[node name="Title2" type="Label" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=880288724]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "ТЕРРАФОРМИРОВАНИЕ"
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true
 
 [node name="Smooth" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=2067294744]
 layout_mode = 2
@@ -202,6 +354,7 @@ switch_button = NodePath("HeadButton")
 
 [node name="HeadButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=1169821579]
 layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 32
 button_group = SubResource("ButtonGroup_jjus3")
 text = "Сглаживание"

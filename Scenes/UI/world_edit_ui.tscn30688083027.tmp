@@ -1,0 +1,290 @@
+[gd_scene format=3 uid="uid://cmp4jpvhs0pat"]
+
+[ext_resource type="PackedScene" uid="uid://6v17lb7xppvc" path="res://Scenes/UI/dropdown_content.tscn" id="1_jymxp"]
+[ext_resource type="PackedScene" uid="uid://cvdxfsaxlj71g" path="res://Scenes/UI/label_edit.tscn" id="2_jjus3"]
+
+[sub_resource type="GDScript" id="GDScript_14y0q"]
+script/source = "extends Control
+
+var current_block: String = \"\"
+var parent: Node
+
+@onready var block_id: HBoxContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/BlockID
+@onready var block_x: HBoxContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer/BlockX
+@onready var block_y: HBoxContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer/BlockY
+@onready var block_z: HBoxContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer/BlockZ
+
+@onready var sphere: PanelContainer = $PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere
+
+func _physics_process(delta: float) -> void:
+	if visible:
+		if Input.is_action_just_pressed('alt'):
+			if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+				Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			else:
+				Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		
+		if Input.is_action_just_pressed('right_click') and if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			_apply_tool()
+
+func connect_to_parent(p: Node) -> void:
+	parent = p
+	parent.current_block_update.connect(_current_block_update)
+
+func _current_block_update(value: String) -> void:
+	current_block = value
+
+func _apply_tool() -> void:
+	if sphere.content.window_visible:
+		var tool_data: Dictionary = sphere.get_tool()
+		var hit: Vector3i = parent._get_select_block_pos()
+		if parent._get_select_block_pos() != null and current_block != '':
+			WorldEdit.sphere(hit, tool_data['radius'], current_block, tool_data['hollow'], tool_data['thickness'])
+"
+
+[sub_resource type="GDScript" id="GDScript_jjus3"]
+script/source = "extends PanelContainer
+
+@export var tool_type: String = 'sphere'
+
+@onready var content: VBoxContainer = $DropdownContent
+
+@onready var raduis: HBoxContainer = $DropdownContent/Raduis
+@onready var hollow_button: CheckButton = $DropdownContent/DropdownContent/HollowButton
+@onready var thickness: HBoxContainer = $DropdownContent/DropdownContent/Thickness
+
+func get_tool() -> Dictionary:
+	var tool_data: Dictionary
+	
+	tool_data['tool_type'] = tool_type
+	tool_data['radius'] = int(raduis.value)
+	tool_data['hollow'] = hollow_button.button_pressed
+	tool_data['thickness'] = int(thickness.value)
+	
+	return tool_data
+"
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_jjus3"]
+allow_unpress = true
+
+[node name="WorldEdit_UI" type="Control" unique_id=1948536089]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_14y0q")
+metadata/_edit_lock_ = true
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1206141595]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer" unique_id=44935471]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/MarginContainer" unique_id=1654662895]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+
+[node name="MainContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/ScrollContainer" unique_id=792253935]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BlockID" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=421085760 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Block ID"
+value = "stone"
+
+[node name="HBoxContainer" type="GridContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=234646452]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+
+[node name="BlockX" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=1988694762 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "X"
+input_type = "int"
+value = ""
+
+[node name="BlockY" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=2057844565 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Y"
+input_type = "int"
+value = ""
+
+[node name="BlockZ" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/HBoxContainer" unique_id=1556628453 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Z"
+input_type = "int"
+value = ""
+
+[node name="Title" type="Label" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=314544913]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Геометрические фигуры"
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true
+
+[node name="Sphere" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=742205217]
+layout_mode = 2
+script = SubResource("GDScript_jjus3")
+
+[node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere" unique_id=905907621 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
+layout_mode = 2
+theme_override_constants/separation = 0
+switch_button = NodePath("HeadButton")
+
+[node name="HeadButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere/DropdownContent" unique_id=1424342239]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+button_group = SubResource("ButtonGroup_jjus3")
+text = "Сфера"
+
+[node name="Raduis" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere/DropdownContent" unique_id=1673670360 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Радиус"
+input_type = "int"
+value = "5"
+
+[node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere/DropdownContent" unique_id=386246879 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
+layout_mode = 2
+switch_button = NodePath("HollowButton")
+
+[node name="HollowButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere/DropdownContent/DropdownContent" unique_id=1277767733]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Полая"
+
+[node name="Thickness" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Sphere/DropdownContent/DropdownContent" unique_id=1460053106 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Толщина стенки"
+input_type = "int"
+value = "1"
+
+[node name="Cylinder" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1841188216]
+layout_mode = 2
+
+[node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder" unique_id=300286811 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
+layout_mode = 2
+theme_override_constants/separation = 0
+switch_button = NodePath("HeadButton")
+
+[node name="HeadButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent" unique_id=112009651]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+button_group = SubResource("ButtonGroup_jjus3")
+text = "Цилиндр"
+
+[node name="Raduis" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent" unique_id=254898971 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Радиус"
+input_type = "int"
+value = "5"
+
+[node name="Height" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent" unique_id=236639467 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Высота"
+input_type = "int"
+value = "5"
+
+[node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent" unique_id=1209688233 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
+layout_mode = 2
+switch_button = NodePath("HollowButton")
+
+[node name="HollowButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent/DropdownContent" unique_id=703410958]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Полая"
+
+[node name="Thickness" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder/DropdownContent/DropdownContent" unique_id=1118406349 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Толщина стенки"
+input_type = "int"
+value = "1"
+
+[node name="Cube" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1045443351]
+layout_mode = 2
+
+[node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube" unique_id=1528595213 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
+layout_mode = 2
+theme_override_constants/separation = 0
+switch_button = NodePath("HeadButton")
+
+[node name="HeadButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent" unique_id=854806745]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+button_group = SubResource("ButtonGroup_jjus3")
+text = "Прямоугольник"
+
+[node name="Raduis" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent" unique_id=1279331958 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Радиус"
+input_type = "int"
+value = "5"
+
+[node name="Height" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent" unique_id=1006322520 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Высота"
+input_type = "int"
+value = "5"
+
+[node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent" unique_id=571131716 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
+layout_mode = 2
+switch_button = NodePath("HollowButton")
+
+[node name="HollowButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent/DropdownContent" unique_id=547773815]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Полая"
+
+[node name="Thickness" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube/DropdownContent/DropdownContent" unique_id=1232081484 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Толщина стенки"
+input_type = "int"
+value = "1"
+
+[node name="Title2" type="Label" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=880288724]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "ТЕРРАФОРМИРОВАНИЕ"
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true
+
+[node name="Smooth" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=2067294744]
+layout_mode = 2
+
+[node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth" unique_id=457595364 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
+layout_mode = 2
+theme_override_constants/separation = 0
+switch_button = NodePath("HeadButton")
+
+[node name="HeadButton" type="CheckButton" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=1169821579]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+button_group = SubResource("ButtonGroup_jjus3")
+text = "Сглаживание"
+
+[node name="Raduis" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=1464952543 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Радиус"
+input_type = "int"
+value = "5"
+
+[node name="Height" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=574294116 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Сила"
+input_type = "int"
+value = "1"
