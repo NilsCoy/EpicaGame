@@ -46,16 +46,16 @@ func _current_block_update(value: String) -> void:
 func _apply_tool() -> void:
 	if sphere.content.window_visible:
 		var tool_data: Dictionary = sphere.get_tool()
-		var hit: Vector3i = parent._get_select_block_pos()
 		if parent._get_select_block_pos() != null and current_block != '':
+			var hit: Vector3i = parent._get_select_block_pos()
 			block_x.value = str(hit.x)
 			block_y.value = str(hit.y)
 			block_z.value = str(hit.z)
 			WorldEdit.sphere(hit, tool_data['radius'], current_block, tool_data['hollow'], tool_data['thickness'])
 	elif cylinder.content.window_visible:
 		var tool_data: Dictionary = cylinder.get_tool()
-		var hit: Vector3i = parent._get_select_block_pos()
-		if hit != null and current_block != '':
+		if parent._get_select_block_pos() != null and current_block != '':
+			var hit: Vector3i = parent._get_select_block_pos()
 			block_x.value = str(hit.x)
 			block_y.value = str(hit.y)
 			block_z.value = str(hit.z)
