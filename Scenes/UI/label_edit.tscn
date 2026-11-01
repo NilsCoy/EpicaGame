@@ -1,89 +1,15 @@
 [gd_scene format=3 uid="uid://cvdxfsaxlj71g"]
 
-[sub_resource type="GDScript" id="GDScript_8jfm4"]
-script/source = "@tool
-extends HBoxContainer
+[ext_resource type="Script" uid="uid://c010vd7tur4rm" path="res://Scripts/Other/lable_edit.gd" id="1_o1tsf"]
 
-signal value_changed(new_value: Variant)
-
-@onready var label: Label = $Label
-@onready var line_edit: LineEdit = $LineEdit
-@onready var check_box: CheckBox = $CheckBox
-
-## Title ввода
-@export var text: String = 'Text':
-	set(new_value):
-		text = new_value
-		$Label.text = new_value+':'
-## Тип ввода
-@export_enum('text', 'int', 'float', 'bool') var input_type: String = 'text':
-	set(new_value):
-		input_type = new_value
-		$LineEdit.placeholder_text = input_type
-## Вводимое значение
-signal change_value(value: String)
-@export var value: String = 'test':
-	set(new_value):
-		value = new_value
-		$LineEdit.text = new_value
-		change_value.emit(value)
-
-## Позиция курсора
-var caret_column: int = 0
-
-func _ready() -> void:
-	# Если тип ввода bool, то мы используем check_box
-	if input_type == 'bool':
-		var lower: String = value.to_lower()
-		if lower == \"true\" or lower == \"1\":
-			check_box.button_pressed = true
-		elif lower == \"false\" or lower == \"0\":
-			check_box.button_pressed = false
-		check_box.show()
-		line_edit.hide()
-		check_box.pressed.connect(_on_check_box_pressed)
-	# Если тип ввода не bool, то мы используем line_edit
-	else:
-		check_box.hide()
-		line_edit.show()
-		line_edit.text_changed.connect(_on_line_edit_text_changed)
-
-## Обрабатываем изменение check_box
-func _on_check_box_pressed() -> void:
-	value_changed.emit(bool(check_box.button_pressed))
-
-## Обрабатываем изменение line_edit
-func _on_line_edit_text_changed(new_text: String) -> void:
-	caret_column = line_edit.caret_column
-	match input_type:
-		'text':
-			value = new_text
-			value_changed.emit(new_text)
-		'int':
-			if new_text.is_valid_int():
-				value = str(int(new_text))
-				value_changed.emit(int(new_text))
-			else:
-				if new_text == '':
-					value_changed.emit(int(0))
-				else:
-					line_edit.text = value
-		'float':
-			if new_text.is_valid_float():
-				value = str(float(new_text))
-				value_changed.emit(float(new_text))
-			else:
-				if new_text == '':
-					value_changed.emit(float(0))
-				else:
-					line_edit.text = value
-	line_edit.caret_column = caret_column
-"
-
-[node name="LabelEdit" type="HBoxContainer" unique_id=421085760]
-offset_right = 40.0
+[node name="LabelEdit" type="HBoxContainer" unique_id=69930649 node_paths=PackedStringArray("label", "line_edit", "check_box")]
+offset_right = 99.0
 offset_bottom = 40.0
-script = SubResource("GDScript_8jfm4")
+script = ExtResource("1_o1tsf")
+label = NodePath("Label")
+line_edit = NodePath("LineEdit")
+check_box = NodePath("CheckBox")
+metadata/_custom_type_script = "uid://c010vd7tur4rm"
 
 [node name="Label" type="Label" parent="." unique_id=815257635]
 layout_mode = 2
@@ -93,8 +19,10 @@ text = "Text:"
 [node name="LineEdit" type="LineEdit" parent="." unique_id=1116566488]
 layout_mode = 2
 size_flags_horizontal = 3
+focus_mode = 1
 theme_override_font_sizes/font_size = 24
 
 [node name="CheckBox" type="CheckBox" parent="." unique_id=1125321344]
 visible = false
 layout_mode = 2
+focus_mode = 0

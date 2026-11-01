@@ -1265,10 +1265,10 @@ metadata/_edit_lock_ = true
 
 [node name="Skeleton3D" parent="Character/Model/Import/blockbench_export/base" parent_id_path=PackedInt32Array(2055412372, 1433825283) index="0" unique_id=948983089]
 bones/0/position = Vector3(0, -0.01875, 0)
-bones/1/rotation = Quaternion(-0.00023170165, 0, 0, 1)
-bones/12/rotation = Quaternion(0.043608498, 0.00097466644, 0.022323528, 0.99879885)
+bones/1/rotation = Quaternion(-0.00055548234, 0, 0, 0.99999994)
+bones/12/rotation = Quaternion(0.043608166, 0.0009892703, 0.022658015, 0.99879134)
 bones/13/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
-bones/15/rotation = Quaternion(0.043608498, -0.00097466644, -0.022323528, 0.99879885)
+bones/15/rotation = Quaternion(0.043608166, -0.0009892703, -0.022658015, 0.99879134)
 bones/16/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
 bones/18/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
 bones/19/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
@@ -1276,12 +1276,12 @@ bones/20/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
 bones/21/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
 
 [node name="head" type="BoneAttachment3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="1" unique_id=1469560934]
-transform = Transform3D(1, 0, 0, 0, 0.9999999, 0.0004634033, 0, -0.0004634033, 0.9999999, 0, 1.4812498, -0.00034755247)
+transform = Transform3D(1, 0, 0, 0, 0.9999994, 0.0011109643, 0, -0.0011109643, 0.9999994, 0, 1.4812496, -0.0008332232)
 bone_name = "head"
 bone_idx = 2
 
 [node name="right_equip" type="BoneAttachment3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="2" unique_id=455013527]
-transform = Transform3D(0.99900144, -0.04399967, 0.0077583287, 0.044678427, 0.9839047, -0.1730184, -2.0704365e-05, 0.17319226, 0.9848881, 0.3664329, 0.85111356, -0.10003492)
+transform = Transform3D(0.9989713, -0.044658594, 0.007874515, 0.0453475, 0.983987, -0.17237532, -5.0379716e-05, 0.17255509, 0.98499995, 0.36677116, 0.85112673, -0.10011259)
 bone_name = "right_equip"
 bone_idx = 14
 
@@ -1292,7 +1292,7 @@ texture = ExtResource("9_tx1dd")
 collision_size = Vector3(0.3, 0.8, 0.3)
 
 [node name="left_equip" type="BoneAttachment3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D" index="3" unique_id=636606705]
-transform = Transform3D(0.99900144, 0.04399967, -0.0077583287, -0.044678427, 0.9839047, -0.1730184, 2.0704365e-05, 0.17319226, 0.9848881, -0.3664329, 0.85111356, -0.10003492)
+transform = Transform3D(0.9989713, 0.044658594, -0.007874515, -0.0453475, 0.983987, -0.17237532, 5.0379716e-05, 0.17255509, 0.98499995, -0.36677116, 0.85112673, -0.10011259)
 bone_name = "left_equip"
 bone_idx = 17
 
@@ -1315,12 +1315,12 @@ shape = SubResource("SphereShape3D_s1fef")
 disabled = true
 
 [node name="Physical Bone body" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=324781836]
-transform = Transform3D(1, -5.697578e-13, -2.850989e-08, -2.8509886e-08, 0.0004638866, -0.9999999, 1.37951135e-11, 0.9999999, 0.0004638866, 1.3848767e-06, 1.121727, -0.00017136478)
+transform = Transform3D(1, -5.6900063e-13, -2.8514227e-08, -2.851421e-08, 0.0011114599, -0.9999994, 3.2261423e-11, 0.9999994, 0.0011114599, 1.3848767e-06, 1.1217868, -0.00042427864)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3737442e-06, -9.772288e-06, 0.39047706)
-body_offset = Transform3D(1, -5.697578e-13, -2.850989e-08, -2.850989e-08, 4.832982e-07, -1, 5.835367e-13, 1, 4.832982e-07, 1.3848767e-06, 0.39047706, 9.583571e-06)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3737408e-06, -9.78762e-06, 0.39053702)
+body_offset = Transform3D(1, -5.690041e-13, -2.8514227e-08, -2.8514227e-08, 4.9558e-07, -1, 5.8313424e-13, 1, 4.9558e-07, 1.3848767e-06, 0.39053702, 9.594078e-06)
 friction = 0.5
 bone_name = "body"
 joint_constraints/bias = 0.3
@@ -1332,12 +1332,12 @@ transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0)
 shape = SubResource("BoxShape3D_m8n4g")
 
 [node name="Physical Bone head" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=1091599046]
-transform = Transform3D(0.9992799, -0.027095268, -0.026561478, 1.7581304e-05, 0.7003683, -0.71378165, 0.037942924, 0.7132672, 0.69986445, 0.0041692127, 1.5977031, -0.115302466)
+transform = Transform3D(0.99927974, -0.027099265, -0.02656522, 4.2156556e-05, 0.7008276, -0.71333075, 0.037948377, 0.71281576, 0.700324, 0.0041692127, 1.5976377, -0.115879886)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00019346736, 0.0005463287, 0.1636858)
-body_offset = Transform3D(0.9992799, -0.02709527, -0.026561478, -1.5734258e-09, 0.7000377, -0.71410596, 0.037942927, 0.71359175, 0.69953364, 0.0041692127, 0.11650658, -0.11490094)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0001947172, 0.0005521253, 0.16370383)
+body_offset = Transform3D(0.99927974, -0.027099261, -0.026565216, -2.761226e-09, 0.7000353, -0.71410835, 0.0379484, 0.71359396, 0.699531, 0.0041692127, 0.116515756, -0.114917286)
 friction = 0.5
 bone_name = "head"
 joint_constraints/bias = 0.3
@@ -1349,12 +1349,12 @@ transform = Transform3D(0.99999994, 0, 0, 0, 0.7193396, -0.6946583, 0, 0.6946582
 shape = SubResource("BoxShape3D_i84mr")
 
 [node name="Physical Bone right_arm" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=278945233]
-transform = Transform3D(-0.5540712, 0.5866353, -0.5906472, -0.096433975, 0.6595056, 0.7454883, 0.82686496, 0.470012, -0.3088415, 0.33735308, 1.2291434, 0.05170967)
+transform = Transform3D(-0.554028, 0.58617747, -0.5911421, -0.09626706, 0.6602089, 0.7448872, 0.8269134, 0.46959582, -0.3093446, 0.33744776, 1.2292306, 0.0513911)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0068539567, 0.00814281, 0.16241086)
-body_offset = Transform3D(-0.55784357, 0.61550534, -0.5567438, 0.00037054718, 0.67100376, 0.74145365, 0.82994604, 0.4134089, -0.37454325, 0.081585854, -0.12588143, 0.06315199)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0068493895, 0.008139987, 0.16242114)
+body_offset = Transform3D(-0.5578651, 0.6154896, -0.5567397, 0.0003728047, 0.6710117, 0.7414466, 0.8299315, 0.41341957, -0.3745635, 0.08159518, -0.12588608, 0.06315632)
 friction = 0.5
 bone_name = "right_arm"
 joint_constraints/bias = 0.3
@@ -1366,12 +1366,12 @@ transform = Transform3D(0.99999666, -7.8231096e-08, 1.2218952e-06, -2.3245811e-0
 shape = SubResource("CapsuleShape3D_f5ba2")
 
 [node name="Physical Bone right_elbow" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=447285116]
-transform = Transform3D(0.8507807, -0.46311995, 0.248379, 0.12741807, 0.64031786, 0.757468, -0.50984, -0.6127912, 0.6037799, 0.40463862, 0.9800068, 0.00094185024)
+transform = Transform3D(0.85068333, -0.46356195, 0.24788766, 0.1276572, 0.6396132, 0.7580228, -0.50994277, -0.6131927, 0.6032853, 0.4048877, 0.9801125, 0.00078163296)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.001794517, -0.002753023, 0.16702816)
-body_offset = Transform3D(0.8556345, -0.4340364, 0.28196096, -0.00036715716, 0.5442581, 0.83891773, -0.51758033, -0.7179104, 0.4655267, -0.049825788, -0.1386239, -0.078803696)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0017946698, -0.0027536973, 0.16702722)
+body_offset = Transform3D(0.85562277, -0.43404934, 0.28197676, -0.00037050247, 0.54426354, 0.8389142, -0.51759976, -0.7178984, 0.46552336, -0.04982859, -0.1386221, -0.078803025)
 friction = 0.5
 bone_name = "right_elbow"
 joint_constraints/bias = 0.3
@@ -1383,12 +1383,12 @@ transform = Transform3D(0.99927115, 0.032967016, -0.019239038, -0.033542603, 0.5
 shape = SubResource("CapsuleShape3D_kvkok")
 
 [node name="Physical Bone left_arm" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=1130741554]
-transform = Transform3D(-0.5541785, -0.5866091, 0.59057266, 0.09641954, 0.65947, 0.7455217, -0.82679474, 0.47009483, -0.30890352, -0.3506385, 1.2290584, 0.05169845)
+transform = Transform3D(-0.5541363, -0.58614725, 0.59107053, 0.09625202, 0.66017795, 0.7449165, -0.8268426, 0.469677, -0.30941063, -0.35073054, 1.2291516, 0.051379595)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00052448735, 0.00040422007, 0.17031772)
-body_offset = Transform3D(-0.55795, -0.6154775, 0.5566678, -0.00038360804, 0.67097664, 0.74147826, -0.82987434, 0.41349432, -0.3746076, -0.094854236, -0.1265583, 0.06319991)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0005280562, 0.00040640123, 0.17032844)
+body_offset = Transform3D(-0.55797267, -0.615458, 0.55666673, -0.00038657337, 0.6709892, 0.7414669, -0.82985926, 0.413503, -0.37463158, -0.0948607, -0.12656581, 0.063204154)
 friction = 0.5
 bone_name = "left_arm"
 joint_constraints/bias = 0.3
@@ -1400,12 +1400,12 @@ transform = Transform3D(-0.38219717, 0.022356372, 0.92381096, 0.6932694, 0.66792
 shape = SubResource("CapsuleShape3D_f5ba2")
 
 [node name="Physical Bone left_elbow" type="PhysicalBone3D" parent="Character/Model/Import/blockbench_export/base/Skeleton3D/PhysicalBoneSimulator3D" unique_id=1423749290]
-transform = Transform3D(0.8507807, 0.46311018, -0.24839723, -0.12741807, 0.6403477, 0.7574428, 0.50984, -0.6127674, 0.60380405, -0.40658197, 0.9782175, 0.0009863153)
+transform = Transform3D(0.85068333, 0.46355283, -0.24790469, -0.1276572, 0.6396411, 0.75799936, 0.50994277, -0.61317056, 0.6033078, -0.40683436, 0.97832054, 0.0008251965)
 collision_layer = 32
 collision_mask = 45
 joint_type = 1
-joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0003918372, -0.0006733686, 0.1678741)
-body_offset = Transform3D(0.8556345, 0.4340253, -0.28197804, 0.00036715716, 0.54429126, 0.8388963, 0.51758033, -0.7178921, 0.465555, 0.047964334, -0.14046228, -0.07843522)
+joint_offset = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00038963556, -0.0006722212, 0.16787672)
+body_offset = Transform3D(0.85562277, 0.43403903, -0.2819927, 0.00037050247, 0.5442945, 0.8388942, 0.51759976, -0.7178814, 0.46554983, 0.04796517, -0.14046478, -0.07843589)
 friction = 0.5
 bone_name = "left_elbow"
 joint_constraints/bias = 0.3

@@ -51,7 +51,8 @@ func _apply_tool() -> void:
 			block_x.value = str(hit.x)
 			block_y.value = str(hit.y)
 			block_z.value = str(hit.z)
-			WorldEdit.sphere(hit, tool_data['radius'], current_block, tool_data['hollow'], tool_data['thickness'])
+			WorldEdit.sphere(hit, tool_data.get('radius', 5), current_block,
+				tool_data.get('hollow', false), tool_data.get('thickness', 1))
 	elif cylinder.content.window_visible:
 		var tool_data: Dictionary = cylinder.get_tool()
 		if parent._get_select_block_pos() != null and current_block != '':
@@ -59,18 +60,30 @@ func _apply_tool() -> void:
 			block_x.value = str(hit.x)
 			block_y.value = str(hit.y)
 			block_z.value = str(hit.z)
-			WorldEdit.cylinder(hit, tool_data['radius'], tool_data['height'], current_block, tool_data['hollow'], tool_data['thickness'])
-	#elif cube.content.window_visible:
-		#var tool_data: Dictionary = cube.get_tool()
-		#var hit: Vector3i = parent._get_select_block_pos()
-		#if parent._get_select_block_pos() != null and current_block != '':
-			#WorldEdit.cube(hit, tool_data['radius'], tool_data['height'], current_block, tool_data['hollow'], tool_data['thickness'])
+			WorldEdit.cylinder(hit, tool_data.get('radius', 5), tool_data.get('height', 5),
+				current_block, tool_data.get('hollow', false), tool_data.get('thickness', 1))
+	elif cube.content.window_visible:
+		var tool_data: Dictionary = cube.get_tool()
+		if parent._get_select_block_pos() != null and current_block != '':
+			var hit: Vector3i = parent._get_select_block_pos()
+			block_x.value = str(hit.x)
+			block_y.value = str(hit.y)
+			block_z.value = str(hit.z)
+			WorldEdit.cube_radius_height(hit, tool_data.get('radius', 5), tool_data.get('height', 5),
+					current_block, tool_data.get('hollow', false), tool_data.get('thickness', 1))
+	elif smooth.content.window_visible:
+		var tool_data: Dictionary = smooth.get_tool()
+		if parent._get_select_block_pos() != null:
+			var hit: Vector3i = parent._get_select_block_pos()
+			block_x.value = str(hit.x)
+			block_y.value = str(hit.y)
+			block_z.value = str(hit.z)
+			WorldEdit.smooth_cylinder(hit, tool_data.get('radius', 5), tool_data.get('height', 5),
+				tool_data.get('strength', 1))
 "
 
 [sub_resource type="GDScript" id="GDScript_jjus3"]
-script/source = "extends PanelContainer
-
-@export var tool_type: String = 'sphere'
+script/source = "extends ToolPanel
 
 @onready var content: VBoxContainer = $DropdownContent
 
@@ -93,9 +106,7 @@ func get_tool() -> Dictionary:
 allow_unpress = true
 
 [sub_resource type="GDScript" id="GDScript_f5ba2"]
-script/source = "extends PanelContainer
-
-@export var tool_type: String = 'cube'
+script/source = "extends ToolPanel
 
 @onready var content: VBoxContainer = $DropdownContent
 
@@ -117,9 +128,7 @@ func get_tool() -> Dictionary:
 "
 
 [sub_resource type="GDScript" id="GDScript_8jfm4"]
-script/source = "extends PanelContainer
-
-@export var tool_type: String = 'cylinder'
+script/source = "extends ToolPanel
 
 @onready var content: VBoxContainer = $DropdownContent
 
@@ -136,6 +145,26 @@ func get_tool() -> Dictionary:
 	tool_data['height'] = int(height.value)
 	tool_data['hollow'] = hollow_button.button_pressed
 	tool_data['thickness'] = int(thickness.value)
+	
+	return tool_data
+"
+
+[sub_resource type="GDScript" id="GDScript_s1fef"]
+script/source = "extends ToolPanel
+
+@onready var content: VBoxContainer = $DropdownContent
+
+@onready var raduis: HBoxContainer = $DropdownContent/Raduis
+@onready var height: HBoxContainer = $DropdownContent/Height
+@onready var strenght: HBoxContainer = $DropdownContent/Strenght
+
+func get_tool() -> Dictionary:
+	var tool_data: Dictionary
+	
+	tool_data['tool_type'] = tool_type
+	tool_data['radius'] = int(raduis.value)
+	tool_data['height'] = int(height.value)
+	tool_data['strenght'] = int(strenght.value)
 	
 	return tool_data
 "
@@ -251,6 +280,7 @@ value = "1"
 [node name="Cylinder" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1841188216]
 layout_mode = 2
 script = SubResource("GDScript_f5ba2")
+tool_type = "cube"
 
 [node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder" unique_id=300286811 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
 layout_mode = 2
@@ -295,6 +325,7 @@ value = "1"
 [node name="Cube" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1045443351]
 layout_mode = 2
 script = SubResource("GDScript_8jfm4")
+tool_type = "cylinder"
 
 [node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Cube" unique_id=1528595213 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
 layout_mode = 2
@@ -344,8 +375,11 @@ horizontal_alignment = 1
 vertical_alignment = 1
 uppercase = true
 
-[node name="Smooth" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=2067294744]
+[node name="Smooth" type="PanelContainer" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1562645164]
 layout_mode = 2
+script = SubResource("GDScript_s1fef")
+tool_type = "smooth"
+metadata/_custom_type_script = "uid://b27bsnfbva58k"
 
 [node name="DropdownContent" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth" unique_id=457595364 node_paths=PackedStringArray("switch_button") instance=ExtResource("1_jymxp")]
 layout_mode = 2
@@ -366,6 +400,12 @@ input_type = "int"
 value = "5"
 
 [node name="Height" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=574294116 instance=ExtResource("2_jjus3")]
+layout_mode = 2
+text = "Высота"
+input_type = "int"
+value = "1"
+
+[node name="Strenght" parent="PanelContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=822814180 instance=ExtResource("2_jjus3")]
 layout_mode = 2
 text = "Сила"
 input_type = "int"

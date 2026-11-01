@@ -59,7 +59,7 @@ func _process(delta: float) -> void:
 					Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 					close_all_windows()
 	
-	if Input.is_action_just_pressed(\"chat\") and get_parent().gamemode != 2:
+	if Input.is_action_just_pressed(\"chat\"):
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 			open_window(\"Chat\")

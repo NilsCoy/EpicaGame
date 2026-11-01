@@ -121,9 +121,10 @@ func rebuild() -> void:
 		if 'ModelBlock' in child.name:
 			child.free()
 
-	if rebuild_thread.is_started():
-		rebuild_thread.wait_to_finish()
-	rebuild_thread.start(_rebuild)
+	#if rebuild_thread.is_started():
+		#rebuild_thread.wait_to_finish()
+	#rebuild_thread.start(_rebuild)
+	_rebuild()
 
 func _rebuild() -> void:
 	var has_ModelBlock: bool = false

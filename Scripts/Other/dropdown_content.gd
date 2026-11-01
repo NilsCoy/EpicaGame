@@ -1,4 +1,5 @@
 extends VBoxContainer
+class_name DropdownContent
 
 ## Кнопка для открытия окна
 @export var switch_button: Button
