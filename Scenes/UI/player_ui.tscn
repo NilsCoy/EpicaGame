@@ -9,26 +9,32 @@
 [ext_resource type="Texture2D" uid="uid://bmhs6hh27u36r" path="res://Assets/Textures/UI/Energy bar/energy_bar_over.png" id="7_8wddj"]
 [ext_resource type="Texture2D" uid="uid://bwgwkswrgdsqg" path="res://Assets/Textures/UI/Energy bar/energy_bar_progress.png" id="8_2h8c0"]
 [ext_resource type="Texture2D" uid="uid://b62hsjigxs16x" path="res://Assets/Textures/UI/Head overlay/head_overlay.png" id="9_plo7s"]
-[ext_resource type="PackedScene" uid="uid://c0m4ufvoff2i0" path="res://Assets/Models/Entities/human.gltf" id="10_we3k3"]
 [ext_resource type="PackedScene" uid="uid://bpa5r2i2c8gv0" path="res://Scenes/UI/creative_inventory.tscn" id="11_axtvl"]
 [ext_resource type="Shader" uid="uid://cngvw826l31p8" path="res://Scripts/Shaders/blur.gdshader" id="11_plo7s"]
-[ext_resource type="PackedScene" uid="uid://cmp4jpvhs0pat" path="res://Scenes/UI/world_edit_ui.tscn" id="11_we3k3"]
 [ext_resource type="PackedScene" uid="uid://bddn6irh7p6vb" path="res://Scenes/UI/player_inventory.tscn" id="12_onufr"]
 
 [sub_resource type="GDScript" id="GDScript_s1fef"]
 script/source = "extends CanvasLayer
 
-@onready var world_edit_ui: Control = $WorldEdit_UI
 @onready var player_inventory: InventoryWindow = $PlayerInventory
-@onready var creative_inventory: InventoryWindow = $CreativeInventory
+@onready var creative: InventoryWindow = $CreativeInventory
+@onready var creative_inventory: ScrollContainer = $CreativeInventory/InventoryContainer
+@onready var world_edit_ui: Control = $CreativeInventory/WorldEdit_UI
+@onready var creative_switch_window: Control = $CreativeInventory/SwichWindow
 @onready var chat: Control = $Chat
 @onready var hud: Control = $HUD
+@onready var background: ColorRect = $Background
+@onready var performance_stats: Control = $HUD/PerformanceStats
+@onready var top_bar: Control = $HUD/TopBar
 
 
 func _ready() -> void:
 	close_all_windows()
 	world_edit_ui.connect_to_parent(get_parent())
-	get_parent().current_block_update.connect(creative_inventory._current_block_update)
+	get_parent().current_block_update.connect(creative._current_block_update)
+	var model: Node3D = get_parent().get_node('Character/Model').duplicate()
+	$HUD/TopBar/Head/HeadScreen/Scene.add_child(model)
+	$HUD/TopBar/Head.get_icon()
 
 func _process(delta: float) -> void:
 	if get_multiplayer_authority() != multiplayer.get_unique_id():
@@ -45,19 +51,26 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed(\"tab\"):
 		match get_parent().gamemode:
 			0, 1:
-				if $PlayerInventory.visible == false:
+				if player_inventory.visible == false:
 					Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 					open_window(\"PlayerInventory\")
 				else:
 					Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 					close_all_windows()
 			2:
-				if $CreativeInventory/ScrollContainer.visible == false:
-					Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-					open_window(\"CreativeInventory\")
-				else:
-					Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-					close_all_windows()
+				if creative.current_window == 'inventory':
+					if creative_inventory.visible == false:
+						Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+						open_window(\"CreativeInventory\")
+					else:
+						Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+						close_all_windows()
+				elif creative.current_window == 'world_edit':
+					if world_edit_ui.visible == false:
+						open_window(\"WorldEdit\")
+					else:
+						Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+						close_all_windows()
 	
 	if Input.is_action_just_pressed(\"chat\"):
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
@@ -67,30 +80,49 @@ func _process(delta: float) -> void:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 			close_all_windows()
 	
-	
+	if Input.is_action_just_pressed('F1'):
+		visible = not(visible)
+	elif Input.is_action_just_pressed('F2'):
+		var dir: DirAccess = FileManager.open_or_create_directory('user://','Screenshots')
+		var t: Dictionary = Time.get_datetime_dict_from_system()
+		var filename: String = \"screenshot_%04d-%02d-%02d_%02d-%02d-%02d.png\" % [t.year, t.month, t.day, t.hour, t.minute, t.second]
+		await RenderingServer.frame_post_draw
+		var image: Image = get_viewport().get_texture().get_image()
+		image.save_png(dir.get_current_dir()+'/'+filename)
+		print(\"Скриншот сохранён: \", dir.get_current_dir(false)+'/'+filename)
+		ChatManager.rpc_id(get_parent().player_id, '_message', \"Скриншот сохранён: \", dir.get_current_dir(false)+'/'+filename)
+	elif Input.is_action_just_pressed('F3'):
+		performance_stats.visible = not(performance_stats.visible)
 
 func close_all_windows() -> void:
-	$Background.hide()
-	$PlayerInventory.hide()
-	$CreativeInventory/ScrollContainer.hide()
+	background.hide()
+	player_inventory.hide()
+	creative_inventory.hide()
+	chat.show()
 	$Chat/BackgroundRect.hide()
 	$Chat/SendChat.release_focus()
 	world_edit_ui.hide()
+	performance_stats.show()
+	top_bar.show()
+	creative_switch_window.hide()
 
 func open_window(window_name: String) -> void:
 	close_all_windows()
 	match window_name:
 		\"PlayerInventory\":
-			$PlayerInventory.show()
-			$Background.show()
+			player_inventory.show()
+			background.show()
 		\"CreativeInventory\":
-			$CreativeInventory/ScrollContainer.show()
-			$Background.show()
+			creative_switch_window.show()
+			creative_inventory.show()
+			background.show()
 		\"Chat\":
-			chat.show()
 			$Chat/BackgroundRect.show()
 			$Chat/SendChat.grab_focus()
 		\"WorldEdit\":
+			creative_switch_window.show()
+			performance_stats.hide()
+			top_bar.hide()
 			chat.hide()
 			world_edit_ui.show()
 "
@@ -112,6 +144,8 @@ func update_health(health: float, max_health: float) -> void:
 	$HealthLable.text = str(int(health))+'%'
 	$HealthBar.max_value = max_health
 	$HealthBar.value = health
+	var overlay_visible: float = (max_health-health)/max_health/2
+	$\"../HealthOverlay\".modulate = Color(1, 1, 1, overlay_visible)
 
 func update_energy(energy: float, max_energy: float) -> void:
 	$EnergyLable.text = str(int(energy))+'%'
@@ -122,7 +156,7 @@ func update_energy(energy: float, max_energy: float) -> void:
 [sub_resource type="GDScript" id="GDScript_plo7s"]
 script/source = "extends Control
 
-func _ready() -> void:
+func get_icon() -> void:
 	$HeadTexture.texture = get_texture_3d()
 
 func get_texture_3d() -> AtlasTexture:
@@ -347,32 +381,19 @@ world_3d = SubResource("World3D_8erm5")
 transparent_bg = true
 render_target_update_mode = 1
 
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="HUD/TopBar/Head/HeadScreen" unique_id=1364002626]
+transform = Transform3D(-0.60737574, -0.75113386, 0.25863612, 0, 0.32556817, 0.9455186, -0.7944147, 0.5742851, -0.19774221, 0, 0, 0)
+metadata/_edit_lock_ = true
+
 [node name="Scene" type="Node3D" parent="HUD/TopBar/Head/HeadScreen" unique_id=1365261343]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 metadata/_edit_lock_ = true
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="HUD/TopBar/Head/HeadScreen/Scene" unique_id=1364002626]
-transform = Transform3D(-0.60737574, -0.7511338, 0.25863612, 0, 0.32556814, 0.9455186, -0.7944147, 0.57428503, -0.1977422, 0, 1, 0)
-metadata/_edit_lock_ = true
-
-[node name="blockbench_export" parent="HUD/TopBar/Head/HeadScreen" unique_id=562773184 instance=ExtResource("10_we3k3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
-
-[node name="Skeleton3D" parent="HUD/TopBar/Head/HeadScreen/blockbench_export/base" parent_id_path=PackedInt32Array(562773184, 2113020208) index="0" unique_id=1981775415]
-bones/0/position = Vector3(0, -0.01875, 0)
-bones/11/rotation = Quaternion(0.04360901, 0.00095155195, 0.021794122, 0.99881047)
-bones/12/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
-bones/14/rotation = Quaternion(0.04360901, -0.00095155195, -0.021794122, 0.99881047)
-bones/15/rotation = Quaternion(0.043619387, 0, 0, 0.99904823)
-bones/17/rotation = Quaternion(0.044703674, -0.0424222, 0.028029142, 0.9977055)
-bones/18/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
-bones/19/rotation = Quaternion(0.044703674, 0.0424222, -0.028029142, 0.9977055)
-bones/20/rotation = Quaternion(-0.043619387, 0, 0, 0.99904823)
 
 [node name="Camera3D" type="Camera3D" parent="HUD/TopBar/Head/HeadScreen" unique_id=189511079]
 transform = Transform3D(-0.81512773, -0.07661365, 0.57419264, 0, 0.9912155, 0.1322564, -0.5792813, 0.10780585, -0.8079673, 0.3633367, 0.8457718, -0.4523987)
 projection = 1
 fov = 60.0
+metadata/_edit_lock_ = true
 
 [node name="Chat" type="Control" parent="." unique_id=295325971]
 layout_mode = 3
@@ -449,7 +470,6 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="CreativeInventory" parent="." unique_id=1745702651 instance=ExtResource("11_axtvl")]
-visible = false
 
 [node name="PlayerInventory" parent="." unique_id=1111068089 instance=ExtResource("12_onufr")]
 visible = false
@@ -467,9 +487,4 @@ grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 
-[node name="WorldEdit_UI" parent="." unique_id=1948536089 instance=ExtResource("11_we3k3")]
-visible = false
-
 [connection signal="text_submitted" from="Chat/SendChat" to="Chat" method="_on_send_chat_text_submitted"]
-
-[editable path="HUD/TopBar/Head/HeadScreen/blockbench_export"]

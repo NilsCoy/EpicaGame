@@ -1,7 +1,5 @@
 [gd_scene format=3 uid="uid://bfos268tpe1gs"]
 
-[ext_resource type="PackedScene" uid="uid://cd36x2mlp1cj2" path="res://Scenes/MapSystem/generate_texture_atlas.tscn" id="1_ap68k"]
-
 [sub_resource type="GDScript" id="GDScript_1i61x"]
 script/source = "extends Node3D
 
@@ -13,7 +11,6 @@ var CHUNK_SIZE: int = WorldEdit.CHUNK_SIZE
 
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 @onready var collision_shape: CollisionShape3D = $StaticBody3D/CollisionShape3D
-@onready var atlas_generator: Node = $GenerateTextureAtlas
 
 var rebuild_thread: Thread = Thread.new()
 
@@ -35,7 +32,7 @@ func save_data() -> Dictionary:
 			for z: int in CHUNK_SIZE:
 				blocks_ids[x][y][z] = str(blocks[x][y][z][\"id\"])
 				blocks_rotations[x][y][z] = [blocks[x][y][z][\"rotation\"].x, blocks[x][y][z][\"rotation\"].y, blocks[x][y][z][\"rotation\"].z]
-	
+
 	return {
 		\"name\": name,
 		\"position\": [position.x, position.y, position.z],
@@ -45,16 +42,16 @@ func save_data() -> Dictionary:
 
 func load_data(data: Dictionary) -> void:
 	self.name = data.get(\"name\", 'chunk_unknown')
-	
+
 	self.position.x = data.get(\"position\", Vector3.ZERO)[0]
 	self.position.y = data.get(\"position\", Vector3.ZERO)[1]
 	self.position.z = data.get(\"position\", Vector3.ZERO)[2]
-	
+
 	generate_blocks(
 		data.get(\"blocks_ids\", [[[]]]),
 		data.get(\"blocks_rotations\", [[[]]])
 	)
-	
+
 	loaded_chunk = true
 
 func serialize() -> PackedByteArray:
@@ -70,7 +67,7 @@ func _ready() -> void:
 	if blocks == []:
 		generate_blocks()
 		#rebuild()
-	
+
 	if starter_block:
 		blocks[0][0][0] = {
 			\"id\": \"stone\",
@@ -109,14 +106,19 @@ func is_block(x: int, y: int, z: int) -> bool:
 		return false
 	if x >= CHUNK_SIZE or y >= CHUNK_SIZE or z >= CHUNK_SIZE:
 		return false
-	return blocks[x][y][z]['id'] != \"air\" and atlas_generator.blocks[str(blocks[x][y][z]['id'])][\"type\"] != \"model\"
+	var id: String = str(blocks[x][y][z][\"id\"])
+	if id == \"air\":
+		return false
+	# model-блоки не считаем твёрдыми для целей отсечения граней,
+	# неизвестный блок (\"error\") ведёт себя как обычный куб
+	return BlockRegistry.get_type(id) != \"model\"
 
 
 # Перестроение меша
 func rebuild() -> void:
 	#if OS.has_feature(\"dedicated_server\"):
 		#return
-	
+
 	for child: Node in get_children():
 		if 'ModelBlock' in child.name:
 			child.free()
@@ -128,7 +130,7 @@ func rebuild() -> void:
 
 func _rebuild() -> void:
 	var has_ModelBlock: bool = false
-	
+
 	var st: SurfaceTool = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
@@ -139,10 +141,11 @@ func _rebuild() -> void:
 				var block_id: String = str(block_data[\"id\"])
 				if block_id != \"air\":
 					var block_rotation: Vector3 = block_data[\"rotation\"]
-					if atlas_generator.blocks[block_id][\"type\"] == \"model\":
+					if BlockRegistry.get_type(block_id) == \"model\":
 						call_deferred(\"add_model_block\", x, y, z, block_id, block_rotation)
 						has_ModelBlock = true
 					else:
+						# \"block\" и \"error\" рендерим как куб (error — с error-текстурой)
 						add_block_faces(st, x, y, z, block_id, block_rotation)
 
 	var mesh: ArrayMesh = st.commit()
@@ -150,9 +153,9 @@ func _rebuild() -> void:
 	if mesh.get_surface_count() == 0 and has_ModelBlock == false:
 		queue_free()
 		return
-	
+
 	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_texture = atlas_generator.atlas_texture
+	material.albedo_texture = BlockRegistry.atlas_texture
 	material.uv1_scale = Vector3(1, 1, 1)
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	material.roughness = 1.0
@@ -168,19 +171,31 @@ func update_mesh(mesh: ArrayMesh) -> void:
 
 # Добавление блок-модель
 func add_model_block(x: int, y: int, z: int, block_id: String, block_rotation: Vector3) -> void:
-	var scene: Resource = load(atlas_generator.blocks[block_id][\"asset\"])
-	var instance: Variant = scene.instantiate()
+	# Безопасно достаём путь ассета
+	var asset_path: String = BlockRegistry.get_block(block_id).get(\"asset\", \"\")
+	if asset_path == \"\" or not ResourceLoader.exists(asset_path):
+		push_warning(\"Model asset missing for block '%s': '%s' — skipping\" % [block_id, asset_path])
+		return
+
+	var scene: Resource = load(asset_path)
+	if scene == null:
+		push_warning(\"Failed to load model for block '%s': '%s'\" % [block_id, asset_path])
+		return
+
+	var instance: Node = scene.instantiate()
+	if instance == null:
+		push_warning(\"Failed to instantiate model for block '%s'\" % block_id)
+		return
 
 	Global.create_collision(instance,[1],[1])
 	var static_instance: StaticBody3D = StaticBody3D.new()
-	#instance = G.replace_to_static(instance)
 	static_instance.add_child(instance)
-	
+
 	static_instance.set_collision_mask_value(1, false)
 	static_instance.set_collision_mask_value(2, true)
 	static_instance.set_collision_layer_value(1, false)
 	static_instance.set_collision_layer_value(2, true)
-	
+
 	var collision: CollisionShape3D = CollisionShape3D.new()
 	var box: BoxShape3D = BoxShape3D.new()
 	box.size = Vector3(1, 1, 1)
@@ -190,8 +205,6 @@ func add_model_block(x: int, y: int, z: int, block_id: String, block_rotation: V
 
 	static_instance.position = Vector3(x, y, z)
 
-	# Поворот по направлению
-	#print(block_rotation)
 	if block_rotation == Vector3.RIGHT:
 		instance.rotation_degrees.y = -90
 		instance.position.x += 1
@@ -202,7 +215,7 @@ func add_model_block(x: int, y: int, z: int, block_id: String, block_rotation: V
 		instance.rotation_degrees.y = 180
 		instance.position.x += 1
 		instance.position.z += 1
-	
+
 	static_instance.name = \"ModelBlock_\" + str(x) + \"_\" + str(y) + \"_\" + str(z)
 	add_child(static_instance)
 
@@ -235,7 +248,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 	var v: Array = []
 	var uv_rotation_steps: int = 0  # 0,1,2,3 = 0°,90°,180°,270°
 
-	# UV из атласа
+	# UV из атласа (безопасно через реестр)
 	var atlas_pos: Vector2i
 
 	match normal:
@@ -246,7 +259,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(1,1,1),
 				pos + Vector3(0,1,1)
 			]
-			atlas_pos = atlas_generator.block_uv_map[block_id][\"top\"]
+			atlas_pos = BlockRegistry.get_uv(block_id, \"top\")
 
 		Vector3.DOWN:
 			v = [
@@ -255,7 +268,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(1,0,1),
 				pos + Vector3(1,0,0)
 			]
-			atlas_pos = atlas_generator.block_uv_map[block_id][\"bottom\"]
+			atlas_pos = BlockRegistry.get_uv(block_id, \"bottom\")
 
 		Vector3.RIGHT:
 			v = [
@@ -264,7 +277,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(1,1,1),
 				pos + Vector3(1,1,0)
 			]
-			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
+			atlas_pos = BlockRegistry.get_uv(block_id, \"side\")
 			uv_rotation_steps = 2
 
 		Vector3.LEFT:
@@ -274,7 +287,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(0,1,1),
 				pos + Vector3(0,0,1)
 			]
-			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
+			atlas_pos = BlockRegistry.get_uv(block_id, \"side\")
 			uv_rotation_steps = 1
 
 		Vector3.FORWARD:
@@ -284,7 +297,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(1,1,0),
 				pos + Vector3(0,1,0)
 			]
-			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
+			atlas_pos = BlockRegistry.get_uv(block_id, \"side\")
 			uv_rotation_steps = 2
 
 		Vector3.BACK:
@@ -294,18 +307,18 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 				pos + Vector3(1,1,1),
 				pos + Vector3(1,0,1)
 			]
-			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
+			atlas_pos = BlockRegistry.get_uv(block_id, \"side\")
 			uv_rotation_steps = 1
 
-	if atlas_generator.blocks[block_id][\"is_rotate\"] == true:
+	if BlockRegistry.get_block(block_id).get(\"is_rotate\", false) == true:
 		if normal == block_rotation:
-			atlas_pos = atlas_generator.block_uv_map[block_id][\"top\"]
+			atlas_pos = BlockRegistry.get_uv(block_id, \"top\")
 
 		elif normal == -block_rotation:
-			atlas_pos = atlas_generator.block_uv_map[block_id][\"bottom\"]
+			atlas_pos = BlockRegistry.get_uv(block_id, \"bottom\")
 
 		else:
-			atlas_pos = atlas_generator.block_uv_map[block_id][\"side\"]
+			atlas_pos = BlockRegistry.get_uv(block_id, \"side\")
 			match block_rotation:
 				Vector3.RIGHT:
 					if normal == Vector3.FORWARD: uv_rotation_steps = 1
@@ -333,7 +346,7 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 	else:
 		block_rotation = Vector3.UP
 
-	var TILE_SIZE: float = atlas_generator.TILE_SIZE
+	var TILE_SIZE: float = BlockRegistry.TILE_SIZE
 
 	var uv_origin: Vector2 = Vector2(atlas_pos.x, atlas_pos.y) * TILE_SIZE
 
@@ -379,6 +392,13 @@ func add_face(st: SurfaceTool, pos: Vector3, normal: Vector3, block_id: String, 
 ## Установка блока
 @rpc(\"any_peer\", \"reliable\")
 func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"grass_block\", player_rotation: Vector3 = Vector3.ZERO) -> void:
+	# Неизвестный блок заменяем на error_block
+	if not BlockRegistry.has_block(block_id):
+		push_warning(\"Attempt to place unknown block '%s' — using error_block\" % block_id)
+		block_id = \"error_block\"
+
+	var is_model: bool = BlockRegistry.get_type(block_id) == \"model\"
+
 	var local_pos: Vector3 = to_local(hit_position + normal * 0.5)
 
 	var x: int = int(floor(local_pos.x))
@@ -388,17 +408,11 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 	# блок попадает внутрь текущего чанка?
 	if x >= 0 and y >= 0 and z >= 0 and \\
 		x < CHUNK_SIZE and y < CHUNK_SIZE and z < CHUNK_SIZE:
-		
-		if atlas_generator.blocks[block_id][\"type\"] == \"model\":
-			blocks[x][y][z] = {
-				\"id\": block_id,
-				\"rotation\": player_rotation
-			}
-		else:
-			blocks[x][y][z] = {
-				\"id\": block_id,
-				\"rotation\": normal
-			}
+
+		blocks[x][y][z] = {
+			\"id\": block_id,
+			\"rotation\": player_rotation if is_model else normal
+		}
 		if not(multiplayer.is_server()):
 			rebuild()
 	# блок вне текущего чанка (в соседнем)
@@ -407,61 +421,31 @@ func place_block(hit_position: Vector3, normal: Vector3, block_id: String = \"gr
 		var chunk_name: String = 'chunk_' + str(int(neighbor_chunk_pos.x / CHUNK_SIZE)) + \\
 						 '_' + str(int(neighbor_chunk_pos.y / CHUNK_SIZE)) + \\
 						 '_' + str(int(neighbor_chunk_pos.z / CHUNK_SIZE))
-		# Поиск соседнего чанка
-		var chunk: Node = get_parent().get_node(chunk_name)
+		var chunk: Node = get_parent().get_node_or_null(chunk_name)
+
 		# Соседнего чанка нет?
 		if chunk == null:
 			chunk = load(\"res://Scenes/MapSystem/chunk.tscn\").instantiate()
 			chunk.position = neighbor_chunk_pos
 			chunk.name = chunk_name
 			get_parent().add_child(chunk)
-			var neighbor_local_pos: Vector3 = chunk.to_local(hit_position + normal * 0.5)
-			var nx: int = int(floor(neighbor_local_pos.x))
-			var ny: int = int(floor(neighbor_local_pos.y))
-			var nz: int = int(floor(neighbor_local_pos.z))
-			#var nx: int = x
-			#var ny: int = y
-			#var nz: int = z
-			#print(nx, ny, nz)
-			#nx = clamp(abs(nx), 0, CHUNK_SIZE - 1)
-			#ny = clamp(abs(ny), 0, CHUNK_SIZE - 1)
-			#nz = clamp(abs(nz), 0, CHUNK_SIZE - 1)
-			#print(nx, ny, nz)
+
+		var neighbor_local_pos: Vector3 = chunk.to_local(hit_position + normal * 0.5)
+		var nx: int = clampi(int(floor(neighbor_local_pos.x)), 0, CHUNK_SIZE - 1)
+		var ny: int = clampi(int(floor(neighbor_local_pos.y)), 0, CHUNK_SIZE - 1)
+		var nz: int = clampi(int(floor(neighbor_local_pos.z)), 0, CHUNK_SIZE - 1)
+
+		# Если чанк только что создан — он пуст, сгенерируем воздух
+		if chunk.blocks.is_empty():
 			chunk.generate_blocks()
-			if atlas_generator.blocks[block_id][\"type\"] == \"model\":
-				chunk.blocks[nx][ny][nz] = {
-					\"id\": block_id,
-					\"rotation\": player_rotation
-				}
-			else:
-				chunk.blocks[nx][ny][nz] = {
-					\"id\": block_id,
-					\"rotation\": normal
-				}
-				
-			if not(multiplayer.is_server()):
-				chunk.rebuild()
-		# Соседний чанк существует
-		else:
-			var neighbor_local_pos: Vector3 = chunk.to_local(hit_position + normal * 0.5)
-			var nx: int = floor(neighbor_local_pos.x)
-			var ny: int = floor(neighbor_local_pos.y)
-			var nz: int = floor(neighbor_local_pos.z)
-			#nx = clamp(nx, 0, CHUNK_SIZE - 1)
-			#ny = clamp(ny, 0, CHUNK_SIZE - 1)
-			#nz = clamp(nz, 0, CHUNK_SIZE - 1)
-			if atlas_generator.blocks[block_id][\"type\"] == \"model\":
-				chunk.blocks[nx][ny][nz] = {
-					\"id\": block_id,
-					\"rotation\": player_rotation
-				}
-			else:
-				chunk.blocks[nx][ny][nz] = {
-					\"id\": block_id,
-					\"rotation\": normal
-				}
-			if not(multiplayer.is_server()):
-				chunk.rebuild()
+
+		chunk.blocks[nx][ny][nz] = {
+			\"id\": block_id,
+			\"rotation\": player_rotation if is_model else normal
+		}
+
+		if not(multiplayer.is_server()):
+			chunk.rebuild()
 
 ## Ломание блока
 @rpc(\"any_peer\", \"reliable\")
@@ -649,5 +633,3 @@ collision_mask = 0
 shape = SubResource("BoxShape3D_1i61x")
 debug_color = Color(0.6601783, 0.5141194, 0.06929062, 0.41960785)
 debug_fill = false
-
-[node name="GenerateTextureAtlas" parent="." unique_id=174601223 instance=ExtResource("1_ap68k")]

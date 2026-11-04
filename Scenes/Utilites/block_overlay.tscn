@@ -5,27 +5,91 @@
 [sub_resource type="GDScript" id="GDScript_kvkok"]
 script/source = "extends Node
 
-@export var visible: bool = false
-@onready var overlay: MeshInstance3D = $Overlay
+@export var block_look_visible: bool = false:
+	set(new_value):
+		block_look_visible = new_value
+		block_look_overlay.visible = new_value
 
+@export var block_pos1_visible: bool = false:
+	set(new_value):
+		block_pos1_visible = new_value
+		block_pos_1_overlay.visible = new_value
 
-func _process(delta: float) -> void:
-	overlay.visible = visible
+@export var block_pos2_visible: bool = false:
+	set(new_value):
+		block_pos2_visible = new_value
+		block_pos_2_overlay.visible = new_value
+
+@export var block_area_visible: bool = false:
+	set(new_value):
+		block_pos2_visible = new_value
+		block_area_overlay.visible = new_value
+
+@onready var block_look_overlay: MeshInstance3D = $BlockLookOverlay
+@onready var block_pos_1_overlay: MeshInstance3D = $BlockPos1Overlay
+@onready var block_pos_2_overlay: MeshInstance3D = $BlockPos2Overlay
+@onready var block_area_overlay: MeshInstance3D = $BlockAreaOverlay
 "
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_khhxn"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wkq2a"]
 render_priority = 0
 shader = ExtResource("1_wkq2a")
 shader_parameter/tint = Color(1, 1, 1, 1)
 shader_parameter/outline_width = 0.01
 shader_parameter/outline_glow = 1.0
 
-[sub_resource type="BoxMesh" id="BoxMesh_s1fef"]
-material = SubResource("ShaderMaterial_khhxn")
+[sub_resource type="BoxMesh" id="BoxMesh_wkq2a"]
+material = SubResource("ShaderMaterial_wkq2a")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ej2k3"]
+render_priority = 0
+shader = ExtResource("1_wkq2a")
+shader_parameter/tint = Color(1, 0, 0, 1)
+shader_parameter/outline_width = 0.01
+shader_parameter/outline_glow = 1.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_35ae8"]
+material = SubResource("ShaderMaterial_ej2k3")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7nxlv"]
+render_priority = 0
+shader = ExtResource("1_wkq2a")
+shader_parameter/tint = Color(0, 0, 1, 1)
+shader_parameter/outline_width = 0.01
+shader_parameter/outline_glow = 1.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_n0nod"]
+material = SubResource("ShaderMaterial_7nxlv")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3s8up"]
+render_priority = 0
+shader = ExtResource("1_wkq2a")
+shader_parameter/tint = Color(0, 1, 0, 1)
+shader_parameter/outline_width = 0.01
+shader_parameter/outline_glow = 1.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_2fnhq"]
+material = SubResource("ShaderMaterial_3s8up")
 
 [node name="BlockOverlay" type="Node" unique_id=1752300680]
 script = SubResource("GDScript_kvkok")
 
-[node name="Overlay" type="MeshInstance3D" parent="." unique_id=1321848600]
+[node name="BlockLookOverlay" type="MeshInstance3D" parent="." unique_id=1321848600]
 transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
-mesh = SubResource("BoxMesh_s1fef")
+visible = false
+mesh = SubResource("BoxMesh_wkq2a")
+
+[node name="BlockPos1Overlay" type="MeshInstance3D" parent="." unique_id=454839880]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
+visible = false
+mesh = SubResource("BoxMesh_35ae8")
+
+[node name="BlockPos2Overlay" type="MeshInstance3D" parent="." unique_id=841813765]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
+visible = false
+mesh = SubResource("BoxMesh_n0nod")
+
+[node name="BlockAreaOverlay" type="MeshInstance3D" parent="." unique_id=1333593074]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
+visible = false
+mesh = SubResource("BoxMesh_2fnhq")

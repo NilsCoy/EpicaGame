@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://b4prui3gxwl8q" path="res://Scripts/Classes/InventorySystem/slot_data.gd" id="2_qns53"]
 [ext_resource type="PackedScene" uid="uid://xq6oew8fy170" path="res://Scenes/InventorySystem/inventory_container.tscn" id="3_3k7iu"]
 [ext_resource type="PackedScene" uid="uid://74bnuimkjgne" path="res://Scenes/InventorySystem/item_visual.tscn" id="4_o1kjb"]
+[ext_resource type="PackedScene" uid="uid://cmp4jpvhs0pat" path="res://Scenes/UI/world_edit_ui.tscn" id="5_qns53"]
 
 [sub_resource type="GDScript" id="GDScript_vgqql"]
 script/source = "extends InventoryWindow
@@ -12,13 +13,23 @@ script/source = "extends InventoryWindow
 @export var blocks_data: InventoryData
 @export var hot_bar_data: InventoryData
 
+@export_enum('inventory', 'world_edit') var current_window: String = 'inventory':
+	set(new_value):
+		current_window = new_value
+		if $InventoryContainer.visible and new_value == 'world_edit':
+			$InventoryContainer.hide()
+			$WorldEdit_UI.show()
+		elif $WorldEdit_UI.visible and new_value == 'inventory':
+			$InventoryContainer.show()
+			$WorldEdit_UI.hide()
+
 func _ready() -> void:
 	init_inventory()
 
 func init_inventory() -> void:
 	super.init_inventory()
 	
-	$ScrollContainer/BlocksContainer.columns = blocks_data.grid_size.x
+	$InventoryContainer/BlocksContainer.columns = blocks_data.grid_size.x
 	$HotBarContainer.columns = hot_bar_data.grid_size.x
 	
 	var files: Array = FileManager.get_files_in_directory(
@@ -65,7 +76,7 @@ func init_inventory() -> void:
 	blocks_data.grid_size.y = rows
 
 	blocks_data.inventory_interact.connect(on_inventory_interact)
-	$ScrollContainer/BlocksContainer.set_inventory_data(blocks_data)
+	$InventoryContainer/BlocksContainer.set_inventory_data(blocks_data)
 
 	hot_bar_data.inventory_interact.connect(on_inventory_interact)
 	$HotBarContainer.set_inventory_data(hot_bar_data)
@@ -89,6 +100,12 @@ func on_inventory_interact(inv_data: InventoryData, index: int, button: int) -> 
 
 func _current_block_update(current_block: String) -> void:
 	$ItemName.text = current_block
+
+
+func _on_inventory_pressed() -> void:
+	current_window = 'inventory'
+func _on_world_eidt_pressed() -> void:
+	current_window = 'world_edit'
 "
 
 [sub_resource type="Resource" id="Resource_fkybt"]
@@ -179,7 +196,7 @@ layout_mode = 0
 offset_right = 64.0
 offset_bottom = 64.0
 
-[node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=991526994]
+[node name="InventoryContainer" type="ScrollContainer" parent="." unique_id=991526994]
 visible = false
 custom_minimum_size = Vector2(572, 500)
 layout_mode = 1
@@ -195,7 +212,7 @@ grow_vertical = 2
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 2
 
-[node name="BlocksContainer" parent="ScrollContainer" unique_id=1445187137 instance=ExtResource("3_3k7iu")]
+[node name="BlocksContainer" parent="InventoryContainer" unique_id=1445187137 instance=ExtResource("3_3k7iu")]
 layout_mode = 2
 
 [node name="BlockScreen" type="SubViewport" parent="." unique_id=698160024]
@@ -232,3 +249,32 @@ text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
 metadata/_edit_lock_ = true
+
+[node name="WorldEdit_UI" parent="." unique_id=1948536089 instance=ExtResource("5_qns53")]
+visible = false
+layout_mode = 1
+
+[node name="SwichWindow" type="HBoxContainer" parent="." unique_id=1773151476]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -105.0
+offset_right = 105.0
+offset_bottom = 40.0
+grow_horizontal = 2
+
+[node name="Inventory" type="Button" parent="SwichWindow" unique_id=1370628057]
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 32
+text = "Inventory"
+
+[node name="WorldEidt" type="Button" parent="SwichWindow" unique_id=969371793]
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 32
+text = "WorldEdit"
+
+[connection signal="pressed" from="SwichWindow/Inventory" to="." method="_on_inventory_pressed"]
+[connection signal="pressed" from="SwichWindow/WorldEidt" to="." method="_on_world_eidt_pressed"]
