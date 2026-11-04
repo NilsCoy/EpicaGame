@@ -18,9 +18,15 @@ const MAX_COORD: int = 1_000_000                      # защита от пер
 var block_1: Vector3i
 var block_2: Vector3i
 
+var overlay: Node
+
 ## Контейнер, в котором лежат чанки (узел Chunks). Если не задан — ищется по пути.
 @export var chunks_container: Node = null
 
+func _ready() -> void:
+	if not(OS.has_feature("dedicated_server")):
+		overlay = load("res://Scenes/Utilites/block_overlay.tscn").instantiate()
+		add_child(overlay)
 
 # ============================================================
 #  ПУБЛИЧНОЕ API (вызывается с клиента/сервера)

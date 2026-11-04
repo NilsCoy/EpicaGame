@@ -247,6 +247,7 @@ layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
 grow_vertical = 2
+metadata/_edit_lock_ = true
 
 [node name="MarginContainer" type="MarginContainer" parent="ToolContainer" unique_id=44935471]
 layout_mode = 2
@@ -254,10 +255,12 @@ theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
+metadata/_edit_lock_ = true
 
 [node name="ScrollContainer" type="ScrollContainer" parent="ToolContainer/MarginContainer" unique_id=1654662895]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
+metadata/_edit_lock_ = true
 
 [node name="MainContainer" type="VBoxContainer" parent="ToolContainer/MarginContainer/ScrollContainer" unique_id=792253935]
 layout_mode = 2
@@ -665,6 +668,7 @@ anchor_bottom = 1.0
 offset_left = -320.0
 grow_horizontal = 0
 grow_vertical = 2
+metadata/_edit_lock_ = true
 
 [node name="MarginContainer" type="MarginContainer" parent="ManageContainer" unique_id=145411625]
 layout_mode = 2
@@ -672,14 +676,17 @@ theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
+metadata/_edit_lock_ = true
 
 [node name="ScrollContainer" type="ScrollContainer" parent="ManageContainer/MarginContainer" unique_id=2141566496]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
+metadata/_edit_lock_ = true
 
 [node name="MainContainer" type="VBoxContainer" parent="ManageContainer/MarginContainer/ScrollContainer" unique_id=1417457876]
 layout_mode = 2
 size_flags_horizontal = 3
+metadata/_edit_lock_ = true
 
 [node name="FilterTitle" type="Label" parent="ManageContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=865355022]
 layout_mode = 2
