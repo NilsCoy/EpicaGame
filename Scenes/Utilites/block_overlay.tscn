@@ -10,25 +10,87 @@ script/source = "extends Node
 		block_look_visible = new_value
 		block_look_overlay.visible = new_value
 
-@export var block_pos1_visible: bool = false:
+@export var block_pos_1_visible: bool = false:
 	set(new_value):
-		block_pos1_visible = new_value
+		block_pos_1_visible = new_value
 		block_pos_1_overlay.visible = new_value
+		update_area_overlay()
 
-@export var block_pos2_visible: bool = false:
+@export var block_pos_2_visible: bool = false:
 	set(new_value):
-		block_pos2_visible = new_value
+		block_pos_2_visible = new_value
 		block_pos_2_overlay.visible = new_value
+		update_area_overlay()
 
 @export var block_area_visible: bool = false:
 	set(new_value):
-		block_pos2_visible = new_value
+		block_area_visible = new_value
 		block_area_overlay.visible = new_value
 
 @onready var block_look_overlay: MeshInstance3D = $BlockLookOverlay
 @onready var block_pos_1_overlay: MeshInstance3D = $BlockPos1Overlay
 @onready var block_pos_2_overlay: MeshInstance3D = $BlockPos2Overlay
 @onready var block_area_overlay: MeshInstance3D = $BlockAreaOverlay
+
+## Размер одной блочной клетки по всем осям.
+const BLOCK_SIZE: float = 1.0
+
+## Возвращает блочную координату (int) объекта block_pos_1_overlay и сохраняет её в point_1.
+var point_1: Vector3i:
+	get():
+		return _node_position_to_block(block_pos_1_overlay)
+## Возвращает блочную координату (int) объекта block_pos_2_overlay и сохраняет её в point_2.
+var point_2: Vector3i:
+	get():
+		return _node_position_to_block(block_pos_2_overlay)
+
+## Обновляет block_area_overlay: масштаб и позицию так, чтобы он покрывал область от point_1 до point_2.
+func update_area_overlay() -> void:
+	if block_pos_1_visible and block_pos_2_visible:
+		block_area_visible = true
+
+	# Границы области в блочных координатах (включительно).
+	var min_block: Vector3i = Vector3i(
+		mini(point_1.x, point_2.x),
+		mini(point_1.y, point_2.y),
+		mini(point_1.z, point_2.z)
+	)
+	var max_block: Vector3i = Vector3i(
+		maxi(point_1.x, point_2.x),
+		maxi(point_1.y, point_2.y),
+		maxi(point_1.z, point_2.z)
+	)
+
+	# Размер области в блоках (минимум 1 по каждой оси).
+	var block_size: Vector3i = Vector3i(
+		max_block.x - min_block.x + 1,
+		max_block.y - min_block.y + 1,
+		max_block.z - min_block.z + 1
+	)
+
+	# Масштаб: предполагаем, что базовый меш area_overlay — куб 1x1x1.
+	block_area_overlay.scale = Vector3(
+		block_size.x * BLOCK_SIZE + 0.1,
+		block_size.y * BLOCK_SIZE + 0.1,
+		block_size.z * BLOCK_SIZE + 0.1
+	)
+
+	# Центр области = середина между минимальной и максимальной точками.
+	var area_center: Vector3 = (Vector3(min_block) + Vector3(block_size) * 0.5) * BLOCK_SIZE
+	block_area_overlay.position = area_center
+
+
+## Преобразует позицию ноды (оверлея точки) в блочную координату.
+## Оверлей точки стоит в центре клетки, поэтому сначала смещаем на полблока назад.
+func _node_position_to_block(node: Node3D) -> Vector3i:
+	if node == null:
+		return Vector3i.ZERO
+	var block_position: Vector3 = node.position / BLOCK_SIZE - Vector3.ONE * 0.5
+	return Vector3i(
+		floori(block_position.x),
+		floori(block_position.y),
+		floori(block_position.z)
+	)
 "
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wkq2a"]
@@ -45,7 +107,7 @@ material = SubResource("ShaderMaterial_wkq2a")
 render_priority = 0
 shader = ExtResource("1_wkq2a")
 shader_parameter/tint = Color(1, 0, 0, 1)
-shader_parameter/outline_width = 0.01
+shader_parameter/outline_width = 0.03
 shader_parameter/outline_glow = 1.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_35ae8"]
@@ -55,7 +117,7 @@ material = SubResource("ShaderMaterial_ej2k3")
 render_priority = 0
 shader = ExtResource("1_wkq2a")
 shader_parameter/tint = Color(0, 0, 1, 1)
-shader_parameter/outline_width = 0.01
+shader_parameter/outline_width = 0.03
 shader_parameter/outline_glow = 1.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_n0nod"]

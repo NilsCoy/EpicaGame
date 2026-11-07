@@ -10,6 +10,25 @@ script/source = "extends Control
 var current_block: String = \"\"
 var parent: Node
 
+var selected_tool: String:
+	get():
+		if rectangle_select.content.window_visible:
+			var tool_data: Dictionary = rectangle_select.get_tool()
+			return tool_data['tool_type']
+		elif sphere.content.window_visible:
+			var tool_data: Dictionary = rectangle_select.get_tool()
+			return tool_data['tool_type']
+		elif cylinder.content.window_visible:
+			var tool_data: Dictionary = rectangle_select.get_tool()
+			return tool_data['tool_type']
+		elif cube.content.window_visible:
+			var tool_data: Dictionary = rectangle_select.get_tool()
+			return tool_data['tool_type']
+		elif smooth.content.window_visible:
+			var tool_data: Dictionary = rectangle_select.get_tool()
+			return tool_data['tool_type']
+		return \"\"
+
 @onready var block_id: HBoxContainer = $ToolContainer/MarginContainer/ScrollContainer/MainContainer/BlockID
 @onready var block_x: HBoxContainer = $ToolContainer/MarginContainer/ScrollContainer/MainContainer/BlockPosContainer/BlockX
 @onready var block_y: HBoxContainer = $ToolContainer/MarginContainer/ScrollContainer/MainContainer/BlockPosContainer/BlockY
@@ -32,8 +51,9 @@ func _physics_process(delta: float) -> void:
 			else:
 				Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		
-		if Input.is_action_just_pressed('right_click') and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-			_apply_tool()
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+			if Input.is_action_just_pressed('left_click'): _apply_tool('left')
+			elif Input.is_action_just_pressed('right_click'): _apply_tool('right')
 
 func connect_to_parent(p: Node) -> void:
 	parent = p
@@ -47,24 +67,27 @@ func _current_block_update(value: String) -> void:
 	#current_block = value
 	block_id.value = value
 
-func _apply_tool() -> void:
-	if rectangle_select.content.window_visible:
+func _apply_tool(mouse_button: String) -> void:
+	if selected_tool == 'rectangle_select':
 		var tool_data: Dictionary = rectangle_select.get_tool()
-		if parent._get_select_block_pos() != null:
+		if parent._get_select_block_on_global_pos() != Vector3.INF and parent._get_select_block_pos() != null:
 			var hit: Vector3i = parent._get_select_block_pos()
-			if rectangle_select.new_pos:
+			var pos: Vector3 = parent._get_select_block_on_global_pos()
+			if mouse_button == 'left':
 				rectangle_select.block_x1.value = str(hit.x)
 				rectangle_select.block_y1.value = str(hit.y)
 				rectangle_select.block_z1.value = str(hit.z)
-				rectangle_select.new_pos = false
-			else:
+				WorldEdit.overlay.block_pos_1_overlay.global_position = pos
+				WorldEdit.overlay.block_pos_1_visible = true
+			elif mouse_button == 'right':
 				rectangle_select.block_x2.value = str(hit.x)
 				rectangle_select.block_y2.value = str(hit.y)
 				rectangle_select.block_z2.value = str(hit.z)
-				rectangle_select.new_pos = true
+				WorldEdit.overlay.block_pos_2_overlay.global_position = pos
+				WorldEdit.overlay.block_pos_2_visible = true
 			#WorldEdit.sphere(hit, tool_data.get('radius', 5), current_block,
 				#tool_data.get('hollow', false), tool_data.get('thickness', 1))
-	elif sphere.content.window_visible:
+	if selected_tool == 'sphere':
 		var tool_data: Dictionary = sphere.get_tool()
 		if parent._get_select_block_pos() != null and current_block != '':
 			var hit: Vector3i = parent._get_select_block_pos()
@@ -73,7 +96,7 @@ func _apply_tool() -> void:
 			block_z.value = str(hit.z)
 			WorldEdit.sphere(hit, tool_data.get('radius', 5), current_block,
 				tool_data.get('hollow', false), tool_data.get('thickness', 1))
-	elif cylinder.content.window_visible:
+	if selected_tool == 'cylinder':
 		var tool_data: Dictionary = cylinder.get_tool()
 		if parent._get_select_block_pos() != null and current_block != '':
 			var hit: Vector3i = parent._get_select_block_pos()
@@ -82,7 +105,7 @@ func _apply_tool() -> void:
 			block_z.value = str(hit.z)
 			WorldEdit.cylinder(hit, tool_data.get('radius', 5), tool_data.get('height', 5),
 				current_block, tool_data.get('hollow', false), tool_data.get('thickness', 1))
-	elif cube.content.window_visible:
+	if selected_tool == 'cube':
 		var tool_data: Dictionary = cube.get_tool()
 		if parent._get_select_block_pos() != null and current_block != '':
 			var hit: Vector3i = parent._get_select_block_pos()
@@ -91,9 +114,9 @@ func _apply_tool() -> void:
 			block_z.value = str(hit.z)
 			WorldEdit.cube_radius_height(hit, tool_data.get('radius', 5), tool_data.get('height', 5),
 					current_block, tool_data.get('hollow', false), tool_data.get('thickness', 1))
-	elif smooth.content.window_visible:
+	if selected_tool == 'smooth':
 		var tool_data: Dictionary = smooth.get_tool()
-		if parent._get_select_block_pos() != null:
+		if parent._get_select_block_pos() != null and current_block != '':
 			var hit: Vector3i = parent._get_select_block_pos()
 			block_x.value = str(hit.x)
 			block_y.value = str(hit.y)
@@ -114,8 +137,6 @@ script/source = "extends ToolPanel
 @onready var block_x2: LableEdit = $DropdownContent/BlockPos2/BlockX
 @onready var block_y2: LableEdit = $DropdownContent/BlockPos2/BlockY
 @onready var block_z2: LableEdit = $DropdownContent/BlockPos2/BlockZ
-
-var new_pos: bool = true
 
 func get_tool() -> Dictionary:
 	var tool_data: Dictionary
@@ -479,7 +500,7 @@ value = "1"
 [node name="Cylinder" type="PanelContainer" parent="ToolContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1841188216]
 layout_mode = 2
 script = SubResource("GDScript_f5ba2")
-tool_type = "cube"
+tool_type = "cylinder"
 
 [node name="DropdownContent" type="VBoxContainer" parent="ToolContainer/MarginContainer/ScrollContainer/MainContainer/Cylinder" unique_id=89207564 node_paths=PackedStringArray("switch_button")]
 use_parent_material = true
@@ -529,7 +550,7 @@ value = "1"
 [node name="Cube" type="PanelContainer" parent="ToolContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1045443351]
 layout_mode = 2
 script = SubResource("GDScript_8jfm4")
-tool_type = "cylinder"
+tool_type = "cube"
 
 [node name="DropdownContent" type="VBoxContainer" parent="ToolContainer/MarginContainer/ScrollContainer/MainContainer/Cube" unique_id=1430772469 node_paths=PackedStringArray("switch_button")]
 use_parent_material = true
@@ -625,6 +646,7 @@ value = "1"
 [node name="Sculpt" type="PanelContainer" parent="ToolContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=123017493]
 layout_mode = 2
 script = ExtResource("3_8jfm4")
+tool_type = "sculpt"
 metadata/_custom_type_script = "uid://b27bsnfbva58k"
 
 [node name="DropdownContent" type="VBoxContainer" parent="ToolContainer/MarginContainer/ScrollContainer/MainContainer/Sculpt" unique_id=515324581 node_paths=PackedStringArray("switch_button")]
@@ -639,7 +661,7 @@ layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 32
 button_group = SubResource("ButtonGroup_jjus3")
-text = "Сглаживание"
+text = "Скульптинг"
 
 [node name="Raduis" parent="ToolContainer/MarginContainer/ScrollContainer/MainContainer/Sculpt/DropdownContent" unique_id=1358061000 instance=ExtResource("2_jjus3")]
 layout_mode = 2
@@ -699,6 +721,6 @@ uppercase = true
 [node name="BlockID" parent="ManageContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=1834313975 instance=ExtResource("2_jjus3")]
 layout_mode = 2
 text = "Block ID"
-value = "stone"
+value = ""
 
 [connection signal="pressed" from="ToolContainer/MarginContainer/ScrollContainer/MainContainer/PolySelect/DropdownContent/BlockPos/DeleteButton" to="ToolContainer/MarginContainer/ScrollContainer/MainContainer/PolySelect/DropdownContent/BlockPos" method="_on_delete_button_pressed"]
