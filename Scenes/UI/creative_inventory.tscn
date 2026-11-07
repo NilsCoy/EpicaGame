@@ -19,9 +19,11 @@ script/source = "extends InventoryWindow
 		if $InventoryContainer.visible and new_value == 'world_edit':
 			$InventoryContainer.hide()
 			$WorldEdit_UI.show()
+			get_parent().background.hide()
 		elif $WorldEdit_UI.visible and new_value == 'inventory':
 			$InventoryContainer.show()
 			$WorldEdit_UI.hide()
+			get_parent().background.show()
 
 func _ready() -> void:
 	init_inventory()
