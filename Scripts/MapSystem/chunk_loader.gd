@@ -1,9 +1,14 @@
 extends Node
 ## Загрузчик чанков вокруг игрока.
 ## Клиент: следит за чанком игрока, запрашивает колонки X/Z в радиусе (ближние первыми) и выгружает чанки за его пределами.
-## Сервер: хранит центры игроков и рассылает клиентам изменённые чанки (флаг dirty).
+## Клиент: сообщает карте, когда начальные чанки вокруг спавна распакованы и построены.
+## Сервер: отправляет чанки вокруг спавна при входе, хранит центры игроков и рассылает клиентам изменённые чанки (флаг dirty).
 ## Пул из WORKER_COUNT потоков выполняет задачи: распаковку пакета и построение меша чанка.
 ## Ноды создаются и удаляются только в главном потоке.
+## Метод rebuild_chunks принимает чанки от WorldEdit и ставит их перестроение в пул.
+
+## Сигнал: начальные чанки вокруг спавна получены, распакованы и построены (клиент).
+signal initial_chunks_ready
 
 ## Количество потоков в пуле.
 const WORKER_COUNT: int = 4
@@ -18,7 +23,9 @@ var chunk_size: int = WorldEdit.CHUNK_SIZE
 ## Колонки X/Z, которые клиент уже запросил и держит в радиусе.
 var _requested: Dictionary = {}
 ## Текущий центр загрузки клиента (X/Z чанка).
-var _center: Vector2i = Vector2i(999999, 999999)
+var _center: Vector2i = Vector2i.ZERO
+## Известен ли центр загрузки клиента.
+var _has_center: bool = false
 ## Центры игроков на сервере: peer_id -> Vector2i.
 var _peer_centers: Dictionary = {}
 
@@ -28,6 +35,13 @@ var _busy: Dictionary = {}
 var _pending: Dictionary = {}
 ## Чанки, которые нужно удалить, когда поток закончит работу: имя -> true.
 var _unload_pending: Dictionary = {}
+## Чанки, которые изменились, пока поток строил их меш: имя -> Node3D. Перестроятся повторно после потока.
+var _rebuild_again: Dictionary = {}
+
+## Сколько пакетов чанков распаковано с момента подключения (клиент).
+var _decoded_count: int = 0
+## Сколько начальных чанков ожидается от сервера, -1 если ожидание не активно (клиент).
+var _initial_target: int = -1
 
 ## Очередь задач для потоков.
 var _queue: Array[Callable] = []
@@ -69,8 +83,42 @@ func _process(_delta: float) -> void:
 		_update_center()
 
 # ============================================================
+#  ПЕРЕСТРОЕНИЕ ИЗ WORLDEDIT
+# ============================================================
+
+## Главный поток: ставит перестроение мешей чанков в пул. Вызывается из WorldEdit после изменения блоков.
+## Чанк, который уже строится, помечается на повторное перестроение, чтобы не потерять последние изменения.
+func rebuild_chunks(chunks: Array) -> void:
+	for chunk: Node3D in chunks:
+		if not is_instance_valid(chunk) or chunk.is_queued_for_deletion():
+			continue
+		var chunk_name: String = chunk.name
+		if _busy.has(chunk_name):
+			_rebuild_again[chunk_name] = chunk
+			continue
+		_start_mesh(chunk)
+
+## Главный поток: очищает старые ModelBlock-ноды и отправляет чанк в пул на построение меша.
+func _start_mesh(chunk: Node3D) -> void:
+	var chunk_name: String = chunk.name
+	_clear_model_blocks(chunk)
+	_busy[chunk_name] = chunk
+	_enqueue(_mesh_job.bind(chunk, chunk_name))
+
+# ============================================================
 #  КЛИЕНТ
 # ============================================================
+
+## Клиент: получает от сервера центр спавна и количество начальных чанков.
+## Колонки вокруг спавна помечаются как запрошенные, чтобы не запрашивать их повторно.
+func begin_initial_load(expected: int, center: Vector2i) -> void:
+	_center = center
+	_has_center = true
+	for x: int in range(-LOAD_RADIUS, LOAD_RADIUS + 1):
+		for z: int in range(-LOAD_RADIUS, LOAD_RADIUS + 1):
+			_requested[center + Vector2i(x, z)] = true
+	_initial_target = expected
+	_check_initial_ready()
 
 ## Пересчитывает центр игрока. При смене чанка выгружает лишнее и запрашивает недостающее.
 func _update_center() -> void:
@@ -81,9 +129,10 @@ func _update_center() -> void:
 		floori(player.global_position.x / chunk_size),
 		floori(player.global_position.z / chunk_size)
 	)
-	if center == _center:
+	if _has_center and center == _center:
 		return
 	_center = center
+	_has_center = true
 	_unload_outside_radius()
 
 	var missing: Array[Vector2i] = []
@@ -112,22 +161,30 @@ func _unload_outside_radius() -> void:
 			continue
 		var chunk_name: String = chunk.name
 		_pending.erase(chunk_name)
+		_rebuild_again.erase(chunk_name)
 		if _busy.has(chunk_name):
 			# Поток ещё читает blocks: удалим чанк, когда он закончит
 			_unload_pending[chunk_name] = true
 		else:
 			chunk.queue_free()
 
-## Главный поток: получает распакованные данные и создаёт или обновляет чанк.
+## Главный поток: получает распакованные данные и считает их для ожидания начальной загрузки.
 func _on_chunk_decoded(data: Dictionary) -> void:
+	_decoded_count += 1
+	_route_decoded(data)
+	_check_initial_ready()
+
+## Главный поток: направляет данные чанка в создание/обновление или откладывает, если чанк занят.
+func _route_decoded(data: Dictionary) -> void:
 	var chunk_pos: Vector3 = data.position
 	var column: Vector2i = _column_from_position(chunk_pos)
-	if not _requested.has(column) or not _is_in_radius(column, _center):
+	if _has_center and not _is_in_radius(column, _center):
 		return
 	var chunk_name: String = data.name
 	if _busy.has(chunk_name):
 		# Меш этого чанка строится прямо сейчас: применим данные после него
 		_unload_pending.erase(chunk_name)
+		_rebuild_again.erase(chunk_name)
 		_pending[chunk_name] = data
 		return
 	_apply_chunk(data)
@@ -149,25 +206,50 @@ func _apply_chunk(data: Dictionary) -> void:
 		chunk.blocks = data.blocks
 		chunk.loaded_chunk = false
 		chunks.add_child(chunk)
+		_busy[chunk_name] = chunk
+		_enqueue(_mesh_job.bind(chunk, chunk_name))
 	else:
 		chunk.blocks = data.blocks
-		chunk.clear_model_blocks()
-	_busy[chunk_name] = chunk
-	_enqueue(_mesh_job.bind(chunk, chunk_name))
+		_start_mesh(chunk)
+
+## Главный поток: удаляет старые ModelBlock-ноды чанка перед перестроением.
+## Встроенный скрипт chunk.tscn не имеет метода clear_model_blocks, поэтому очистка делается здесь.
+func _clear_model_blocks(chunk: Node3D) -> void:
+	for child: Node in chunk.get_children():
+		if "ModelBlock" in child.name:
+			chunk.remove_child(child)
+			child.queue_free()
 
 ## Главный поток: поток закончил строить меш чанка.
+## Порядок: удаление > новые данные из сети > повторное перестроение после изменений.
 func _on_mesh_done(chunk_name: String) -> void:
 	_busy.erase(chunk_name)
 	if _unload_pending.has(chunk_name):
 		_unload_pending.erase(chunk_name)
+		_rebuild_again.erase(chunk_name)
 		var old_chunk: Node = get_parent().chunks.get_node_or_null(chunk_name)
 		if old_chunk != null:
 			old_chunk.queue_free()
-		return
-	if _pending.has(chunk_name):
+	elif _pending.has(chunk_name):
 		var data: Dictionary = _pending[chunk_name]
 		_pending.erase(chunk_name)
-		_on_chunk_decoded(data)
+		_rebuild_again.erase(chunk_name)
+		_route_decoded(data)
+	elif _rebuild_again.has(chunk_name):
+		var again: Node3D = _rebuild_again[chunk_name]
+		_rebuild_again.erase(chunk_name)
+		if is_instance_valid(again) and not again.is_queued_for_deletion():
+			_start_mesh(again)
+	_check_initial_ready()
+
+## Клиент: проверяет, получены ли все начальные чанки и построены ли их меши.
+func _check_initial_ready() -> void:
+	if _initial_target < 0:
+		return
+	if _decoded_count < _initial_target or not _busy.is_empty():
+		return
+	_initial_target = -1
+	initial_chunks_ready.emit()
 
 ## Клиент: получает сжатый чанк от сервера и ставит его в очередь распаковки.
 @rpc("authority", "reliable")
@@ -178,6 +260,23 @@ func receive_chunk(pocket: Array) -> void:
 # ============================================================
 #  СЕРВЕР
 # ============================================================
+
+## Сервер: возвращает колонку X/Z, где находится спавн карты.
+func get_spawn_column() -> Vector2i:
+	return _column_from_position(get_parent().spawn.position)
+
+## Сервер: отправляет клиенту чанки в радиусе вокруг спавна и запоминает его центр.
+## Возвращает количество отправленных чанков.
+func send_spawn_chunks(peer_id: int, center: Vector2i) -> int:
+	_peer_centers[peer_id] = center
+	var sent: int = 0
+	for chunk: Node in get_parent().chunks.get_children():
+		var column: Vector2i = _column_from_position((chunk as Node3D).position)
+		if not _is_in_radius(column, center):
+			continue
+		rpc_id(peer_id, "receive_chunk", [chunk.serialize()])
+		sent += 1
+	return sent
 
 ## Сервер: принимает колонки клиента, запоминает его центр и отправляет существующие чанки.
 ## Порядок отправки совпадает с порядком колонок (ближние первыми).

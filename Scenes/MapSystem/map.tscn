@@ -11,6 +11,9 @@ script/source = "extends Node
 
 signal load_completed_signal
 
+var _initial_ready: bool = false
+var _waiting_players: Array = []
+
 @onready var chunks: Node = $Chunks
 @onready var entities: Node = $Entities
 @onready var players: Node = $Players
@@ -18,6 +21,12 @@ signal load_completed_signal
 
 @rpc('authority', 'reliable')
 func add_player(pocket: Array) -> void:
+	if not _initial_ready:
+		_waiting_players.append(pocket)
+		return
+	_spawn_player(pocket)
+
+func _spawn_player(pocket: Array) -> void:
 	var scene: Resource = load('res://Scenes/Entities/player.tscn')
 	var decompressed: PackedByteArray = pocket[0].decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
 	var data: Dictionary = bytes_to_var(decompressed)
@@ -28,25 +37,36 @@ func add_player(pocket: Array) -> void:
 	players.add_child(player)
 
 @rpc('authority', 'reliable')
-func load_completed() -> void:
-	emit_signal('load_completed_signal')
+func load_completed(expected: int, center: Vector2i) -> void:
+	$ChunkLoader.begin_initial_load(expected, center)
 	#$AmbientSystem.init_sound()
 
 @rpc('any_peer', 'reliable')
 func load_scene() -> void:
 	if multiplayer.is_server():
+		var sender: int = multiplayer.get_remote_sender_id()
+		var center: Vector2i = $ChunkLoader.get_spawn_column()
+		var sent: int = $ChunkLoader.send_spawn_chunks(sender, center)
 		for player: Node in players.get_children():
-			rpc_id(multiplayer.get_remote_sender_id(), 'add_player', [player.serialize()])
-		rpc_id(multiplayer.get_remote_sender_id(), 'load_completed')
+			rpc_id(sender, 'add_player', [player.serialize()])
+		rpc_id(sender, 'load_completed', sent, center)
 
 func _ready() -> void:
 	MultiplayerManager.map = self
 	MultiplayerManager.players = $Players
 	MultiplayerManager.player_spawn = $Spawn
+	$ChunkLoader.initial_chunks_ready.connect(_on_initial_chunks_ready)
 	if OS.has_feature('dedicated_server'):
 		update_spawn()
 		load_entities()
 		load_chunks()
+
+func _on_initial_chunks_ready() -> void:
+	_initial_ready = true
+	for pocket: Array in _waiting_players:
+		_spawn_player(pocket)
+	_waiting_players.clear()
+	emit_signal('load_completed_signal')
 
 func load_entities() -> void:
 	var files: Array = FileManager.get_files_in_directory('./world/entities')
