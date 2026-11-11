@@ -12,6 +12,9 @@ var CHUNK_SIZE: int = WorldEdit.CHUNK_SIZE
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 @onready var collision_shape: CollisionShape3D = $StaticBody3D/CollisionShape3D
 
+## Флаг: чанк изменён на сервере и его нужно отправить клиентам.
+var dirty: bool = false
+
 var rebuild_thread: Thread = Thread.new()
 
 func save_data() -> Dictionary:

@@ -441,6 +441,7 @@ func _set_block_world(cache: Dictionary, world_block: Vector3i,
 	elif chunk.atlas_generator.blocks[block_id]["type"] != "model" and rot == Vector3.ZERO:
 		rot = Vector3.UP
 	chunk.blocks[lx][ly][lz] = {"id": block_id, "rotation": rot}
+	chunk.dirty = true
 
 
 ## Возвращает размер чанка (CHUNK_SIZE): сначала из кеша, потом у любого
