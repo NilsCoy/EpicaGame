@@ -1,62 +1,72 @@
 [gd_scene format=3 uid="uid://b2doj54r58x6h"]
 
 [ext_resource type="PackedScene" uid="uid://csirajce688aq" path="res://Scenes/Utilites/ambient_system.tscn" id="1_20ysd"]
+[ext_resource type="Script" uid="uid://cq4pa5mbgulh4" path="res://Scripts/MapSystem/chunk_loader.gd" id="2_chunk_loader"]
 
 [sub_resource type="GDScript" id="GDScript_58wgy"]
 script/source = "extends Node
 
+## Узел карты: хранит чанки, сущности и игроков.
+## Загрузкой чанков вокруг игрока занимается дочерний узел ChunkLoader.
+
 signal load_completed_signal
+
+var _initial_ready: bool = false
+var _waiting_players: Array = []
 
 @onready var chunks: Node = $Chunks
 @onready var entities: Node = $Entities
 @onready var players: Node = $Players
 @onready var spawn: Node3D = $Spawn
 
-@rpc(\"authority\", \"reliable\")
-func receive_chunk(pocket: Array) -> void:
-	var chunk_scene: Resource = load(\"res://Scenes/MapSystem/chunk.tscn\")
-	var decompressed: PackedByteArray = pocket[0].decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
-	var data: Dictionary = bytes_to_var(decompressed)
-	var chunk: Node3D = chunk_scene.instantiate()
-	chunk.name = data.name
-	chunk.blocks = data.blocks
-	chunk.position = data.position
-	chunks.add_child(chunk)
-	chunk.rebuild()
-
-@rpc(\"authority\", \"reliable\")
+@rpc('authority', 'reliable')
 func add_player(pocket: Array) -> void:
-	var scene: Resource = load(\"res://Scenes/Entities/player.tscn\")
+	if not _initial_ready:
+		_waiting_players.append(pocket)
+		return
+	_spawn_player(pocket)
+
+func _spawn_player(pocket: Array) -> void:
+	var scene: Resource = load('res://Scenes/Entities/player.tscn')
 	var decompressed: PackedByteArray = pocket[0].decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
 	var data: Dictionary = bytes_to_var(decompressed)
 	var player: Node3D = scene.instantiate()
 	player.load_data(data)
-	player.player_id = data.get(\"player_id\", 1)
+	player.player_id = data.get('player_id', 1)
 	player.set_multiplayer_authority(player.player_id)
 	players.add_child(player)
 
-@rpc(\"authority\", \"reliable\")
-func load_completed() -> void:
-	emit_signal(\"load_completed_signal\")
+@rpc('authority', 'reliable')
+func load_completed(expected: int, center: Vector2i) -> void:
+	$ChunkLoader.begin_initial_load(expected, center)
 	#$AmbientSystem.init_sound()
 
-@rpc(\"any_peer\", \"reliable\")
+@rpc('any_peer', 'reliable')
 func load_scene() -> void:
 	if multiplayer.is_server():
-		for child: Node in chunks.get_children():
-			rpc_id(multiplayer.get_remote_sender_id(), \"receive_chunk\", [child.serialize()])
+		var sender: int = multiplayer.get_remote_sender_id()
+		var center: Vector2i = $ChunkLoader.get_spawn_column()
+		var sent: int = $ChunkLoader.send_spawn_chunks(sender, center)
 		for player: Node in players.get_children():
-			rpc_id(multiplayer.get_remote_sender_id(), \"add_player\", [player.serialize()])
-		rpc_id(multiplayer.get_remote_sender_id(), \"load_completed\")
+			rpc_id(sender, 'add_player', [player.serialize()])
+		rpc_id(sender, 'load_completed', sent, center)
 
 func _ready() -> void:
 	MultiplayerManager.map = self
 	MultiplayerManager.players = $Players
 	MultiplayerManager.player_spawn = $Spawn
-	if OS.has_feature(\"dedicated_server\"):
+	$ChunkLoader.initial_chunks_ready.connect(_on_initial_chunks_ready)
+	if OS.has_feature('dedicated_server'):
 		update_spawn()
 		load_entities()
 		load_chunks()
+
+func _on_initial_chunks_ready() -> void:
+	_initial_ready = true
+	for pocket: Array in _waiting_players:
+		_spawn_player(pocket)
+	_waiting_players.clear()
+	emit_signal('load_completed_signal')
 
 func load_entities() -> void:
 	var files: Array = FileManager.get_files_in_directory('./world/entities')
@@ -64,12 +74,12 @@ func load_entities() -> void:
 		for file: String in files:
 			var path: String = './world/entities/'+file
 			var data: Dictionary = FileManager.read_json(FileManager.get_file_path(path, true))
-			var entity_scene: Resource = load(\"res://Scenes/Entities/{type}.tscn\".format({\"type\": data.type}))
+			var entity_scene: Resource = load('res://Scenes/Entities/{type}.tscn'.format({'type': data.type}))
 			var entity: Node = FileManager.load_file(path, entity_scene)
 			entities.add_child(entity)
 
 func load_chunks() -> void:
-	var chunk_scene: Resource = load(\"res://Scenes/MapSystem/chunk.tscn\")
+	var chunk_scene: Resource = load('res://Scenes/MapSystem/chunk.tscn')
 	var files: Array = FileManager.get_files_in_directory('./world/chunks')
 	if files != []:
 		for file: String in files:
@@ -122,6 +132,9 @@ script = SubResource("GDScript_58wgy")
 [node name="AmbientSystem" parent="." unique_id=981918370 instance=ExtResource("1_20ysd")]
 
 [node name="Chunks" type="Node" parent="." unique_id=1473334747]
+
+[node name="ChunkLoader" type="Node" parent="." unique_id=1534827761]
+script = ExtResource("2_chunk_loader")
 
 [node name="Entities" type="Node" parent="." unique_id=1761748697]
 

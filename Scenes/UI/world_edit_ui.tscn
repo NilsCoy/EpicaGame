@@ -16,18 +16,18 @@ var selected_tool: String:
 			var tool_data: Dictionary = rectangle_select.get_tool()
 			return tool_data['tool_type']
 		elif sphere.content.window_visible:
-			var tool_data: Dictionary = rectangle_select.get_tool()
+			var tool_data: Dictionary = sphere.get_tool()
 			return tool_data['tool_type']
 		elif cylinder.content.window_visible:
-			var tool_data: Dictionary = rectangle_select.get_tool()
+			var tool_data: Dictionary = cylinder.get_tool()
 			return tool_data['tool_type']
 		elif cube.content.window_visible:
-			var tool_data: Dictionary = rectangle_select.get_tool()
+			var tool_data: Dictionary = cube.get_tool()
 			return tool_data['tool_type']
 		elif smooth.content.window_visible:
-			var tool_data: Dictionary = rectangle_select.get_tool()
+			var tool_data: Dictionary = smooth.get_tool()
 			return tool_data['tool_type']
-		return \"\"
+		return ''
 
 @onready var block_id: HBoxContainer = $ToolContainer/MarginContainer/ScrollContainer/MainContainer/BlockID
 @onready var block_x: HBoxContainer = $ToolContainer/MarginContainer/ScrollContainer/MainContainer/BlockPosContainer/BlockX
@@ -635,13 +635,13 @@ value = "5"
 layout_mode = 2
 text = "Высота"
 input_type = "int"
-value = "1"
+value = "5"
 
 [node name="Strenght" parent="ToolContainer/MarginContainer/ScrollContainer/MainContainer/Smooth/DropdownContent" unique_id=822814180 instance=ExtResource("2_jjus3")]
 layout_mode = 2
 text = "Сила"
 input_type = "int"
-value = "1"
+value = "3"
 
 [node name="Sculpt" type="PanelContainer" parent="ToolContainer/MarginContainer/ScrollContainer/MainContainer" unique_id=123017493]
 layout_mode = 2
