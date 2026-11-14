@@ -19,7 +19,7 @@ class_name WeaponItemComponent
 ## Число получаемых урон целей
 @export var count_targets: int = 1
 ## Тип оружия
-@export_enum('one_hand', 'two_hand') var weapon_type: String = 'one_hand'
+@export_enum('one_hand', 'close_twohand', 'far_twohand') var weapon_type: String = 'one_hand'
 
 @export_group('Model property')
 ## Смещение объекта

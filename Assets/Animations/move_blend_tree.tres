@@ -1,7 +1,7 @@
 [gd_resource type="AnimationNodeBlendTree" format=3 uid="uid://bfsc40fkwmylr"]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_n7jwg"]
-animation = &"fall"
+animation = &"fall_new_fasted_legs"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_l6n3p"]
 animation = &"idle"
@@ -12,7 +12,7 @@ start_offset = 0.0
 loop_mode = 1
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_fetw0"]
-animation = &"jump"
+animation = &"jump_legs"
 
 [sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_arox2"]
 
@@ -71,7 +71,7 @@ input_4/break_loop_at_end = false
 input_4/reset = true
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_36dho"]
-animation = &"run"
+animation = &"run_legs"
 play_mode = 1
 use_custom_timeline = true
 timeline_length = 0.7
@@ -98,7 +98,7 @@ input_1/break_loop_at_end = false
 input_1/reset = true
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_nv4vc"]
-animation = &"run"
+animation = &"run_legs"
 use_custom_timeline = true
 timeline_length = 0.7
 stretch_time_scale = true
@@ -132,7 +132,7 @@ blend_point_3/pos = Vector2(-1, 0)
 blend_point_3/name = &"3"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8gxox"]
-animation = &"walk"
+animation = &"walk_legs"
 play_mode = 1
 use_custom_timeline = true
 timeline_length = 1.0
@@ -159,7 +159,7 @@ input_1/break_loop_at_end = false
 input_1/reset = true
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_fs7ks"]
-animation = &"walk"
+animation = &"walk_legs"
 use_custom_timeline = true
 timeline_length = 1.0
 stretch_time_scale = true
@@ -193,7 +193,7 @@ blend_point_3/pos = Vector2(1, 0)
 blend_point_3/name = &"3"
 
 [resource]
-graph_offset = Vector2(338.49927, 507.5459)
+graph_offset = Vector2(-589.89374, 727.88214)
 nodes/output/position = Vector2(1240, 540)
 nodes/move_state/node = SubResource("AnimationNodeTransition_wpjfl")
 nodes/move_state/position = Vector2(1020, 540)
@@ -210,7 +210,7 @@ nodes/walk_blend/position = Vector2(580, 340)
 nodes/run_blend/node = SubResource("AnimationNodeAdd2_yh6i2")
 nodes/run_blend/position = Vector2(600, 620)
 nodes/walk_back/node = SubResource("AnimationNodeAnimation_8gxox")
-nodes/walk_back/position = Vector2(40, 340)
+nodes/walk_back/position = Vector2(53.333332, 346.66666)
 nodes/walk_direction/node = SubResource("AnimationNodeTransition_sbwqj")
 nodes/walk_direction/position = Vector2(320, 200)
 nodes/run_forward/node = SubResource("AnimationNodeAnimation_nv4vc")
