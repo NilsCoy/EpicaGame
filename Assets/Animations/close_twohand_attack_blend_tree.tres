@@ -42,6 +42,10 @@ animation = &"close_twohand_block"
 resource_local_to_scene = true
 animation = &"close_twohand_fall"
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8745y"]
+resource_local_to_scene = true
+animation = &"close_twohand_run"
+
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ukxpd"]
 resource_local_to_scene = true
 animation = &"close_twohand_idle"
@@ -78,10 +82,6 @@ point_count = 2
 fadein_time = 0.3
 fadein_curve = SubResource("Curve_85s6f")
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8745y"]
-resource_local_to_scene = true
-animation = &"close_twohand_run"
-
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_4gjal"]
 resource_local_to_scene = true
 animation = &"close_twohand_attack_stabbing"
@@ -117,17 +117,21 @@ input_2/name = "run"
 input_2/auto_advance = false
 input_2/break_loop_at_end = false
 input_2/reset = true
-input_3/name = "jump"
+input_3/name = "fast_run"
 input_3/auto_advance = false
 input_3/break_loop_at_end = false
 input_3/reset = true
-input_4/name = "fall"
+input_4/name = "jump"
 input_4/auto_advance = false
 input_4/break_loop_at_end = false
 input_4/reset = true
+input_5/name = "fall"
+input_5/auto_advance = false
+input_5/break_loop_at_end = false
+input_5/reset = true
 
 [resource]
-graph_offset = Vector2(-470.5599, 739.15094)
+graph_offset = Vector2(-642.5599, 1369.8177)
 nodes/output/position = Vector2(1760, 1893.3334)
 nodes/walk_animation/node = SubResource("AnimationNodeAnimation_kmjms")
 nodes/walk_animation/position = Vector2(-26.666666, 1253.3334)
@@ -161,4 +165,6 @@ nodes/tip_animation/node = SubResource("AnimationNodeAnimation_v25yb")
 nodes/tip_animation/position = Vector2(693.3333, 2986.6667)
 nodes/kick_animation/node = SubResource("AnimationNodeAnimation_gvm7k")
 nodes/kick_animation/position = Vector2(693.3333, 3226.6667)
-node_connections = [&"output", 0, &"on_attack", &"weapon_move_state", 0, &"idle_animation", &"weapon_move_state", 1, &"walk_animation", &"weapon_move_state", 2, &"run_animation", &"weapon_move_state", 3, &"jump_animation", &"weapon_move_state", 4, &"fall_animation", &"on_attack", 0, &"is_block", &"on_attack", 1, &"attack_type", &"is_block", 0, &"weapon_move_state", &"is_block", 1, &"block_animation", &"attack_type", 0, &"attack_1_animation", &"attack_type", 1, &"attack_2_animation", &"attack_type", 2, &"vertical_animation", &"attack_type", 3, &"stabbing_animation", &"attack_type", 4, &"tip_animation", &"attack_type", 5, &"kick_animation"]
+nodes/fast_run_animation/node = SubResource("AnimationNodeAnimation_8745y")
+nodes/fast_run_animation/position = Vector2(-260.66672, 1691.6932)
+node_connections = [&"output", 0, &"on_attack", &"weapon_move_state", 0, &"idle_animation", &"weapon_move_state", 1, &"walk_animation", &"weapon_move_state", 2, &"run_animation", &"weapon_move_state", 3, &"fast_run_animation", &"weapon_move_state", 4, &"jump_animation", &"weapon_move_state", 5, &"fall_animation", &"on_attack", 0, &"is_block", &"on_attack", 1, &"attack_type", &"is_block", 0, &"weapon_move_state", &"is_block", 1, &"block_animation", &"attack_type", 0, &"attack_1_animation", &"attack_type", 1, &"attack_2_animation", &"attack_type", 2, &"vertical_animation", &"attack_type", 3, &"stabbing_animation", &"attack_type", 4, &"tip_animation", &"attack_type", 5, &"kick_animation"]
