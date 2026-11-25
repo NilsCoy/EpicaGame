@@ -1,5 +1,8 @@
 [gd_resource type="AnimationNodeBlendTree" format=3 uid="uid://bfsc40fkwmylr"]
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_rp6gy"]
+animation = &"crouch_idle_legs"
+
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_n7jwg"]
 animation = &"fall_new_fasted_legs"
 
@@ -103,6 +106,9 @@ blend_point_3/node = SubResource("AnimationNodeAnimation_rowp7")
 blend_point_3/pos = Vector2(1, 0)
 blend_point_3/name = &"3"
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_sxsmc"]
+animation = &"knockdown_idle_legs"
+
 [sub_resource type="Curve" id="Curve_olqyp"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
 point_count = 2
@@ -134,6 +140,20 @@ input_5/name = "fall"
 input_5/auto_advance = false
 input_5/break_loop_at_end = false
 input_5/reset = true
+
+[sub_resource type="AnimationNodeTransition" id="AnimationNodeTransition_jewv6"]
+input_0/name = "stand"
+input_0/auto_advance = false
+input_0/break_loop_at_end = false
+input_0/reset = true
+input_1/name = "crouch"
+input_1/auto_advance = false
+input_1/break_loop_at_end = false
+input_1/reset = true
+input_2/name = "knockdown"
+input_2/auto_advance = false
+input_2/break_loop_at_end = false
+input_2/reset = true
 
 [sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_yh6i2"]
 
@@ -174,6 +194,10 @@ loop_mode = 1
 
 [sub_resource type="AnimationNodeAdd2" id="AnimationNodeAdd2_11gg7"]
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_txbu0"]
+animation = &"crouch_walk_legs"
+play_mode = 1
+
 [sub_resource type="Curve" id="Curve_qpa8y"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.99999, 1), 0.0, 0.0, 0, 0]
 point_count = 2
@@ -190,6 +214,9 @@ input_1/auto_advance = false
 input_1/break_loop_at_end = false
 input_1/reset = true
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_vw3le"]
+animation = &"crouch_walk_legs"
+
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_fs7ks"]
 animation = &"walk_legs"
 use_custom_timeline = true
@@ -198,27 +225,34 @@ stretch_time_scale = true
 start_offset = 0.0
 loop_mode = 1
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_jewv6"]
+animation = &"knockdown_walk"
+play_mode = 1
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_hygr4"]
+animation = &"knockdown_walk_legs"
+
 [resource]
-graph_offset = Vector2(-492.79736, 56.687458)
+graph_offset = Vector2(-211.28217, -244.76933)
 nodes/output/position = Vector2(1760, 560)
 nodes/move_state/node = SubResource("AnimationNodeTransition_wpjfl")
 nodes/move_state/position = Vector2(1520, 560)
 nodes/idle/node = SubResource("AnimationNodeAnimation_l6n3p")
-nodes/idle/position = Vector2(840, 220)
+nodes/idle/position = Vector2(613.3333, -320)
 nodes/walk_forward/node = SubResource("AnimationNodeAnimation_fs7ks")
-nodes/walk_forward/position = Vector2(40, 140)
+nodes/walk_forward/position = Vector2(-1333.3334, -453.33334)
 nodes/walk_rotate_direction/node = SubResource("AnimationNodeBlendSpace2D_83xs0")
-nodes/walk_rotate_direction/position = Vector2(300, 440)
+nodes/walk_rotate_direction/position = Vector2(-1066.6666, -133.33333)
 nodes/fast_run_rotate_direction/node = SubResource("AnimationNodeBlendSpace2D_bi64h")
 nodes/fast_run_rotate_direction/position = Vector2(346.66666, 1173.3334)
 nodes/walk_blend/node = SubResource("AnimationNodeAdd2_11gg7")
-nodes/walk_blend/position = Vector2(580, 340)
+nodes/walk_blend/position = Vector2(-800, -240)
 nodes/run_blend/node = SubResource("AnimationNodeAdd2_yh6i2")
 nodes/run_blend/position = Vector2(600, 620)
 nodes/walk_back/node = SubResource("AnimationNodeAnimation_8gxox")
-nodes/walk_back/position = Vector2(53.333332, 346.66666)
+nodes/walk_back/position = Vector2(-1306.6666, -240)
 nodes/walk_direction/node = SubResource("AnimationNodeTransition_sbwqj")
-nodes/walk_direction/position = Vector2(320, 200)
+nodes/walk_direction/position = Vector2(-1040, -373.33334)
 nodes/run_forward/node = SubResource("AnimationNodeAnimation_nv4vc")
 nodes/run_forward/position = Vector2(-80, 613.3333)
 nodes/run_back/node = SubResource("AnimationNodeAnimation_36dho")
@@ -243,4 +277,32 @@ nodes/fast_run_forward/node = SubResource("AnimationNodeAnimation_nv4vc")
 nodes/fast_run_forward/position = Vector2(-160, 1040)
 nodes/fast_run_back/node = SubResource("AnimationNodeAnimation_36dho")
 nodes/fast_run_back/position = Vector2(-133.33333, 1226.6666)
-node_connections = [&"output", 0, &"move_state", &"move_state", 0, &"idle", &"move_state", 1, &"walk_blend", &"move_state", 2, &"run_blend", &"move_state", 3, &"fast_run_blend", &"move_state", 4, &"jump_blend", &"move_state", 5, &"fall", &"walk_blend", 0, &"walk_direction", &"walk_blend", 1, &"walk_rotate_direction", &"run_blend", 0, &"run_direction", &"run_blend", 1, &"run_rotate_direction", &"walk_direction", 0, &"walk_forward", &"walk_direction", 1, &"walk_back", &"run_direction", 0, &"run_forward", &"run_direction", 1, &"run_back", &"jump_blend", 0, &"jump", &"jump_blend", 1, &"jump_rotate_direction", &"fast_run_blend", 0, &"fast_run_direction", &"fast_run_blend", 1, &"fast_run_rotate_direction", &"fast_run_direction", 0, &"fast_run_forward", &"fast_run_direction", 1, &"fast_run_back"]
+nodes/move_type_idle/node = SubResource("AnimationNodeTransition_jewv6")
+nodes/move_type_idle/position = Vector2(1360, 266.66666)
+nodes/crouch_idle/node = SubResource("AnimationNodeAnimation_rp6gy")
+nodes/crouch_idle/position = Vector2(586.6667, -133.33333)
+nodes/knockdown_idle/node = SubResource("AnimationNodeAnimation_sxsmc")
+nodes/knockdown_idle/position = Vector2(613.3333, 53.333332)
+nodes/move_type_walk/node = SubResource("AnimationNodeTransition_jewv6")
+nodes/move_type_walk/position = Vector2(880, 373.33334)
+nodes/walk_crouch_blend/node = SubResource("AnimationNodeAdd2_11gg7")
+nodes/walk_crouch_blend/position = Vector2(-800, 266.66666)
+nodes/walk_crouch_rotate_direction/node = SubResource("AnimationNodeBlendSpace2D_83xs0")
+nodes/walk_crouch_rotate_direction/position = Vector2(-1120, 506.66666)
+nodes/walk_crouch_direction/node = SubResource("AnimationNodeTransition_sbwqj")
+nodes/walk_crouch_direction/position = Vector2(-1146.6666, 240)
+nodes/walk_crouch_forward/node = SubResource("AnimationNodeAnimation_vw3le")
+nodes/walk_crouch_forward/position = Vector2(-1386.6666, 266.66666)
+nodes/walk_crouch_back/node = SubResource("AnimationNodeAnimation_txbu0")
+nodes/walk_crouch_back/position = Vector2(-1360, 506.66666)
+nodes/walk_knockdown_blend/node = SubResource("AnimationNodeAdd2_11gg7")
+nodes/walk_knockdown_blend/position = Vector2(-640, 746.6667)
+nodes/walk_kockdown_rotate_direction/node = SubResource("AnimationNodeBlendSpace2D_83xs0")
+nodes/walk_kockdown_rotate_direction/position = Vector2(-1040, 1120)
+nodes/walk_knockdown_direction/node = SubResource("AnimationNodeTransition_sbwqj")
+nodes/walk_knockdown_direction/position = Vector2(-970.6638, 858.9758)
+nodes/walk_knockdown_back/node = SubResource("AnimationNodeAnimation_jewv6")
+nodes/walk_knockdown_back/position = Vector2(-1306.6666, 986.6667)
+nodes/walk_knockdown_forward/node = SubResource("AnimationNodeAnimation_hygr4")
+nodes/walk_knockdown_forward/position = Vector2(-1333.3334, 800)
+node_connections = [&"output", 0, &"move_state", &"move_state", 0, &"move_type_idle", &"move_state", 1, &"move_type_walk", &"move_state", 2, &"run_blend", &"move_state", 3, &"fast_run_blend", &"move_state", 4, &"jump_blend", &"move_state", 5, &"fall", &"walk_blend", 0, &"walk_direction", &"walk_blend", 1, &"walk_rotate_direction", &"run_blend", 0, &"run_direction", &"run_blend", 1, &"run_rotate_direction", &"walk_direction", 0, &"walk_forward", &"walk_direction", 1, &"walk_back", &"run_direction", 0, &"run_forward", &"run_direction", 1, &"run_back", &"jump_blend", 0, &"jump", &"jump_blend", 1, &"jump_rotate_direction", &"fast_run_blend", 0, &"fast_run_direction", &"fast_run_blend", 1, &"fast_run_rotate_direction", &"fast_run_direction", 0, &"fast_run_forward", &"fast_run_direction", 1, &"fast_run_back", &"move_type_idle", 0, &"idle", &"move_type_idle", 1, &"crouch_idle", &"move_type_idle", 2, &"knockdown_idle", &"move_type_walk", 0, &"walk_blend", &"move_type_walk", 1, &"walk_crouch_blend", &"move_type_walk", 2, &"walk_knockdown_blend", &"walk_crouch_blend", 0, &"walk_crouch_direction", &"walk_crouch_blend", 1, &"walk_crouch_rotate_direction", &"walk_crouch_direction", 0, &"walk_crouch_forward", &"walk_crouch_direction", 1, &"walk_crouch_back", &"walk_knockdown_blend", 0, &"walk_knockdown_direction", &"walk_knockdown_blend", 1, &"walk_kockdown_rotate_direction", &"walk_knockdown_direction", 0, &"walk_knockdown_forward", &"walk_knockdown_direction", 1, &"walk_knockdown_back"]
